@@ -1,0 +1,2 @@
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+PROJ_ROOT := $(shell dirname $(mkfile_path))

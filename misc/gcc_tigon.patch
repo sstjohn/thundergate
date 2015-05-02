@@ -1,0 +1,100 @@
+diff -rupN gcc/config/mips_old/mips.c gcc/config/mips/mips.c
+--- gcc/config/mips_old/mips.c	2014-03-08 03:27:23.000000000 -0600
++++ gcc/config/mips/mips.c	2015-01-30 12:52:34.264697294 -0600
+@@ -7300,7 +7300,9 @@ mips_block_move_straight (rtx dest, rtx
+      For instance, lh/lh/sh/sh is usually better than lwl/lwr/swl/swr
+      and lw/lw/sw/sw is usually better than ldl/ldr/sdl/sdr.
+      Otherwise move word-sized chunks.  */
+-  if (MEM_ALIGN (src) == BITS_PER_WORD / 2
++  if (TARGET_TIGON)
++      bits = MIN (MEM_ALIGN (src), MEM_ALIGN (dest));
++  else if (MEM_ALIGN (src) == BITS_PER_WORD / 2
+       && MEM_ALIGN (dest) == BITS_PER_WORD / 2)
+     bits = BITS_PER_WORD / 2;
+   else
+diff -rupN gcc/config/mips_old/mips.md gcc/config/mips/mips.md
+--- gcc/config/mips_old/mips.md	2014-02-02 10:05:09.000000000 -0600
++++ gcc/config/mips/mips.md	2015-01-30 12:51:59.351696866 -0600
+@@ -3870,7 +3870,7 @@
+ 	(sign_extract:GPR (match_operand:BLK 1 "memory_operand")
+ 			  (match_operand 2 "const_int_operand")
+ 			  (match_operand 3 "const_int_operand")))]
+-  "!TARGET_MIPS16"
++  "!TARGET_MIPS16 && !TARGET_TIGON"
+ {
+   if (mips_expand_ext_as_unaligned_load (operands[0], operands[1],
+ 					 INTVAL (operands[2]),
+@@ -3907,7 +3907,7 @@
+ 	(zero_extract:GPR (match_operand:BLK 1 "memory_operand")
+ 			  (match_operand 2 "const_int_operand")
+ 			  (match_operand 3 "const_int_operand")))]
+-  "!TARGET_MIPS16"
++  "!TARGET_MIPS16 && !TARGET_TIGON"
+ {
+   if (mips_expand_ext_as_unaligned_load (operands[0], operands[1],
+ 					 INTVAL (operands[2]),
+@@ -3958,7 +3958,7 @@
+ 			  (match_operand 1 "const_int_operand")
+ 			  (match_operand 2 "const_int_operand"))
+ 	(match_operand:GPR 3 "reg_or_0_operand"))]
+-  "!TARGET_MIPS16"
++  "!TARGET_MIPS16 && !TARGET_TIGON"
+ {
+   if (mips_expand_ins_as_unaligned_store (operands[0], operands[3],
+ 					  INTVAL (operands[1]),
+@@ -4030,7 +4030,7 @@
+ 	(unspec:GPR [(match_operand:BLK 1 "memory_operand" "m")
+ 		     (match_operand:QI 2 "memory_operand" "ZC")]
+ 		    UNSPEC_LOAD_LEFT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
++  "!TARGET_MIPS16 && !TARGET_TIGON && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
+   "<load>l\t%0,%2"
+   [(set_attr "move_type" "load")
+    (set_attr "mode" "<MODE>")])
+@@ -4041,7 +4041,7 @@
+ 		     (match_operand:QI 2 "memory_operand" "ZC")
+ 		     (match_operand:GPR 3 "register_operand" "0")]
+ 		    UNSPEC_LOAD_RIGHT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
++  "!TARGET_MIPS16 && !TARGET_TIGON && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
+   "<load>r\t%0,%2"
+   [(set_attr "move_type" "load")
+    (set_attr "mode" "<MODE>")])
+@@ -4051,7 +4051,7 @@
+ 	(unspec:BLK [(match_operand:GPR 1 "reg_or_0_operand" "dJ")
+ 		     (match_operand:QI 2 "memory_operand" "ZC")]
+ 		    UNSPEC_STORE_LEFT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
++  "!TARGET_MIPS16 && !TARGET_TIGON && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
+   "<store>l\t%z1,%2"
+   [(set_attr "move_type" "store")
+    (set_attr "mode" "<MODE>")])
+@@ -4062,7 +4062,7 @@
+ 		     (match_operand:QI 2 "memory_operand" "ZC")
+ 		     (match_dup 0)]
+ 		    UNSPEC_STORE_RIGHT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
++  "!TARGET_MIPS16 && !TARGET_TIGON && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
+   "<store>r\t%z1,%2"
+   [(set_attr "move_type" "store")
+    (set_attr "mode" "<MODE>")])
+diff -rupN gcc/config/mips_old/mips.opt gcc/config/mips/mips.opt
+--- gcc/config/mips_old/mips.opt	2014-02-21 07:30:47.000000000 -0600
++++ gcc/config/mips/mips.opt	2015-01-30 12:44:18.551691220 -0600
+@@ -1,4 +1,4 @@
+-; Options for the MIPS port of the compiler
++; Options for the MIPS port of the compiler;2015-01-30  12:44 PM
+ ;
+ ; Copyright (C) 2005-2014 Free Software Foundation, Inc.
+ ;
+@@ -356,6 +356,10 @@ mshared
+ Target Report Var(TARGET_SHARED) Init(1)
+ When generating -mabicalls code, make the code suitable for use in shared libraries
+ 
++mtigon
++Target Report Mask(TIGON)
++Do not use lwl/lwr/swl/swr
++
+ msingle-float
+ Target Report RejectNegative Mask(SINGLE_FLOAT)
+ Restrict the use of hardware floating-point instructions to 32-bit operations
