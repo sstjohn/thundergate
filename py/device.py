@@ -309,12 +309,12 @@ class Device(object):
 
     def fwed(self):
         oldhash = hashfile("fw/app.c")
-        res = os.system("sudo -u $SUDO_USER vim fw/app.c")
+        res = os.system("vim fw/app.c")
         if 0 == res:
             newhash = hashfile("fw/app.c")
             if oldhash != newhash:
                 print "[+] building new firmware"
-                res = os.system("sudo -u $SUDO_USER make -C fw")
+                res = os.system("make -C fw")
                 if 0 == res:
                     print "[+] firmware compilation successful"
                     self.nvram.init(wr=1)

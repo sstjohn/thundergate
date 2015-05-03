@@ -35,10 +35,10 @@ def to_x(v):
 
 class Cpu(rflip.cpu):
     try:
-        mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
+        md_mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
     except:
-        mode = CS_MODE_32 + CS_MODE_BIG_ENDIAN
-    md = Cs(CS_ARCH_MIPS, mode)
+        md_mode = CS_MODE_32 + CS_MODE_BIG_ENDIAN
+    md = Cs(CS_ARCH_MIPS, md_mode)
     md.detail = True
 
     def set_breakpoint(self, addr, enable = True, reset = False):
