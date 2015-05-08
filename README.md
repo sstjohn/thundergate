@@ -10,7 +10,7 @@
                                  Version 0.1.1
                         Copyright (c) 2015 Saul St John
 
-                             http://thundergate.io
+                            <http://thundergate.io>
 </pre>
 
 # Introduction #
@@ -144,8 +144,8 @@ optional arguments:
 The example EFI PCI Option Rom code lives under the 'efi/' directory. It can
 be installed to the target device from the ThunderGate CLI as follows:
 ~~~
-dev.nvram.init(wr=1)
-dev.nvram.load_efi_drv("efi/dmarf.efi")
+In <1>: dev.nvram.init(wr=1)
+In <2>: dev.nvram.load_efi_drv("efi/dmarf.efi")
 ~~~
 
 ## MIPS CPU firmware application ##
@@ -154,8 +154,8 @@ The example Tigon3 MIPS core firmware application code lives under the 'fw/'
 directory. It can be installed to the target device from the ThunderGate CLI
 as follows:
 ~~~
-dev.nvram.init(wr=1)
-dev.load_rxcpu_fw("fw/fw.img")
+In <1>: dev.nvram.init(wr=1)
+In <2>: dev.load_rxcpu_fw("fw/fw.img")
 ~~~
 
 # Further Reading #
