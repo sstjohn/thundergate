@@ -33,7 +33,6 @@
         <div id="title">
           <h1>ThunderGate</h1>
           <p>an open source toolkit for PCI bus exploration</p>
-          <hr>
         </div>
 
         <h1>
@@ -172,11 +171,11 @@ optional arguments:
 <h2>
 <a id="efi-pci-oprom" class="anchor" href="#efi-pci-oprom" aria-hidden="true"><span class="octicon octicon-link"></span></a>EFI PCI OpRom</h2>
 
-<p>The example EFI PCI Option Rom code lives under the 'dmarf/' directory. It can
+<p>The example EFI PCI Option Rom code lives under the 'efi/' directory. It can
 be installed to the target device from the ThunderGate CLI as follows:</p>
 
 <pre><code>In &lt;1&gt;: dev.nvram.init(wr=1)
-In &lt;2&gt;: dev.nvram.load_efi_drv("dmarf/dmarf.efi")
+In &lt;2&gt;: dev.nvram.load_efi_drv("efi/dmarf.efi")
 </code></pre>
 
 <h2>
@@ -187,8 +186,13 @@ directory. It can be installed to the target device from the ThunderGate CLI
 as follows:</p>
 
 <pre><code>In &lt;1&gt;: dev.nvram.init(wr=1)
-In &lt;2&gt;: dev.load_rxcpu_fw("fw/nvimage")
+In &lt;2&gt;: dev.load_rxcpu_fw("fw/fw.img")
 </code></pre>
+<h1>
+	<a id="user-content-further-reading" class="anchor" href="#further-reading" aria-hidden="true"><span class="octicon octicon-link"></span></a>Further Reading</h1>
+<p>A report describing an older version of this project can be found at
+<a href="http://pages.cs.wisc.edu/%7Esstjohn/tg_old.pdf">http://pages.cs.wisc.edu/~sstjohn/tg_old.pdf</a>. </p>
+<hr>
 <div id="title">
           <span class="credits left">Project maintained by <a href="https://github.com/sstjohn">sstjohn</a></span>
           <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
