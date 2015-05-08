@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Thundergate by sstjohn</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/sstjohn/thundergate">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/sstjohn/thundergate/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/sstjohn/thundergate/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Thundergate</h1>
+          <p>an open source toolkit for PCI bus exploration</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/sstjohn">sstjohn</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>
+<a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h1>
+
+<p>ThunderGate is a collection of tools for the manipulation of Tigon3 Gigabit
+Ethernet controllers, with special emphasis on the Broadcom NetLink 57762,
+such as is found in Apple Thunderbolt Gigabit Ethernet adapters.</p>
+
+<p>Tigon3 controllers contain a variety of architectural blocks, including a PCI
+endpoint, an 802.3 media access controller, on-chip ram, DMA read and write
+engines, nonvolatile storage, and one or more MIPS processors.</p>
+
+<p>These features are exposed by ThunderGate through an easy-to-use Python
+interface, allowing for reverse engineering, development, and deployment of
+custom firmware and applications. Examples provided include a userspace VFIO
+tap driver, a firmware application capable of transparently monitoring
+network traffic and host memory, and a PCI option rom containing an EFI boot
+services driver which inhibits the employ of Intel I/O MMU address
+translation (VT-d).</p>
+
+<h1>
+<a id="warning" class="anchor" href="#warning" aria-hidden="true"><span class="octicon octicon-link"></span></a>Warning</h1>
+
+<p>This is experimental software made available to you under the terms of
+the GPLv3. You assume all risks in using it. Please refer to the COPYING file
+for details.</p>
+
+<h1>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h1>
+
+<p>These instructions assume a Debian 8 host.</p>
+
+<ol>
+<li>
+<p>Install dependencies:</p>
+
+<pre><code>$ sudo apt-get install build-essential curl texinfo flex git     \
+      ca-certificates gnu-efi python python-ctypeslib libgmp-dev \
+      libmpfr-dev libmpc-dev python-capstone ipython
+</code></pre>
+</li>
+<li>
+<p>Clone repository:</p>
+
+<pre><code>$ git clone http://github.com/sstjohn/thundergate.git
+</code></pre>
+</li>
+<li>
+<p>Retrieve, compile and install cross mips-elf binutils:</p>
+
+<pre><code>$ curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.25.tar.bz2
+$ tar xfi binutils-2.25.tar.bz2
+$ mkdir binutils-build
+$ pushd binutils-build
+$ ../binutils-2.25/configure --target=mips-elf --with-sysroot \
+        --disable-nls
+$ make &amp;&amp; sudo make install &amp;&amp; popd
+</code></pre>
+</li>
+<li>
+<p>Retrieve, patch, compile and install cross mips-elf GCC 5.1:</p>
+
+<pre><code>$ curl -O http://ftp.gnu.org/gnu/gcc/gcc-5.1.0/gcc-5.1.0.tar.bz2
+$ tar xfi gcc-5.1.0.tar.bz2
+$ pushd gcc-5.1.0
+$ patch -p1 &lt; ../thundergate/misc/gcc-5.1.0-mtigon.patch
+$ popd
+$ mkdir gcc-build
+$ pushd gcc-build
+$ ../gcc-5.1.0/configure --target=mips-elf --program-prefix=mips-elf-  \
+    --disable-biarch --enable-languages=c,c++ --without-headers        \
+    --without-llsc --with-tune=r6000 --with-arch=mips2 --disable-nls   \
+    --disable-multilib --with-float=soft --without-hard-float
+$ make all-gcc &amp;&amp; make all-target-libgcc
+$ sudo make install-gcc &amp;&amp; sudo make install-target-libgcc &amp;&amp; popd
+</code></pre>
+</li>
+<li>
+<p>Compile ThunderGate:</p>
+
+<pre><code>$ cd thundergate
+$ make
+</code></pre>
+</li>
+</ol>
+
+<h1>
+<a id="setup" class="anchor" href="#setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setup</h1>
+
+<p>You should begin by taking a backup image of the factory-released firmware as
+it was when you bought the device. This image can be used to restore the device
+to a working state in the event that you should break it using ThunderGate.
+See <code>man ethtool</code> for details on conducting a device firmware dump.</p>
+
+<p>In order to launch ThunderGate, you will need to know the BDF
+(Bus-Device-Function) of your Tigon3 device. This information can be
+obtained from, e.g., <code>lspci</code>:</p>
+
+<pre><code>$ sudo lspci -d14e4: | grep Ethernet
+0a:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57762 Gigabit Ethernet PCIe
+</code></pre>
+
+<p>As is commonly the case on Apple hardware, the BDF for the Thunderbolt
+Gigabit in this example is '0a:00.0'.</p>
+
+<p>In order to use the userspace tap driver, the network interface device
+will need to be bound to the <code>vfio-pci</code> kernel module:</p>
+
+<pre><code>$ sudo modprobe vfio-pci
+$ echo $BDF | sudo tee /sys/bus/pci/devices/$BDF/driver/unbind
+$ echo $BDF | sudo tee /sys/bus/pci/drivers/vfio-pci/bind
+</code></pre>
+
+<p>All other functionality is available regardless of the kernel driver in use.</p>
+
+<h1>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
+
+<pre>
+$ py/main.py -h
+usage: main.py [-h] [-v] [-d] [-t] [-s] device
+
+positional arguments:
+  device        BDF of tg3 PCI device
+
+optional arguments:
+  -h, --help    show this help message and exit
+  -v, --vfio    use vfio interface
+  -d, --driver  load userspace tap driver
+  -t, --tests   run tests
+  -s, --shell   ipython cli
+</pre>
+
+<h2>
+<a id="efi-pci-oprom" class="anchor" href="#efi-pci-oprom" aria-hidden="true"><span class="octicon octicon-link"></span></a>EFI PCI OpRom</h2>
+
+<p>The example EFI PCI Option Rom code lives under the 'dmarf/' directory. It can
+be installed to the target device from the ThunderGate CLI as follows:</p>
+
+<pre><code>In &lt;1&gt;: dev.nvram.init(wr=1)
+In &lt;2&gt;: dev.nvram.load_efi_drv("dmarf/dmarf.efi")
+</code></pre>
+
+<h2>
+<a id="mips-cpu-firmware-application" class="anchor" href="#mips-cpu-firmware-application" aria-hidden="true"><span class="octicon octicon-link"></span></a>MIPS CPU firmware application</h2>
+
+<p>The example Tigon3 MIPS core firmware application code lives under the 'fw/'
+directory. It can be installed to the target device from the ThunderGate CLI
+as follows:</p>
+
+<pre><code>In &lt;1&gt;: dev.nvram.init(wr=1)
+In &lt;2&gt;: dev.load_rxcpu_fw("fw/nvimage")
+</code></pre>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-40740194-5");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
