@@ -57,7 +57,7 @@ $ sudo pip install capstone
 $ git clone http://github.com/sstjohn/thundergate.git
     ~~~
 
-3. Retreive, compile and install cross mips-elf binutils:
+3. Retrieve, compile and install cross mips-elf binutils:
 
     ~~~
 $ curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.25.tar.bz2
@@ -68,7 +68,7 @@ $ ../binutils-2.25/configure --target=mips-elf --with-sysroot --disable-nls
 $ make && sudo make install && popd
     ~~~
 
-4. Retreive, patch, compile and install cross mips-elf GCC 5.1:
+4. Retrieve, patch, compile and install cross mips-elf GCC 5.1:
 
     ~~~
 $ curl -O http://ftp.gnu.org/gnu/gcc/gcc-5.1.0/gcc-5.1.0.tar.bz2
