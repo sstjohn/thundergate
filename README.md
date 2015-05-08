@@ -10,7 +10,7 @@
                                  Version 0.1.1
                         Copyright (c) 2015 Saul St John
 
-                            <http://thundergate.io>
+                            [http://thundergate.io]
 </pre>
 
 # Introduction #
