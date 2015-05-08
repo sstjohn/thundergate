@@ -117,7 +117,7 @@ struct grc_cpu_event {
             u32 sw_event_11 :1;
             u32 flow_attn :1;
             u32 rx_cpu_attn :1;
-            u32 mac_attn :1;
+            u32 emac :1;
             u32 reserved2 :1;
             u32 sw_event_10 :1;
             u32 hi_prio_mbox :1;
@@ -181,7 +181,7 @@ struct grc_cpu_event_enable {
             u32 rom :1;
             u32 hc_module :1;
             u32 rx_cpu_module :1;
-            u32 emac_module :1;
+            u32 emac :1;
             u32 memory_map_enable :1;
             u32 reserved2 :1;
             u32 high_prio_mbox :1;

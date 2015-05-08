@@ -7,9 +7,10 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                Version 0.1
-                      Copyright (c) 2015 Saul St John
-                   http://github.com/sstjohn/thundergate
+				 Version 0.1.1
+			Copyright (c) 2015 Saul St John
+
+			     http://thundergate.io
 </pre>
 
 # Introduction #
@@ -44,8 +45,10 @@ These instructions assume a Debian 8 host.
 
     ~~~
 $ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
-            gnu-efi python python-ctypeslib libgmp-dev libmpfr-dev libmpc-dev    \
-            python-capstone ipython
+            gnu-efi python python-ctypeslib libgmp-dev libmpfr-dev libmpc-dev \
+            python-pip ipython
+
+$ sudo pip install capstone
     ~~~
 
 2. Clone repository:
@@ -75,9 +78,9 @@ $ patch -p1 < ../thundergate/misc/gcc-5.1.0-mtigon.patch
 $ popd
 $ mkdir gcc-build
 $ pushd gcc-build
-$ ../gcc-5.1.0/configure --target=mips-elf --program-prefix=mips-elf-    \
-        --disable-nls --enable-languages=c,c++ --without-headers            \
-        --without-llsc --with-tune=r6000 --with-arch=mips2 --disable-biarch \
+$ ../gcc-5.1.0/configure --target=mips-elf --program-prefix=mips-elf-        \
+        --disable-nls --enable-languages=c,c++ --without-headers             \
+        --without-llsc --with-tune=r6000 --with-arch=mips2 --disable-biarch  \
         --disable-multilib --with-float=soft --without-hard-float
 $ make all-gcc && make all-target-libgcc
 $ sudo make install-gcc && sudo make install-target-libgcc && popd
@@ -138,11 +141,11 @@ optional arguments:
 
 ## EFI PCI OpRom ##
 
-The example EFI PCI Option Rom code lives under the 'dmarf/' directory. It can
+The example EFI PCI Option Rom code lives under the 'efi/' directory. It can
 be installed to the target device from the ThunderGate CLI as follows:
 ~~~
 dev.nvram.init(wr=1)
-dev.nvram.load_efi_drv("dmarf/dmarf.efi")
+dev.nvram.load_efi_drv("efi/dmarf.efi")
 ~~~
 
 ## MIPS CPU firmware application ##
@@ -152,5 +155,10 @@ directory. It can be installed to the target device from the ThunderGate CLI
 as follows:
 ~~~
 dev.nvram.init(wr=1)
-dev.load_rxcpu_fw("fw/nvimage")
+dev.load_rxcpu_fw("fw/fw.img")
 ~~~
+
+# Further Reading #
+
+A report describing an older version of this project can be found at
+<http://pages.cs.wisc.edu/~sstjohn/tg_old.pdf>. 

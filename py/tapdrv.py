@@ -170,9 +170,9 @@ class TapDriver(object):
         dev.reset()
         sleep(0.5)
 
-	if dev.emac.mode.port_mode != 2:
-		print "[+] configuring emac for gmii port"
-		dev.emac.mode.port_mode = 2
+        if dev.pci.misc_host_ctrl.enable_tagged_status_mode == 0:
+            print "[+] enabling tagged status mode"
+            dev.pci.misc_host_ctrl.enable_tagged_status_mode = 1
 
         dma_wmm = 0x6
         if dev.config.caps['pcie'].max_payload_size > 0:
@@ -466,6 +466,7 @@ class TapDriver(object):
 
                 self.dev.emac.rx_mac_mode.enable_flow_control = (res & 2) >> 1
                 self.dev.emac.tx_mac_mode.enable_flow_control = (res & 1)
+
             elif (hcd > 0):
                 if hcd == 5:
                     print "[+] full duplex 100base-tx link negotiated"
@@ -482,6 +483,7 @@ class TapDriver(object):
 
                 self.dev.emac.rx_mac_mode.enable_flow_control = 0
                 self.dev.emac.tx_mac_mode.enable_flow_control = 0
+
             else:
                 raise Exception("autonegotiaton failed, hcd %x" % hcd)
 

@@ -40,6 +40,7 @@ class ShellDriver(object):
         self.dev = dev
 
     def __enter__(self):
+        self.dev.init()
         return self
 
     def __exit__(self, t, v, traceback):

@@ -66,7 +66,7 @@ if __name__ == "__main__":
         dbdf = "0000:%s" % dbdf
 
     if not os.path.exists("/sys/bus/pci/devices/%s/" % dbdf):
-        print "[-] device resources at %d not found; is sysfs mounted?"
+        print "[-] device resources at /sys/bus/pci/devices/%s/ not found; is sysfs mounted?" % dbdf
         sys.exit(1)
 
     dev_interface = SysfsInterface(dbdf)

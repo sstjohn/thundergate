@@ -271,9 +271,6 @@ class Device(object):
             print "[+] enabling endian word swap"
             self.pci.misc_host_ctrl.enable_endian_word_swap = 1
 
-        if self.pci.misc_host_ctrl.enable_tagged_status_mode == 0:
-            print "[+] enabling tagged status mode"
-            self.pci.misc_host_ctrl.enable_tagged_status_mode = 1
 
     def init_grc(self):
         if self.grc.mode.byte_swap_bd:
@@ -318,7 +315,7 @@ class Device(object):
                 if 0 == res:
                     print "[+] firmware compilation successful"
                     self.nvram.init(wr=1)
-                    self.nvram.load_rxcpu_fw("fw/nvimage")
+                    self.nvram.load_rxcpu_fw("fw/fw.img")
                     self.reset()
                 else:
                     print "[-] firmware compilation failed!"

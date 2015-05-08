@@ -20,23 +20,34 @@
 
 import argparse
 import socket
+from fcntl import ioctl
+import struct
+
+from clib import SIOCGIFHWADDR
 
 class Client(object):
     def __init__(self, iface):
-        s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 0x88b5)
+        s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x88b5))
+        info = ioctl(s.fileno(), SIOCGIFHWADDR, struct.pack('256s', iface[:15]))
+        self.local_mac = info[18:24]
+
         s.bind((iface, 0))
         self.s = s
 
-    def send(self, payload, src = '\x00\x00\x00\x00\x00\x00', 
+    def send(self, payload, src = None,
             dst = '\xff\xff\xff\xff\xff\xff', etype = "\x88\xb5"):
+
+        if src == None:
+            src = self.local_mac
+
         pkt = dst+src+etype+payload
         if len(pkt) < 64:
             pkt += ('\x00' * (64 - len(pkt)))
         self.s.send(pkt)
 
     def run(self):
-        print "Sending test packet"
-        test_pkt = '\xa5\xa5' * 25
+        print "Sending ping..."
+        test_pkt = '\x01\x01'
         self.send(test_pkt)
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
-.PHONY: all clean dmarf py fw
+.PHONY: all clean efi py fw
 
-BUILD=dmarf py fw
+BUILD=efi py fw
 
 all: $(BUILD)
 
-dmarf:
-	cd dmarf; make
+efi:
+	cd efi; make
 
 fw:
 	cd fw; make
@@ -14,6 +14,6 @@ py:
 	cd py; make
 
 clean:
-	-cd dmarf; make clean
+	-cd efi; make clean
 	-cd fw; make clean
 	-cd py; make clean
