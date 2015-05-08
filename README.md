@@ -10,7 +10,7 @@
                                  Version 0.1.1
                         Copyright (c) 2015 Saul St John
 
-                            [http://thundergate.io]
+                            <a href="http://thundergate.io">http://thundergate.io</a>
 </pre>
 
 # Introduction #
@@ -161,4 +161,4 @@ In <2>: dev.load_rxcpu_fw("fw/fw.img")
 # Further Reading #
 
 A report describing an older version of this project can be found at
-<http://pages.cs.wisc.edu/~sstjohn/tg_old.pdf>. 
+<http://pages.cs.wisc.edu/~sstjohn/tg_old.pdf>.
