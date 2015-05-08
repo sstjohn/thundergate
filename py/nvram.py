@@ -65,8 +65,7 @@ class Nvram(rflip.nvram):
 
     def acquire_lock(self):
         if self.sw_arb.req1:
-            if not self._locked:
-                self._locked = 1
+            self._locked = 1
             return
 
         self._locked = 0

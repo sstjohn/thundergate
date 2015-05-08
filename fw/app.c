@@ -23,9 +23,11 @@
 #include "proto.h"
 #include "utypes.h"
 
+
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
 
-char *test_buf = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
+char *test_buf_host_stack_up = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
+char *test_buf_host_stack_down = "zzyyxxwwvvuuttssrrqqppoonnmmllkkjjiihhggffeeddccbbaa";
 
 u8 my_mac[6] = { 0 };
 u8 remote_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -89,11 +91,13 @@ typedef void (*reply_t)(void *src, u32 len, u8 cmd);
 
 void post_buf(void *_src, u32 len, u8 cmd)
 {
+	int i;
+
 	if (len > 256)
 		len = 256;
 
 	u32 *src = (u32 *)_src;
-	for (int i = 0; i < len; i++)
+	for (i = 0; i < len; i++)
 		gencomm[i + 1] = *src++;
 
 	gencomm[0] = 0x88b50000 | (cmd << 8);
@@ -151,6 +155,7 @@ int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2)
 {
     u64 data;
     u32 *data_hi, *data_low;
+
     switch(cmd) {
         case PING_CMD:
 	    (*reply)(0, 0, PING_REPLY);
@@ -209,9 +214,14 @@ void reset_timer()
 void dev_init() 
 {
     set_and_wait(ma.mode.enable);
-
-    bufman.mode.attention_enable = 1;
     set_and_wait(bufman.mode.enable);
+
+    grc.rxcpu_event_enable.word = 0;    
+    grc.rxcpu_event_enable.emac = 1;
+    grc.misc_config.gphy_keep_power_during_reset = 1;
+
+    grc.rxcpu_event.word = 0xffffffff;
+    grc.rxcpu_event.word = 0;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
@@ -220,42 +230,12 @@ void dev_init()
     set_and_wait(emac.mode.en_fhde);
     set_and_wait(emac.mode.en_rde);
     set_and_wait(emac.mode.en_tde);
-    
-    set_and_wait(wdma.mode.enable);
 
-    //rdma.mode.word = 0x7fe;
-    set_and_wait(rdma.mode.enable);
-
-    rbdi.mode.receive_bds_available_on_disabled_rbd_ring_attn_enable = 1;
-    set_and_wait(rbdi.mode.enable);
-    
-    set_and_wait(rbdc.mode.enable);
-
-    rlp.mode.class_zero_attention_enable = 1;
-    rlp.mode.mapping_out_of_range_attention_enable = 1;
-    rlp.stats_enable_mask.rc_return_ring_enable = 1;
-    set_and_wait(rlp.mode.enable);
-
-    set_and_wait(rdi.mode.enable);
-
-    rdc.mode.attention_enable = 1;
-    set_and_wait(rdc.mode.enable);
-   
-    //set_and_wait(sdc.mode.enable);
-
-    //sbdc.mode.attention_enable = 1;
-    //set_and_wait(sbdc.mode.enable);
-
-    //set_and_wait(sdi.mode.enable);
-
-    //set_and_wait(sbdi.mode.enable);
-
-    //set_and_wait(sbds.mode.enable);
-
-    //emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1;
     set_and_wait(emac.tx_mac_mode.enable);
-
     set_and_wait(emac.rx_mac_mode.enable);
+
+    set_and_wait(wdma.mode.enable);
+    set_and_wait(rdma.mode.enable);
 
     my_mac[0] = emac.addr[0].byte_1;
     my_mac[1] = emac.addr[0].byte_2;
@@ -263,9 +243,6 @@ void dev_init()
     my_mac[3] = emac.addr[0].byte_4;
     my_mac[4] = emac.addr[0].byte_5;
     my_mac[5] = emac.addr[0].byte_6;
-
-    grc.rxcpu_event.word = 0xffffffff;
-    grc.rxcpu_event.word = 0;
 }
 
 int app() 
@@ -273,13 +250,25 @@ int app()
     dev_init();
 
     setup_rx_rules();
+    
     reset_timer();
 
     while (1) {
         if (grc.rxcpu_event.timer) {
+	    char *test_buf;
+
+	    if (grc.mode.host_stack_up)
+		    test_buf = test_buf_host_stack_up;
+	    else
+		    test_buf = test_buf_host_stack_down;
             send_buf(test_buf, 13, 0);
 	    reset_timer();
         }
+	if (grc.rxcpu_event.emac) {
+	    char *tmp = "emac event!!";
+	    grc.rxcpu_event.emac = 0;
+	    send_buf(tmp, 3, 0);
+	}
 	if (grc.rxcpu_event.rdiq) {
 	    if (ftq.rdiq.peek.valid == 1 && ftq.rdiq.peek.pass == 0) {
 		u32 mbuf = ftq.rdiq.peek.head_rxmbuf_ptr;
@@ -303,17 +292,13 @@ int app()
 	    }
 	    grc.rxcpu_event.rdiq = 0;
 	}
-	if (gencomm[0] != 0x88b50000) {
-		if (0x88b5 != (gencomm[0] >> 16)) {
-			gencomm[0] = 0x88b50000;
-		} else {
-			if (!(gencomm[0] & 0xff00)) {
-				u8 cmd = gencomm[0] & 0xff;
-				u32 arg1 = gencomm[1];
-				u32 arg2 = gencomm[2];
+	if ((gencomm[0] >> 16) == 0x88b5) {
+		if (!(gencomm[0] & 0xff00)) {
+			u8 cmd = gencomm[0] & 0xff;
+			u32 arg1 = gencomm[1];
+			u32 arg2 = gencomm[2];
 
-				handle(post_buf, cmd, arg1, arg2);
-			}
+			handle(post_buf, cmd, arg1, arg2);
 		}
 	}
     } 

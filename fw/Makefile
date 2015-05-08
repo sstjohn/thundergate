@@ -9,7 +9,7 @@ CFLAGS=-mtune=r6000 -mips2 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared
 LDFLAGS=-nostdlib --build-id=none -Timage.x -static -Rfixed.sym
 LIBGCC=$(shell $(CC) -print-libgcc-file-name)
 
-IMAGE=nvimage
+IMAGE=fw.img
 
 CSOURCE=app.c
 CHEADERS=$(shell ls $(PROJ_ROOT)/include)
