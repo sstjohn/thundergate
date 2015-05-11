@@ -27,6 +27,10 @@ class SysfsInterface(object):
         self.dd = "/sys/bus/pci/devices/%s" % bdf
 
     def __enter__(self):
+        self._open_device()
+        self.mm = mm.MemMgr()
+
+    def _open_device(self):
         self.cfgfd = os.open(self.dd + "/config", os.O_RDWR)
         try:
 		self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)
@@ -37,14 +41,20 @@ class SysfsInterface(object):
         if -1 == bar0:
             raise Exception("failed to mmap bar 0")
         self.bar0 = bar0
-        self.mm = mm.MemMgr()
 
 
     def __exit__(self, t, v, traceback):
+        self._close_device()
+
+    def _close_device(self):
         c.munmap(self.bar0, 64 * 1024)
         os.close(self.barfd)
         os.close(self.cfgfd)
     
+    def reattach(self):
+        self._close_device()
+        self._open_device()
+
     def cfg_read(self, offset):
         assert offset >= 0 and offset < 0x400
         os.lseek(self.cfgfd, offset, os.SEEK_SET)

@@ -28,18 +28,15 @@ class VfioInterface(object):
         tmp = os.readlink("/sys/bus/pci/devices/%s/iommu_group" % bdf)
         self.groupno = int(tmp.split('/')[-1])
 
+    def _dev_close(self):
+        c.munmap(self.bar0, self.bar0_sz)
+        os.close(self.device)
+        ioctl(self.group, c.VFIO_GROUP_UNSET_CONTAINER, struct.pack("I", self.container))
+        os.close(self.group)
+    
     def __exit__(self, t, v, traceback):
-        if self.bar0:
-            c.munmap(self.bar0, self.bar0_sz)
-
-        if -1 != self.device:
-            os.close(self.device)
-
-        if -1 != self.group:
-            os.close(self.group)
-
-        if -1 != self.container:
-            os.close(self.container)
+        self._dev_close()
+        os.close(self.container)
 
     def show_irqs(self):
         device_info = c.vfio_device_info()
@@ -55,6 +52,10 @@ class VfioInterface(object):
 
             print "[*] irq %d: count %x, flags %x" % (i, irq.count, irq.flags)
 
+    def reattach(self):
+        self._dev_close()
+        self._dev_open()
+
     def __enter__(self):
         print "[+] opening vfio container"
         container = os.open("/dev/vfio/vfio", os.O_RDWR)
@@ -68,7 +69,9 @@ class VfioInterface(object):
         self.container = container
 
         self.mm = iomem.IOMemMgr(container)
+        self._dev_open()
 
+    def _dev_open(self):
         print "[+] opening vfio group"
         group = os.open("/dev/vfio/%d" % self.groupno, os.O_RDWR)
 
@@ -80,13 +83,13 @@ class VfioInterface(object):
 
         self.group = group
 
-        ioctl(group, c.VFIO_GROUP_SET_CONTAINER, struct.pack("I", container))
+        ioctl(group, c.VFIO_GROUP_SET_CONTAINER, struct.pack("I", self.container))
 
-        ioctl(container, c.VFIO_SET_IOMMU, c.VFIO_TYPE1_IOMMU)
+        ioctl(self.container, c.VFIO_SET_IOMMU, c.VFIO_TYPE1_IOMMU)
 
         iommu_info = c.vfio_iommu_type1_info()
         iommu_info.argsz = c.sizeof(c.vfio_iommu_type1_info)
-        ioctl(container, c.VFIO_IOMMU_GET_INFO, iommu_info)
+        ioctl(self.container, c.VFIO_IOMMU_GET_INFO, iommu_info)
 
         self.iommu_info = iommu_info
 
@@ -106,8 +109,6 @@ class VfioInterface(object):
             r.index = i
 
             ioctl(device, c.VFIO_DEVICE_GET_REGION_INFO, r)
-
-
 
             self.regions += [r]
             flags = ""
@@ -146,7 +147,6 @@ class VfioInterface(object):
         c.cast(c.addressof(irq_set.data), c.POINTER(c.c_uint))[0] = self.eventfd
 
         ioctl(self.device, c.VFIO_DEVICE_SET_IRQS, irq_set)
-
 
     def cfg_read(self, offset):
         assert offset >= 0 and offset < 0x400

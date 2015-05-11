@@ -422,28 +422,24 @@ class TapDriver(object):
         usleep(100)
 
         print "[+] enabling receive mac"
-        dev.emac.mac_hash_0 = 0xffffffff
-        dev.emac.mac_hash_1 = 0xffffffff
-        dev.emac.mac_hash_2 = 0xffffffff
-        dev.emac.mac_hash_3 = 0xffffffff
+        #dev.emac.mac_hash_0 = 0xffffffff
+        #dev.emac.mac_hash_1 = 0xffffffff
+        #dev.emac.mac_hash_2 = 0xffffffff
+        #dev.emac.mac_hash_3 = 0xffffffff
         dev.emac.rx_mac_mode.promiscuous_mode = 1
         dev.emac.rx_mac_mode.accept_runts = 1
-        dev.emac.rx_mac_mode.enable_flow_control = 1
+        #dev.emac.rx_mac_mode.enable_flow_control = 1
         dev.emac.rx_mac_mode.rss_enable = 1
-        dev.emac.rx_mac_mode.rss_ipv4_hash_enable = 1
-        dev.emac.rx_mac_mode.rss_tcpipv4_hash_enable = 1
-        dev.emac.rx_mac_mode.rss_ipv6_hash_enable = 1
-        dev.emac.rx_mac_mode.rss_tcpipv6_hash_enable = 1
+        #dev.emac.rx_mac_mode.rss_ipv4_hash_enable = 1
+        #dev.emac.rx_mac_mode.rss_tcpipv4_hash_enable = 1
+        #dev.emac.rx_mac_mode.rss_ipv6_hash_enable = 1
+        #dev.emac.rx_mac_mode.rss_tcpipv6_hash_enable = 1
         dev.emac.rx_mac_mode.enable = 1
 
         usleep(10)
 
         print "[+] configuring led"
         dev.emac.led_control.word = 0x800
-
-        print "[+] activating link and enabling mac functional block"
-        dev.emac.mii_mode.enable_constant_mdc_clock_speed = 1
-        dev.emac.mii_status.link_status = 1
 
         dev.emac.low_watermark_max_receive_frames = 1
 
@@ -457,27 +453,36 @@ class TapDriver(object):
             hcd = (res & 0x700) >> 8
             self._hcd = hcd
             if (hcd & 0x6) == 6:
+                txpause = self.dev.phy.may_send_pause()
+                rxpause = self.dev.phy.may_recv_pause()
                 if hcd & 1:
-                    print "[+] full duplex gige link negotated (res: %08x, rxpause: %d, txpause: %d)" % (res, (res & 2) >> 1, res & 1)
+                    print "[+] full duplex gige link negotated (res: %08x, txpause: %s, rxpause: %s)" % (res, txpause, rxpause)
+                    self.dev.emac.mode.half_duplex = 1
                 else:
-                    print "[+] half duplex gige link negotated (res: %08x, rxpause: %d, txpause: %d)" % (res, (res & 2) >> 1, res & 1)
+                    print "[+] half duplex gige link negotated (res: %08x, txpause: %s, rxpause: %s)" % (res, txpause, rxpause)
+                    self.dev.emac.mode.half_duplex = 0
 
                 self.dev.emac.mode.port_mode = 2
 
-                self.dev.emac.rx_mac_mode.enable_flow_control = (res & 2) >> 1
-                self.dev.emac.tx_mac_mode.enable_flow_control = (res & 1)
+                self.dev.emac.rx_mac_mode.enable_flow_control = 1 if rxpause else 0
+                self.dev.emac.tx_mac_mode.enable_flow_control = 1 if txpause else 0
 
             elif (hcd > 0):
                 if hcd == 5:
                     print "[+] full duplex 100base-tx link negotiated"
+                    self.dev.emac.mode.half_duplex = 0
                 elif hcd == 4:
                     print "[+] 100base-t4 link negotiated"
+                    self.dev.emac.mode.half_duplex = 0
                 elif hcd == 3:
                     print "[+] half duplex 100base-tx link negotiated"
+                    self.dev.emac.mode.half_duplex = 1
                 elif hcd == 2:
                     print "[+] full duplex 10base-t link negotiated"
+                    self.dev.emac.mode.half_duplex = 0
                 elif hcd == 1:
                     print "[+] half duplex 10base-t link negotiated"
+                    self.dev.emac.mode.half_duplex = 1
 
                 self.dev.emac.mode.port_mode = 1
 
@@ -488,20 +493,23 @@ class TapDriver(object):
                 raise Exception("autonegotiaton failed, hcd %x" % hcd)
 
 
-    def _handle_interrupt(self):
+    def _handle_interrupt(self, verbose=0):
         dev = self.dev
-        print "[+] handling interrupt"
+        if verbose:
+            print "[+] handling interrupt"
         
-        dev.hpmb.box[tg.mb_interrupt].low = 1
+        _ = dev.hpmb.box[tg.mb_interrupt].low
         tag = 0
 
         while self.status_block.updated:
             tag = self.status_block.status_tag
-            print "[+] status tag %x" % tag
+            if verbose:
+                print "[+] status tag %x" % tag
             tag = tag << 24
 
             self.status_block.updated = 0
-            print "[+] status block updated! link: %d, attention: %d" % (self.status_block.link_status, self.status_block.attention)
+            if verbose:
+                print "[+] status block updated! link: %d, attention: %d" % (self.status_block.link_status, self.status_block.attention)
 
             if dev.emac.status.link_state_changed:
                 self._link_detect()
@@ -512,46 +520,50 @@ class TapDriver(object):
                 ci = self.rr_rings_ci[i]
 
                 if pi != ci:
-                    print "[+] rr %d: pi is %x, ci was %x," % (i, pi, ci),
+                    if verbose:
+                        print "[+] rr %d: pi is %x, ci was %x," % (i, pi, ci),
 
                     if pi < ci:
                         count = self.rr_rings_len - ci 
                         count += pi
                     else:
                         count = pi - ci
-
-                    print "%d bds received" % count
+                    
+                    if verbose:
+                        print "%d bds received" % count
                     rbds = ctypes.cast(self.rr_rings_vaddr[i], ctypes.POINTER(tg.rbd))
                     while count > 0:
                         ci += 1
                         if ci > self.rr_rings_len:
                             ci = 1
-                        print "consuming bd 0x%x" % ci
                         rbd = rbds[ci - 1]
-                        print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
-                        print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))
-                        print " length:    %04x" % rbd.length
-                        print " index:     %04x" % rbd.index
-                        print " type:      %04x" % rbd.type
-                        print " flags:    ",
-                        for j in ["is_ipv6", "is_tcp", "l4_checksum_correct", "ip_checksum_correct", "reserved", "has_error", "has_vlan_tag", "reserved2", "reserved3", "rss_hash_valid", "packet_end", "reserved4", "reserved5"]:
-                            if getattr(rbd.flags, j):
-                                print j,
-                        print
 
-                        if rbd.flags.rss_hash_type != 0:
-                            print " rss hash type: %x" % rbd.flags.rss_hash_type
+                        if verbose:
+                            print "consuming bd 0x%x" % ci
+                            print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
+                            print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))
+                            print " length:    %04x" % rbd.length
+                            print " index:     %04x" % rbd.index
+                            print " type:      %04x" % rbd.type
+                            print " flags:    ",
+                            for j in ["is_ipv6", "is_tcp", "l4_checksum_correct", "ip_checksum_correct", "reserved", "has_error", "has_vlan_tag", "reserved2", "reserved3", "rss_hash_valid", "packet_end", "reserved4", "reserved5"]:
+                                if getattr(rbd.flags, j):
+                                    print j,
+                            print
 
-                        print " ip cksum:  %04x" % rbd.ip_cksum
-                        print " l4 cksum: %04x" % rbd.l4_cksum
-                        print " err flags:",
-                        for j in ["reserved1", "reserved2", "reserved3", "reserved4", "reserved5", "reserved6", "reserved7", "giant_packet", "trunc_no_res", "len_less_64", "mac_abort", "dribble_nibble", "phy_decode_error", "link_lost", "collision", "bad_crc"]:
-                            if getattr(rbd.error_flags, j):
-                                print j,
-                        print
-                        print " vlan_tag:  %04x" % rbd.vlan_tag
-                        print " rss_hash:  %08x" % rbd.rss_hash
-                        print " opaque:    %08x" % rbd.opaque
+                            if rbd.flags.rss_hash_type != 0:
+                                print " rss hash type: %x" % rbd.flags.rss_hash_type
+
+                            print " ip cksum:  %04x" % rbd.ip_cksum
+                            print " l4 cksum: %04x" % rbd.l4_cksum
+                            print " err flags:",
+                            for j in ["reserved1", "reserved2", "reserved3", "reserved4", "reserved5", "reserved6", "reserved7", "giant_packet", "trunc_no_res", "len_less_64", "mac_abort", "dribble_nibble", "phy_decode_error", "link_lost", "collision", "bad_crc"]:
+                                if getattr(rbd.error_flags, j):
+                                    print j,
+                            print
+                            print " vlan_tag:  %04x" % rbd.vlan_tag
+                            print " rss_hash:  %08x" % rbd.rss_hash
+                            print " opaque:    %08x" % rbd.opaque
 
                         buf = ctypes.cast(self.rx_ring_buffers[rbd.index], ctypes.POINTER(ctypes.c_char * rbd.length))[0]
                         os.write(self.tfd, buf.raw)
@@ -566,7 +578,8 @@ class TapDriver(object):
             old_ci = self._std_rbd_ci
             count = 0
             if new_ci != old_ci:
-                print "[+] rbdp ci now %x, was %x" % (new_ci, old_ci)
+                if verbose:
+                    print "[+] rbdp ci now %x, was %x" % (new_ci, old_ci)
                 rbds = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
                 while new_ci != old_ci:
                     count += 1
@@ -583,19 +596,17 @@ class TapDriver(object):
                 if self._std_rbd_pi >= self.rx_ring_len:
                     self._std_rbd_pi -= self.rx_ring_len
 
-                print "[+] moving std rbd pi to %x" % self._std_rbd_pi
+                if verbose:
+                    print "[+] moving std rbd pi to %x" % self._std_rbd_pi
                 self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
 
+            if verbose:
+                print "[+] sbd ci: %x" % self.status_block.sbdci
 
-            print "[+] sbd ci: %x" % self.status_block.sbdci
-
-        print "[+] interrupt handling concluded"
+        if verbose:
+            print "[+] interrupt handling concluded"
         self.dev.hpmb.box[tg.mb_interrupt].low = tag
         _ = self.dev.hpmb.box[tg.mb_interrupt].low
-
-        if self.dev.pci.misc_host_ctrl.mask_interrupt:
-            print "[+] clearing misc host ctrl interrupt mask"
-            self.dev.pci.misc_host_ctrl.mask_interrupt = 0
 
     def send(self, data, flags=None):
         if len(data) < 64:
@@ -606,9 +617,10 @@ class TapDriver(object):
         
         self._send_b(b_vaddr, len(data), flags=flags)
 
-    def _send_b(self, buf, buf_sz, flags=None):
+    def _send_b(self, buf, buf_sz, flags=None, verbose=0):
         i = self._tx_pi
-        print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
+        if verbose:
+            print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
         paddr = self.mm.get_paddr(buf)
         txb = ctypes.cast(self.tx_ring_vaddr, ctypes.POINTER(tg.sbd))
         txb[i].addr_hi = paddr >> 32
@@ -626,7 +638,8 @@ class TapDriver(object):
         self.dev.hpmb.box[tg.mb_sbd_host_producer].low = i
         _ = self.dev.hpmb.box[tg.mb_sbd_host_producer].low
         self._tx_pi = i
-        print "[+] host sbd pi now %x" % i
+        if verbose:
+            print "[+] host sbd pi now %x" % i
 
     def run(self):
         self.dev.unmask_interrupts()
@@ -641,6 +654,4 @@ class TapDriver(object):
                 elif i == self.tfd:
                     b = self.mm.alloc(0x800)
                     l = c.read(self.tfd, b, 0x800)
-                    print "[+] read %x bytes from tapfd" % l
                     self._send_b(b, l)
-

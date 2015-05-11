@@ -23,11 +23,9 @@
 #include "proto.h"
 #include "utypes.h"
 
-
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
 
-char *test_buf_host_stack_up = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
-char *test_buf_host_stack_down = "zzyyxxwwvvuuttssrrqqppoonnmmllkkjjiihhggffeeddccbbaa";
+char *test_buf = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
 
 u8 my_mac[6] = { 0 };
 u8 remote_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -109,6 +107,7 @@ void send_buf(void *_src, u32 len, u8 cmd)
     u32 buf = 0xad;
     struct mbuf *mb = (struct mbuf *)(0x8000 + (buf << 7));
 
+    mb->hdr.c = 0;
     mb->hdr.f = 1;
     mb->hdr.length = 80;
     mb->next_frame_ptr = 0;
@@ -117,22 +116,9 @@ void send_buf(void *_src, u32 len, u8 cmd)
     mb->data.frame.status_ctrl = 0;
     
     mb->data.frame.len = 80;
-    mb->data.frame.qids = 0;
+    mb->data.frame.qids = 0xc;
     
-    mb->data.frame.ip_hdr_start = 0;
-    mb->data.frame.tcp_udp_hdr_start = 0;
-
-    mb->data.frame.data_start = 22;
-    mb->data.frame.vlan_id = 0;
-
-    mb->data.frame.ip_checksum = 0;
-    mb->data.frame.tcp_udp_checksum = 0;
-
-    mb->data.frame.rule_match = 0;
-    mb->data.frame.rule_class = 0;
-    mb->data.frame.rupt = 0;
-
-    mb->data.frame.mbuf = buf;
+    mb->data.frame.mbuf = 1;
 
     mac_cpy(remote_mac, (u8 *)(&mb->data.word[10]));
     mac_cpy(my_mac, ((u8 *)&mb->data.word[11]) + 2);
@@ -147,8 +133,6 @@ void send_buf(void *_src, u32 len, u8 cmd)
         mb->data.word[10 + i++] = 0;
 
     ftq.mac_tx.q.word = (buf << 16) | buf;
-
-
 }
 
 int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2)
@@ -201,6 +185,7 @@ void setup_rx_rules()
     emac.rx_rule[7].control.enable = 1;
     while (!emac.rx_rule[7].control.enable);
 
+    rlp.mode.enable = 1;
     grc.rxcpu_event_enable.rdiq = 1;
 }
 
@@ -216,12 +201,12 @@ void dev_init()
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
 
+    grc.rxcpu_event.word = 0xffffffff;
+    grc.rxcpu_event.word = 0;
+
     grc.rxcpu_event_enable.word = 0;    
     grc.rxcpu_event_enable.emac = 1;
     grc.misc_config.gphy_keep_power_during_reset = 1;
-
-    grc.rxcpu_event.word = 0xffffffff;
-    grc.rxcpu_event.word = 0;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
@@ -231,23 +216,140 @@ void dev_init()
     set_and_wait(emac.mode.en_rde);
     set_and_wait(emac.mode.en_tde);
 
+    emac.mode.magic_packet_detection = 1;
+    emac.mode.keep_frame_in_wol = 1;
+
+    emac.event_enable.link_state_changed = 1;
+
+    emac.rx_mac_mode.promiscuous_mode = 1;
+
+    emac.tx_mac_lengths.slot = 0x20;
+    emac.tx_mac_lengths.ipg_crs = 0x2;
+    emac.tx_mac_lengths.ipg = 0x6;
+
     set_and_wait(emac.tx_mac_mode.enable);
     set_and_wait(emac.rx_mac_mode.enable);
 
     set_and_wait(wdma.mode.enable);
     set_and_wait(rdma.mode.enable);
 
-    my_mac[0] = emac.addr[0].byte_1;
-    my_mac[1] = emac.addr[0].byte_2;
-    my_mac[2] = emac.addr[0].byte_3;
-    my_mac[3] = emac.addr[0].byte_4;
-    my_mac[4] = emac.addr[0].byte_5;
-    my_mac[5] = emac.addr[0].byte_6;
+    mac_cpy((void *)0xc0000412, my_mac);
+}
+
+u16 phy_read(u16 reg)
+{
+	emac.mii_communication.read_command = 1;
+	emac.mii_communication.write_command = 0;
+	emac.mii_communication.phy_addr = 1;
+	emac.mii_communication.reg_addr = reg;
+	emac.mii_communication.start_busy = 1;
+
+	while (emac.mii_communication.start_busy);
+
+	return emac.mii_communication.data;
+}
+
+void phy_write(u16 reg, u16 val)
+{
+	emac.mii_communication.read_command = 0;
+	emac.mii_communication.write_command = 1;
+	emac.mii_communication.phy_addr = 1;
+	emac.mii_communication.reg_addr = reg;
+	emac.mii_communication.data = val;
+	emac.mii_communication.start_busy = 1;
+
+	while (emac.mii_communication.start_busy);
+}
+
+void phy_reset()
+{
+	phy_write(0, 0x8000);
+
+	while (phy_read(0) & 0x8000);
+}
+
+void phy_loopback_en()
+{
+	phy_write(0, 1 << 14);
+
+	while(phy_read(1) & (1 << 4));
+}
+
+void phy_auto_mdix()
+{
+	u16 val;
+	phy_write(0x18, 0x7007);
+	
+	val = phy_read(0x18);
+	val |= (1 << 9) | (1 << 15);
+	phy_write(0x18, val);
+
+	val = phy_read(0x10);
+	val &= ~(1 << 14);
+	phy_write(0x10, val);
+}
+
+void phy_nego()
+{
+	u16 val = (1 << 11) | (1 << 10) | (1 << 8) | (1 << 7);
+	val |= (1 << 6) | (1 << 5) | 1;
+	phy_write(0x4, val);
+
+	phy_write(0x9, 1 << 9);
+
+	val = (1 << 12) | (1 << 9);
+	phy_write(0, val);
+	
+	while (!(phy_read(1) & (1 << 5)));
+}
+
+void check_link()
+{
+	u16 res;
+
+	if (grc.mode.host_stack_up)
+		return;
+
+
+	if (!emac.tx_mac_status.link_up) {
+		emac.status.link_state_changed = 1;
+		return;
+	}
+
+	phy_reset();
+	phy_auto_mdix();
+	phy_loopback_en();
+	phy_nego();
+
+	res = (phy_read(0x19) & 0x703);
+	emac.rx_mac_mode.enable_flow_control = !!(res & 2);
+	emac.tx_mac_mode.enable_flow_control = !!(res & 1);
+	res >>= 8;
+	if ((res & 6) == 6) {
+		emac.mode.port_mode = 2;
+
+		if (res & 1)
+			emac.mode.half_duplex = 0;
+		else
+			emac.mode.half_duplex = 1;
+		
+	} else {
+		emac.mode.port_mode = 1;
+
+		if ((res == 3) || (res == 1))
+			emac.mode.half_duplex = 1;
+		else
+			emac.mode.half_duplex = 0;
+	}
+
+	emac.status.link_state_changed = 1;
 }
 
 int app() 
 {
     dev_init();
+
+    check_link();
 
     setup_rx_rules();
     
@@ -255,19 +357,11 @@ int app()
 
     while (1) {
         if (grc.rxcpu_event.timer) {
-	    char *test_buf;
-
-	    if (grc.mode.host_stack_up)
-		    test_buf = test_buf_host_stack_up;
-	    else
-		    test_buf = test_buf_host_stack_down;
             send_buf(test_buf, 13, 0);
 	    reset_timer();
         }
 	if (grc.rxcpu_event.emac) {
-	    char *tmp = "emac event!!";
-	    grc.rxcpu_event.emac = 0;
-	    send_buf(tmp, 3, 0);
+		check_link();
 	}
 	if (grc.rxcpu_event.rdiq) {
 	    if (ftq.rdiq.peek.valid == 1 && ftq.rdiq.peek.pass == 0) {
@@ -282,6 +376,8 @@ int app()
 			u8 cmd = tmp & 0xff;
 			u32 arg1 = rxmbuf[mbuf].data.word[14];
 			u32 arg2 = rxmbuf[mbuf].data.word[15];
+
+			mac_cpy(((u8 *)&rxmbuf[mbuf].data.word[11]) + 2, remote_mac);
 			
 			ftq.rdiq.peek.skip = 1;
 			

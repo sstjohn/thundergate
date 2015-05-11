@@ -25,7 +25,8 @@ pm.in_template = 'In <\\#>: '
 pm.in2_template = '   .\\D.: '
 pm.out_template = 'Out<\\#>: '
 
-cfg.PlainTextFormatter.type_printers = {int: lambda n, p, cycle: p.text("0x%x" % n)}
+cfg.PlainTextFormatter.type_printers = {int: lambda n, p, cycle: p.text("0x%x" % n),
+                                        long: lambda n, p, cycle: p.text("0x%x" % n)}
 
 from IPython.terminal.embed import InteractiveShellEmbed
 embed = InteractiveShellEmbed(config = cfg,

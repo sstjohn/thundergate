@@ -104,12 +104,12 @@ struct pci_misc_host_ctrl {
     u32 mask_interrupt_mode :1;
     u32 enable_indirect_access :1;
     u32 enable_register_word_swap :1;
-    u32 unused2 :1;
+    u32 enable_clock_control_register_rw_cap :1;
     u32 enable_pci_state_register_rw_cap :1;
     u32 enable_endian_word_swap :1;
     u32 enable_endian_byte_swap :1;
     u32 mask_interrupt :1;
-    u32 unused3 :1;
+    u32 clear_interrupt :1;
 };
 
 struct pci_dma_rw_ctrl {
