@@ -128,23 +128,23 @@ class Phy(object):
             addr = self.addr
 
         for i in range(0, 32):
-            if i == 0x18:
+            if addr == 1 and i == 0x18:
                 for j in range(0, 8):
-                    self.write_reg(0x18, j << 12)
-                    val = self.read_reg(0x18)
+                    self.write_reg(0x18, j << 12 | 7, addr=addr)
+                    val = self.read_reg(0x18, addr=addr)
                     print "%02x.%x : %04x" % (0x18, j, val)
-            elif i == 0x1c:
+            elif addr == 1 and i == 0x1c:
                 for j in range(0, 32):
-                    self.write_reg(0x1c, j << 10)
-                    val = self.read_reg(0x1c)
+                    self.write_reg(0x1c, j << 10, addr=addr)
+                    val = self.read_reg(0x1c, addr=addr)
                     print "%02x.%02x : %04x" % (0x1c, j, val)
-            elif i == 0x1d:
-                self.write_reg(0x1d, 0)
-                val = self.read_reg(0x1d)
+            elif addr == 1 and i == 0x1d:
+                self.write_reg(0x1d, 0, addr=addr)
+                val = self.read_reg(0x1d, addr=addr)
                 print "1d.00 : %04x" % val
-                self.write_reg(0x1d, 0x8000)
-                val = self.read_reg(0x1d)
+                self.write_reg(0x1d, 0x8000, addr=addr)
+                val = self.read_reg(0x1d, addr=addr)
                 print "1d.01 : %04x" % val
             else:
-                val = self.read_reg(i)
-                print "%02x     : %04x" % val
+                val = self.read_reg(i, addr=addr)
+                print "%02x   : %04x" % (i, val)
