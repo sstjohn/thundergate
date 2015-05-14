@@ -148,18 +148,10 @@ to a Thunderbolt Gigabit Ethernet adapter device as follows:
 <pre>
  $ sudo py/main.py -i 0a:00.0
 
-
- #######                                            #####
-    #    #    # #    # #    # #####  ###### #####  #     #   ##   ##### ######
-    #    #    # #    # ##   # #    # #      #    # #        #  #    #   #
-    #    ###### #    # # #  # #    # #####  #    # #  #### #    #   #   #####
-    #    #    # #    # #  # # #    # #      #####  #     # ######   #   #
-    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
-    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
-                          
-                                 Version 0.3.2
-                        Copyright (c) 2015 Saul St John
-                             http://thundergate.io
+          ThunderGate
+	 Version 0.3.3
+Copyright (c) 2015 Saul St John
+     http://thundergate.io
 
 [+] tg3 inspector initializing
 [+] huge pages available

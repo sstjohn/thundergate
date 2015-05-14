@@ -27,6 +27,7 @@
 
 u32 tg_dp[12] = {0};
 u32 tg_dp_len = 0;
+u64 drhd_base = 0;
 
 u32 walk_dev_scope(void *a)
 {
@@ -70,7 +71,7 @@ u32 walk_dev_scope(void *a)
 	return ds_sz;
 }
 
-void create_dev_scope(void *a)
+u32 create_dev_scope(void *a)
 {
 	struct dmar_dev_scope *ds = a;
 
@@ -84,9 +85,11 @@ void create_dev_scope(void *a)
 		ds->path[i].device = tg_dp[i] >> 16;
 		ds->path[i].function = tg_dp[i] & 0xff;
 	}
+
+	return ds->length;
 }
 
-u32 create_rmrr(void *a)
+u32 create_rmrr(void *a, u64 base, u64 limit)
 {
 	struct dmar_rmrr *r = a;
 	
@@ -94,14 +97,14 @@ u32 create_rmrr(void *a)
 		return 0;
 
 	r->type = 1;
-	r->length = sizeof(struct dmar_rmrr) + sizeof(struct dmar_dev_scope) + (2 * tg_dp_len);
+	r->length = sizeof(struct dmar_rmrr);
 	r->flags = 1;
 	r->reserved = 0;
 	r->seg_no = 0;
-	r->base_addr = 0;
-	r->limit_addr = ~1;
+	r->base_addr = base;
+	r->limit_addr = limit;
 
-	create_dev_scope(a + sizeof(struct dmar_rmrr));
+	r->length += create_dev_scope(a + sizeof(struct dmar_rmrr));
 	return r->length;
 }
 
@@ -146,6 +149,9 @@ void walk_drhd(void *a)
 	Print(L"drhd base addr: %lx\n", drhd->base_address);
 
 	offset += sizeof(struct dmar_drhd);
+
+	if ((drhd->flags & 1) == 1)
+		drhd_base = drhd->base_address;
 
 	while (offset < drhd_sz)
 		offset += walk_dev_scope(a + offset);
@@ -221,12 +227,24 @@ void walk_dmar(void *a)
 	    offset += ln;
 	} while(offset < tbl_sz);
 
-	u32 rmrr_sz = create_rmrr(a + offset);
+	u32 rmrr_sz = create_rmrr(a + offset, 0, 0xffffff);
 	if (rmrr_sz) {
 		dmar_tbl->length += rmrr_sz;
 		Print(L"\n\nnew rmrr created: \n");
 		walk_rmrr(a + offset);
-	} else {
+	} 
+
+	if (drhd_base != 0) {
+		rmrr_sz = create_rmrr(a + dmar_tbl->length, drhd_base, drhd_base + 0x1000);
+
+		if (rmrr_sz) {
+			Print(L"\n\nnew rmrr created: \n");
+			walk_rmrr(a + dmar_tbl->length);
+			dmar_tbl->length += rmrr_sz;
+		}
+	}
+	
+	if (!rmrr_sz) {
 	    Print(L"\n\nDMARF!\n");
 	    CopyMem(dmar_tbl->sig, "RAMD", 4);
 	}
