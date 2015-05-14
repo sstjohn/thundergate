@@ -341,7 +341,7 @@ class Nvram(rflip.nvram):
 
         self.write_dir_image(0, data, itype, sram_ofs, xa, xb)
 
-    def load_efi_drv(self, fname):
+    def load_efi_drv(self, fname, compress=0):
         data = ''
         with open(fname, "rb") as f:
             data = f.read()
@@ -349,7 +349,7 @@ class Nvram(rflip.nvram):
         if len(data) == 0:
             raise Exception("failed to load driver image")
 
-        oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did)
+        oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=compress)
         self.write_dir_image(0, oprom)
 
         if self.getasf():
