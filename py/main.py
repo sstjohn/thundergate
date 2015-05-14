@@ -28,6 +28,7 @@ from tapdrv import TapDriver
 from sysfsint import SysfsInterface
 from vfioint import VfioInterface
 from uioint import UioInterface
+from tginstall import TgInstaller
 import reutils
 
 import argparse
@@ -44,14 +45,15 @@ if __name__ == "__main__":
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.3.1
+                                 Version 0.3.2
                         Copyright (c) 2015 Saul St John
                              http://thundergate.io
 """
 
     parser = argparse.ArgumentParser()
     parser.add_argument("device", help="BDF of tg3 PCI device")
-    parser.add_argument("-u", "--uio", help="use uio pci generic interface")
+    parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
+    parser.add_argument("-u", "--uio", help="use uio pci generic interface", action="store_true")
     parser.add_argument("-v", "--vfio", help="use vfio interface", action="store_true")
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
@@ -85,7 +87,10 @@ if __name__ == "__main__":
         dev_interface = UioInterface(dbdf)
 
     with Device(dev_interface) as dev:
-        if args.shell:
+        if args.install:
+            with TgInstaller(dev) as i:
+                i.run()
+        elif args.shell:
             with ShellDriver(dev) as shell:
                 if args.driver:
                     with TapDriver(dev) as tap:

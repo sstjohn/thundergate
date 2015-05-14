@@ -318,18 +318,18 @@ class Nvram(rflip.nvram):
             data = struct.unpack("I", self._eeprom_hdr_buf[ofs+i:ofs+i+4])[0]
             self.write_dword(ofs + i, data)
 
-    def write_dir_image(self, index, data, itype = 0, sram_ofs = 0x10000, xa = False, xb = False):
-        assert index == 0
-
+    def write_dir_image(self, index, data, itype = 0, sram_ofs = 0x10000, xa = False, xb = False, nv_ofs = None):
         data += struct.pack("i", zlib.crc32(data))
 
-        nv_ofs = self.eeprom_hdr.directory[index].nvram_start
+        if nv_ofs == None:
+            nv_ofs = self.eeprom_hdr.directory[index].nvram_start
         if nv_ofs < sizeof(self.eeprom_hdr) or nv_ofs > self.eeprom_len:
             raise Exception("bogus nvram start offset for directory entry 0")
         nv_len = len(data)
 
         self._set_dir_entry(index, nv_ofs, nv_len, itype, sram_ofs, xa, xb)
         self.write_block(nv_ofs, data)
+        return nv_len
 
     def load_image(self, fname, itype = 0, sram_ofs = 0x10000, xa = False, xb = False):
         data = ''
@@ -374,6 +374,26 @@ class Nvram(rflip.nvram):
         if not self.getasf():
             self.setasf()
 
+    def install_thundergate(self, efidrv="efi/dmarf.efi", cpufw="fw/fw.img"):
+        start = self.eeprom_hdr.directory[0].nvram_start
+        
+        data = ''
+        with open(efidrv, "rb") as f:
+            data = f.read()
+        oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
+        print "[+] installing thundergate oprom"
+        start += self.write_dir_image(0, oprom, nv_ofs=start)
+        
+        with open(cpufw, "rb") as f:
+            data = f.read()
+        print "[+] installing thundergate rxcpu firmware"
+        self.write_dir_image(1, data, 1, 0x08008000, True, nv_ofs=start)
+
+        if not self.getpxe():
+            self.setpxe()
+        if not self.getasf():
+            self.setasf()
+    
     def dump_eeprom(self, fname):
         with open(fname, "wb") as f:
             f.write(self.read_block(0, self.eeprom_len))

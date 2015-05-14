@@ -99,7 +99,7 @@ u32 create_rmrr(void *a)
 	r->reserved = 0;
 	r->seg_no = 0;
 	r->base_addr = 0;
-	r->limit_addr = 0xffffff;
+	r->limit_addr = ~1;
 
 	create_dev_scope(a + sizeof(struct dmar_rmrr));
 	return r->length;

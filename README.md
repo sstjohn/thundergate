@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.3.1
+                                 Version 0.3.2
                         Copyright (c) 2015 Saul St John
 
                             <a href="http://thundergate.io">http://thundergate.io</a>
@@ -47,8 +47,8 @@ These instructions assume a Debian 8 host.
 $ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
             gnu-efi python python-ctypeslib libgmp-dev libmpfr-dev libmpc-dev \
             python-pip ipython
-
 $ sudo pip install capstone
+$ sudo easy_install https://github.com/nebula/python-eficompressor/archive/master.zip
     ~~~
 
 2. Clone repository:
@@ -132,31 +132,53 @@ positional arguments:
   device        BDF of tg3 PCI device
 
 optional arguments:
-  -h, --help    show this help message and exit
-  -v, --vfio    use vfio interface
-  -d, --driver  load userspace tap driver
-  -t, --tests   run tests
-  -s, --shell   ipython cli
+  -h, --help     show this help message and exit
+  -i, --install  install thundergate firmware
+  -u, --uio      use uio pci generic interface
+  -v, --vfio     use vfio interface
+  -d, --driver   load userspace tap driver
+  -t, --tests    run tests
+  -s, --shell    ipython cli
 </pre>
 
-## EFI PCI OpRom ##
+## Installing ThunderGate Firmware ##
 
-The example EFI PCI Option Rom code lives under the 'efi/' directory. It can
-be installed to the target device from the ThunderGate CLI as follows:
-~~~
-In <1>: dev.nvram.init(wr=1)
-In <2>: dev.nvram.load_efi_drv("efi/dmarf.efi")
-~~~
+The ```-i``` argument can be used to install all example firmware
+to a Thunderbolt Gigabit Ethernet adapter device as follows:
+<pre>
+ $ sudo py/main.py -i 0a:00.0
 
-## MIPS CPU firmware application ##
 
-The example Tigon3 MIPS core firmware application code lives under the 'fw/'
-directory. It can be installed to the target device from the ThunderGate CLI
-as follows:
-~~~
-In <1>: dev.nvram.init(wr=1)
-In <2>: dev.load_rxcpu_fw("fw/fw.img")
-~~~
+ #######                                            #####
+    #    #    # #    # #    # #####  ###### #####  #     #   ##   ##### ######
+    #    #    # #    # ##   # #    # #      #    # #        #  #    #   #
+    #    ###### #    # # #  # #    # #####  #    # #  #### #    #   #   #####
+    #    #    # #    # #  # # #    # #      #####  #     # ######   #   #
+    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
+    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
+                          
+                                 Version 0.3.2
+                        Copyright (c) 2015 Saul St John
+                             http://thundergate.io
+
+[+] tg3 inspector initializing
+[+] huge pages available
+[+] enumerating device capabilities
+[+] mapping device memory window
+[+] masking interrupts
+[+] requesting nvram lock...  granted.
+[+] enabling nvram access
+[+] resetting nvram state machine
+[+] requesting nvram lock...  granted.
+[+] enabling nvram access
+[+] enabling nvram write in grc block
+[+] enabling nvram write access
+[+] installing thundergate oprom
+[+] writing block length 4604 at offset 25fc.....................
+[+] installing thundergate rxcpu firmware
+[+] writing block length 1630 at offset 6c00.........
+[+] tg3 inspector terminated
+</pre>
 
 # Further Reading #
 
