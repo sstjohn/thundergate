@@ -48,7 +48,7 @@ $ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
             gnu-efi python python-ctypeslib libgmp-dev libmpfr-dev libmpc-dev \
             python-pip ipython
 $ sudo pip install capstone
-$ sudo easy_install https://github.com/nebula/python-eficompressor/archive/master.zip
+$ sudo easy_install git+http://github.com/nebula/python-eficompressor.git
     ~~~
 
 2. Clone repository:
