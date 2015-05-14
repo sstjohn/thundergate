@@ -21,6 +21,78 @@
 
 #include "utypes.h"
 
+
+struct __attribute__((packed)) dmar_tbl_hdr {
+	char sig[4];
+	u32 length;
+	u8 rev;
+	u8 cksum;
+	char oemid[6];
+	char oemtableid[8];
+	u32 oem_rev;
+	char creator_id[4];
+	u32 creator_rev;
+	u8 host_addr_width;
+	u8 flags;
+	char reserved[10];
+};
+
+struct __attribute__((packed)) dmar_dev_scope {
+	u8 type;
+	u8 length;
+	u16 reserved;
+	u8 enum_id;
+	u8 start_bus_number;
+	struct __attribute__((packed)) {
+		u8 device;
+		u8 function;
+	} path[0];
+};
+
+struct __attribute__((packed)) dmar_drhd {
+	u16 type;
+	u16 length;
+	u8 flags;
+	u8 reserved;
+	u16 seg_no;
+	u64 base_address;
+};
+
+struct __attribute__((packed)) dmar_rmrr {
+	u16 type;
+	u16 length;
+	u8 flags;
+	u8 reserved;
+	u16 seg_no;
+	u64 base_addr;
+	u64 limit_addr;
+};
+
+struct __attribute__((packed)) dmar_atsr {
+	u16 type;
+	u16 length;
+	u8 flags;
+	u8 reserved;
+	u16 seg_no; 
+	struct dmar_dev_scope dev_scope[0];
+};
+
+struct __attribute__((packed)) dmar_rhsa {
+	u16 type;
+	u16 length;
+	u32 reserved;
+	u64 base_addr;
+	u32 proximity_domain;
+};
+
+struct __attribute__((packed)) dmar_andd {
+	u16 type;
+	u16 length;
+	u8 reserved[3];
+	u8 acpi_dev_no;
+	char object_name[0];
+};
+
 struct __attribute__((packed)) acpi_sdt_hdr {
         char sig[4];
         u32 length;

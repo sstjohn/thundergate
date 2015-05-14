@@ -13,14 +13,13 @@ EFI_CRT_OBJS    = $(EFILIB)/crt0-efi-$(ARCH).o
 EFI_LDS         = $(EFILIB)/elf_$(ARCH)_efi.lds
 LIB_GCC         = $(shell $(CC) -print-libgcc-file-name)
 CFLAGS          = $(EFIINCS) $(TGINC) -mno-red-zone -mno-mmx -mno-sse \
-		  -O2 -fpic -fshort-wchar -fno-strict-aliasing \
+		  -Os -fpic -fshort-wchar -fno-strict-aliasing \
 		  -fno-merge-constants -ffreestanding -fno-stack-protector \
 		  -fno-stack-check -DCONFIG_x86_64 -DGNU_EFI_USE_MS_ABI \
-		  -maccumulate-outgoing-args --std=c11 -D__KERNEL__ \
-		  -I/usr/src/sys/build/include
+		  -maccumulate-outgoing-args --std=c11 -D__KERNEL__
 
 LDFLAGS         = -nostdlib --warn-common --no-undefined --fatal-warnings \
-		-shared -Bsymbolic -L$(EFILIB) $(EFI_CRT_OBJS)
+		-shared -Bsymbolic -s -L$(EFILIB) $(EFI_CRT_OBJS)
 
 all: $(TARGET)
 

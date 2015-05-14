@@ -27,6 +27,7 @@ from shelldrv import ShellDriver
 from tapdrv import TapDriver
 from sysfsint import SysfsInterface
 from vfioint import VfioInterface
+from uioint import UioInterface
 import reutils
 
 import argparse
@@ -43,13 +44,14 @@ if __name__ == "__main__":
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.2.1
+                                 Version 0.3.0
                         Copyright (c) 2015 Saul St John
                              http://thundergate.io
 """
 
     parser = argparse.ArgumentParser()
     parser.add_argument("device", help="BDF of tg3 PCI device")
+    parser.add_argument("-u", "--uio", help="use uio pci generic interface")
     parser.add_argument("-v", "--vfio", help="use vfio interface", action="store_true")
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
@@ -75,6 +77,12 @@ if __name__ == "__main__":
         if odrv != 'vfio-pci':
             raise Exception("device %s currently bound by %s, bind to vfio-pci instead" % (dbdf, odrv))
         dev_interface = VfioInterface(dbdf)
+
+    if args.uio:
+        odrv = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
+        if odrv != 'uio_pci_generic':
+            raise Exception("device %s currently bound by %s, bind to uio_pci_generic instead")
+        dev_interface = UioInterface(dbdf)
 
     with Device(dev_interface) as dev:
         if args.shell:
