@@ -45,10 +45,59 @@ class PCI_PCIe_cap(object):
         self.extended_tag_field_supported = (tmp >> 5) & 0x1
         # etc...
 
+class PCI_MSIX_cap(object):
+    def __init__(self, cfg, offset):
+        self.cfg = cfg
+        self.offset = offset
+
+    def _get_cap_enabled(self):
+        tmp = self.cfg.read(self.offset)
+        return 0 != (tmp & 0x80000000)
+
+    def _set_cap_enabled(self, val):
+        tmp = self.cfg.read(self.offset)
+        if val == 0:
+            self.cfg.write(self.offset, tmp & ~0x80000000)
+        else:
+            self.cfg.write(self.offset, tmp | 0x80000000)
+
+    enabled = property(_get_cap_enabled, _set_cap_enabled)
+
+    def _get_tbl_sz(self):
+        tmp = self.cfg.read(self.offset)
+        return tmp & 0x3ff
+
+    table_size = property(_get_tbl_sz, None)
+
+    def _get_tbl_ofs(self):
+        tmp = self.cfg.read(self.offset + 4)
+        return tmp & 0xfffffffc
+
+    table_offset = property(_get_tbl_ofs, None)
+
+    def _get_tbl_bir(self):
+        tmp = self.cfg.read(self.offset + 4)
+        return tmp & 0x3
+
+    table_bir = property(_get_tbl_bir, None)
+
+    def _get_pba_ofs(self):
+        tmp = self.cfg.read(self.offset + 8)
+        return tmp & 0xfffffffc
+
+    pba_offset = property(_get_pba_ofs, None)
+
+    def _get_pba_bir(self):
+        tmp = self.cfg.read(self.offset + 8)
+        return tmp & 3
+
+    pba_bir = property(_get_pba_bir, None)
+
 cap_types = {
     0x01: ("Power Management version 3", None),
+    0x03: ("VPD", None),
     0x05: ("MSI", None),
-    0x11: ("MSI-X", None),
+    0x11: ("MSI-X", PCI_MSIX_cap, "msix"),
     0x10: ("PCI Express Capabilities List Register", PCI_PCIe_cap, "pcie"),
 }
 
@@ -57,6 +106,7 @@ ext_cap_types = {
     0x002: ("Virtual Channel", None),
     0x003: ("Device Serial Number", None),
     0x004: ("Power Budgeting <?>", None),
+    0x018: ("Latency Tolerance Reporting", None),
 }
 
 class Config(object):
@@ -69,7 +119,7 @@ class Config(object):
         except:
             print "[!] failed to enumerate device capabilities"
 
-    def enumerate_capabilities(self, verbose=0):
+    def enumerate_capabilities(self, verbose=1):
         print "[+] enumerating device capabilities"
         cap_ptr = self.read(0x34)
         while cap_ptr != 0:

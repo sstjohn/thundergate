@@ -285,6 +285,50 @@ struct grc_clock_ctrl {
     u32 reserved13 :5;
 };
 
+struct grc_misc_control {
+	u32 done_dr_fix4_en :1;
+	u32 done_dr_fix3_en :1;
+	u32 done_dr_fix2_en :1;
+	u32 done_dr_fix_en :1;
+	u32 clkreq_delay_dis :1;
+	u32 lcrc_dr_fix2_en :1;
+	u32 lcrc_dr_fix_en :1;
+	u32 chksum_fix_en :1;
+	u32 ma_addr_fix_en :1;
+	u32 ma_prior_en :1;
+	u32 underrun_fix_en :1;
+	u32 underrun_clear :1;
+	u32 overrun_clear :1;
+	u32 reserved0 :19;
+};
+
+struct grc_fastboot_program_counter {
+	u32 enable :1;
+	u32 addr :31;
+};
+
+struct grc_power_management_debug {
+	u32 pclk_sw_force_override_en :1;
+	u32 pclk_sw_force_override_val :1;
+	u32 pclk_sw_sel_override_en :1;
+	u32 pclk_sw_sel_override_val :1;
+	u32 pclk_sw_force_cond_a_dis :1;
+	u32 pclk_sw_force_cond_b_dis :1;
+	u32 pclk_sw_force_cond_c_en :1;
+	u32 pclk_sw_sel_cond_a_dis :1;
+	u32 pclk_sw_sel_cond_b_dis :1;
+	u32 pclk_sw_sel_cond_c_dis :1;
+	u32 reserved17 :5;
+	u32 perst_override :1;
+	u32 reserved6 :10;
+	u32 pipe_clkreq_serdes :1;
+	u32 pipe_aux_power_down :1;
+	u32 pll_power_down :1;
+	u32 clock_req_output_stat :1;
+	u32 reserved1 :1;
+	u32 pll_is_up :1;
+};
+
 struct grc_regs {
     struct grc_mode mode;
     struct grc_misc_config misc_config;
@@ -330,6 +374,16 @@ struct grc_regs {
     struct grc_secfg_2 secfg2;
     struct grc_bond_id bond_id;
     struct grc_clock_ctrl clock_ctrl;
+
+    struct grc_misc_control misc_control;
+    struct grc_fastboot_program_counter fastboot_pc;
+    u32 ofs_98;
+    u32 ofs_9c;
+
+    u32 ofs_a0;
+    struct grc_power_management_debug power_management_debug;
+    u32 ofs_a8;
+    u32 ofs_ac;
 };
 
 #endif

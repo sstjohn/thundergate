@@ -127,6 +127,12 @@ class VfioInterface(object):
                 self.bar0 = bar0
                 self.bar0_sz = r.size
                 t = "pci bar 0"
+            elif i == c.VFIO_PCI_BAR2_REGION_INDEX:
+                bar2 = c.mmap64(0, r.size, c.PROT_READ | c.PROT_WRITE, c.MAP_PRIVATE, device, r.offset)
+                if 0xffffffffffffffff != bar2:
+                    self.bar2 = bar2
+                    self.bar2_sz = r.size
+                t = "pci bar 2"
             elif i == c.VFIO_PCI_CONFIG_REGION_INDEX:
                 self.config_offset = r.offset
                 t = "pci config"

@@ -21,7 +21,7 @@ import struct
 from ctypes import *
 import os
 import hashlib
-
+import msix
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 
@@ -100,6 +100,24 @@ class Device(object):
         self.config = pci.Config(self.interface)
 
         self.bar0 = self.interface.bar0
+        try: self.bar2 = self.interface.bar2
+        except: pass
+        
+        if 'msix' in self.config.caps:
+            sz = self.config.caps['msix'].table_size
+
+            tbar = self.config.caps['msix'].table_bir
+            tofs = self.config.caps['msix'].table_offset
+            try:
+                bar = getattr(self, "bar%d" % tbar)
+                self.msix_tbl = msix.Table(bar, tofs, sz)
+            except: pass            
+            pbar = self.config.caps['msix'].pba_bir
+            pofs = self.config.caps['msix'].pba_offset
+            try:
+                bar = getattr(self, "bar%d" % pbar)
+                self.msix_pba = msix.Pba(bar, pofs, sz)
+            except: pass
 
         self.map_registers()
         self.map_memory()

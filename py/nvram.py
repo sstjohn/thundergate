@@ -352,9 +352,6 @@ class Nvram(rflip.nvram):
         oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=compress)
         self.write_dir_image(0, oprom)
 
-        if self.getasf():
-            self.setasf(disable=1)
-
         if not self.getpxe():
             self.setpxe()
 
@@ -366,11 +363,8 @@ class Nvram(rflip.nvram):
         if len(data) == 0:
             raise Exception("failed to load firmware image")
 
-        self.write_dir_image(0, data, 1, 0x08008000, True)
-
-        if self.getpxe():
-            self.setpxe(disable=1)
-
+        self.write_dir_image(1, data, 1, 0x08008000, True)
+        
         if not self.getasf():
             self.setasf()
 

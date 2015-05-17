@@ -32,21 +32,29 @@ class SysfsInterface(object):
 
     def _open_device(self):
         self.cfgfd = os.open(self.dd + "/config", os.O_RDWR)
-        try:
-		self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)
-	except:
-		self.barfd = os.open(self.dd + "/resource0", os.O_RDWR)
+        try: self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)
+        except: self.barfd = os.open(self.dd + "/resource0", os.O_RDWR)
 
         bar0 = c.mmap(0, 64 * 1024, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.barfd, 0)
-        if -1 == bar0:
-            raise Exception("failed to mmap bar 0")
+        if -1 == bar0: raise Exception("failed to mmap bar 0")
         self.bar0 = bar0
 
+        try:
+            self.barfd2 = os.open(self.dd + "/resource2_wc", os.O_RDWR)
+            self.bar2 = c.mmap(0, 64 * 1024, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.barfd2, 0)
+        except:
+            pass
 
     def __exit__(self, t, v, traceback):
         self._close_device()
 
     def _close_device(self):
+        if hasattr(self, "bar2"):
+            try: c.munmap(self.bar2, 64 * 1024)
+            except: pass
+        if hasattr(self, "barfd2"):
+            try: os.close(self.barfd2)
+            except: pass
         c.munmap(self.bar0, 64 * 1024)
         os.close(self.barfd)
         os.close(self.cfgfd)

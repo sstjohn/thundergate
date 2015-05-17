@@ -22,10 +22,12 @@ import random
 import tglib as tg
 import reutils
 from ctypes import cast, POINTER, sizeof, c_char
-
+import csv
+import os
 from tapdrv import TapDriver
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
+import socket
 
 class TestDriver(object):
     def __init__(self, dev):
@@ -44,7 +46,10 @@ class TestDriver(object):
         #    self.test_send(tap)
         #self.test_dmar()
         #self.test_rdmar()
-        self.test_dmaw()
+        #self.test_dmaw()
+        #self.reg_finder()
+        self.msi_wr()
+
 
     def clear_txmbufs(self):
         for i in range(0x8000, 0x10000, 4):
@@ -64,6 +69,43 @@ class TestDriver(object):
         block.block_enable(quiet = 1)
         usleep(10)
         block.block_disable(quiet = 1)
+
+    def msi_wr(self):
+        dev = self.dev
+        dev.rxcpu.halt()
+        dev.bufman.block_enable()
+        dev.wdma.block_enable()
+
+        test_buf_v = dev.interface.mm.alloc(8)
+        cast(test_buf_v, POINTER(c_uint64))[0] = ~0
+        test_buf_p = dev.interface.mm.get_paddr(test_buf_v)
+        print "test buf is at %x" % test_buf_p
+        print "test buf starts %s" % repr(cast(test_buf_v, POINTER(c_char * 8)).contents.raw)
+
+        dev.pci.msi_lower_address = test_buf_p & 0xffffffff
+        dev.pci.msi_upper_address = test_buf_p >> 32
+        dev.pci.msi_data = 0xaaaa
+        dev.msi.mode.msi_message = 0x7 
+        dev.pci.msi_cap_hdr.msi_enable = 1
+        dev.msi.status.msi_pci_request = 1
+        usleep(1000)
+        print "test buf is now %s" % repr(cast(test_buf_v, POINTER(c_char * 8)).contents.raw)
+
+        
+        for tl in (False, True):
+            for pl in (False, True):
+                for hi in (False, True):
+                    dev.grc.pcie_tl_sel = 1 if tl else 0
+                    dev.grc.pcie_pl_sel = 1 if pl else 0
+                    dev.grc.pcie_hi1k_en = 1 if hi else 0
+
+                    for i in range(0x6100, 0x6800, 4):
+                        if 0 == i % 32:
+                            print
+                            print "%04x'%d%d%d: " % (i, 1 if hi else 0, 1 if pl else 0, 1 if tl else 0),
+                        elif 0 == i % 16:
+                            print "\t",
+                        print "%08x" % dev.reg[i >> 2],
 
     def spy_read(self, tap):
         dev = self.dev
@@ -189,6 +231,12 @@ class TestDriver(object):
     def test_dmar(self, size=0x80, init=1, reset=0):
         dev = self.dev
         dev.rxcpu.halt()
+        dev.bufman.block_enable()
+        dev.grc.mode.pcie_tl_sel = 0
+        dev.grc.mode.pcie_pl_sel = 1
+        dev.grc.mode.pcie_hi1k_en = 1
+        dev.hpmb.box[tg.mb_rbd_standard_producer].low = 0
+        
         end = 0x6000 + (size * 4)
         print "[+] clearing device memory from 0x6000 to 0x%04x" % end
         for i in range(0x6000, end, 4):
@@ -212,12 +260,8 @@ class TestDriver(object):
 
         for i in range(size):
                 buf[i] = 0xaabbccdd;
-
-        if init:
-            dev.bufman.block_enable(reset=reset)
-            dev.ftq.block_reset()
-            dev.hpmb.box[tg.mb_rbd_standard_producer].low = 0
-
+        
+        state = reutils.state_save(dev)
 
         print "[+] setting up standard rcb"
 
@@ -228,18 +272,17 @@ class TestDriver(object):
         dev.rdi.std_rcb.disable_ring = 0
         dev.rdi.std_rcb.nic_addr = 0x6000
         
+        state = reutils.state_diff(dev, state)
+
         print "[+] initiating dma read of sz %x to buffer at vaddr %x, paddr %x" % (size, vaddr, paddr)
         dev.hpmb.box[tg.mb_rbd_standard_producer].low = size >> 3
 
-        if init:
-            blocks = ["rbdi", "rdma"]
-            for b in blocks:
-                    o = getattr(dev, b)
-                    o.block_enable(reset=reset)
+        blocks = ["rbdi", "rdma"]
+        for b in blocks:
+                o = getattr(dev, b)
+                o.block_enable(reset=reset)
+                state = reutils.state_diff(dev, state)
         
-        usleep(100)
-        
-
         for i in range(0x6000, end, 4):
                 if dev.mem.read_dword(i) != buf[(i - 0x6000) >> 2]:
                         raise Exception("dma read test failed")
@@ -253,8 +296,8 @@ class TestDriver(object):
         dev.rxcpu.halt()
         dev.bufman.block_enable()
         dev.grc.mode.pcie_tl_sel = 1
+        dev.grc.mode.pcie_pl_sel = 0
         dev.grc.mode.pcie_hi1k_en = 0
-        
 
         buf_v = dev.interface.mm.alloc(0x80)
         buf_p = dev.interface.mm.get_paddr(buf_v)
@@ -266,22 +309,27 @@ class TestDriver(object):
         dev.hc.block_disable()
         dev.hc.reset()
 
+        state = reutils.state_save(dev)
+
+        dev.hc.nic_diag_sbd_ci[0] = 4
         dev.hc.status_block_host_addr_hi = buf_p >> 32
         dev.hc.status_block_host_addr_low = buf_p & 0xffffffff
         dev.hc.mode.no_int_on_force_update = 1
 
-        usleep(10)
-        
-        state = reutils.state_save(dev)
+        for i in range(0x3d00, 0x3e00, 4):
+            dev.reg[i >> 2] = 0xffffffff
+        dev.reg[0x3f04 >> 2] = 0xffffffff
 
+        state = reutils.state_diff(dev, state) 
+
+        print "[*] coalescing"
         dev.hc.mode.coalesce_now = 1
-        usleep(10)
+        state = reutils.state_diff(dev, state)
 
         print "[*] status block is now"
         print "    %s" % repr(sbuf.contents.raw)
         print
 
-        state = reutils.state_diff(dev, state)
 
         dev.wdma.block_enable()
         state = reutils.state_diff(dev, state)
@@ -289,19 +337,105 @@ class TestDriver(object):
         print "[*] status block is now"
         print "    %s" % repr(sbuf.contents.raw)
         print
-        
+       
+        print "[*] coalescing"
         dev.hc.mode.coalesce_now = 1
-        usleep(10)
-        state = reutils.state_diff(dev, state)
-
-        print "[*] status block is now"
-        print "    %s" % repr(sbuf.contents.raw)
-        print
-        dev.hc.mode.coalesce_now = 1
-        usleep(10)
         state = reutils.state_diff(dev, state)
 
         print "[*] status block is now"
         print "    %s" % repr(sbuf.contents.raw)
         print
 
+    def reg_finder(self):
+        dev = self.dev
+        regs = {}
+        with open('regs.csv', 'wb') as csvfile:
+            fns = ['offset', 'block', 'name', 'rw', 'mod_mask', 'o', 't1', 't2']
+            w = csv.DictWriter(csvfile, fieldnames=fns)
+            w.writeheader()
+
+            for dl in (True, False):
+                for pl in (True, False):
+                    for hi1k in (True, False):
+                        dev.grc.mode.pcie_dl_sel = 1 if dl else 0
+                        dev.grc.mode.pcie_pl_sel = 1 if pl else 0
+                        dev.grc.mode.pcie_hi1k_en = 1 if hi1k else 0
+                        ss = "%s%s%s" % ("d" if dl else "",
+                                         "p" if pl else "",
+                                         "h" if hi1k else "")
+
+                        for i in range(0x7c00, 0x8000, 4):
+                            ofs = "%04x%s" % (i, ss)
+                            bn = reutils.whats_at(i)
+                            regs[ofs] = {'block': 'pcie_win',
+                                       'name': 'ofs_%03x' % (i - 0x7c00),
+                                       'offset': ofs,
+                                       'rw': '',
+                                       'mod_mask': '',
+                                       'o': '', 't1': '', 't2': ''}
+
+                            o = dev.reg[i >> 2]
+                            if o == 0xffffffff:
+                                if dev.reg[0] == 0xffffffff:
+                                    raise Exception("device quit bus")
+
+                            if False:
+                                dev.reg[i >> 2] = 0xffffffff
+                                t1 = dev.reg[i >> 2]
+                                dev.reg[i >> 2] = 0
+                                t2 = dev.reg[i >> 2]
+                                dev.reg[i >> 2] = o
+                                regs[ofs]['t1'] = "%08x" % t1
+                                regs[ofs]['t2'] = "%08x" % t2
+                                if (o ^ t1) or (o ^ t2):
+                                    regs[ofs]['rw'] = True
+                                    regs[ofs]['mod_mask'] = "%08x" % (~(t2 | ~t1))
+                            
+                            regs[ofs]['o'] = "%08x" % o
+                            
+                            w.writerow(regs[ofs])
+                            csvfile.flush()
+
+            for i in range(0x100, 0x7c00, 4):
+                if i % 0x400 == 0:
+                    print "now at %04x" % i
+                if 0 == os.system("dmesg -c | grep -q dmar"):
+                    raise Exception("noticed dmar freaking out at %04x" % i)
+
+                bn = reutils.whats_at(i)
+                regs[i] = {'block': bn[0],
+                           'name': bn[1],
+                           'offset': "%04x" % i,
+                           'rw': False,
+                           'mod_mask': '',
+                           'o': '', 't1': '', 't2': ''}
+
+                o = dev.reg[i >> 2]
+                if o == 0xffffffff:
+                    if dev.reg[0] == 0xffffffff:
+                        raise Exception("device quit bus")
+
+                if (i < 0x3600 or i > 0x36e8) and (i < 0x6800 or i > 0x68fc):
+                    dev.reg[i >> 2] = 0xffffffff
+                    t1 = dev.reg[i >> 2]
+                    dev.reg[i >> 2] = 0
+                    t2 = dev.reg[i >> 2]
+                    dev.reg[i >> 2] = o
+
+                regs[i]['o'] = "%08x" % o
+                try:
+                    regs[i]['t1'] = "%08x" % t1
+                    regs[i]['t2'] = "%08x" % t2
+                    if (o ^ t1) or (o ^ t2):
+                        regs[i]['rw'] = True
+                        regs[i]['mod_mask'] = "%08x" % (~(t2 | ~t1))
+                except:
+                    pass
+
+                if regs[i]['name'].startswith('ofs') and regs[i]['rw']:
+                    print "Unknown rw register at %04x" % i
+
+                w.writerow(regs[i])
+
+
+        return regs
