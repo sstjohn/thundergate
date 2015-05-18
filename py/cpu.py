@@ -18,8 +18,18 @@
 
 import struct
 import rflip
-from capstone import *
-from capstone.mips import *
+
+try:
+    from capstone import *
+    from capstone.mips import *
+    if cs_version()[0] < 3:
+        print "[-] capstone outdated - disassembly unavailable"
+        _no_capstone = True
+    else:
+        _no_capstone = False
+except:
+    print "[-] capstone not present - disassembly unavailable"
+    _no_capstone = True
 
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
@@ -34,12 +44,53 @@ def to_x(v):
     
 
 class Cpu(rflip.cpu):
-    try:
+    if not _no_capstone:
         md_mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
-    except:
-        md_mode = CS_MODE_32 + CS_MODE_BIG_ENDIAN
-    md = Cs(CS_ARCH_MIPS, md_mode)
-    md.detail = True
+        md = Cs(CS_ARCH_MIPS, md_mode)
+        md.detail = True
+        md.skipdata = True
+
+        def dis_at(self, addr, count=1, verbose=0, pc=None):
+            if pc is None:
+                pc = self.pc
+            raw = self._dev.mem.read(addr, count * 4)
+            dis = self.md.disasm(raw, addr)
+            dis = self._disp_dis(dis, verbose=verbose, pc=pc)
+
+
+        def dis_ir(self, context=0, verbose=1):
+            if not self.status.halted:
+                raise Exception("cpu not halted")
+            if context != 0:
+                pc = self.pc
+                self.dis_at(pc - context, count = context * 2, pc = pc)
+            else:
+                raw = struct.pack(">I", self.instruction)
+                self._disp_dis(self.md.disasm(raw, self.pc), verbose=verbose, pc=self.pc)
+
+        def _disp_dis(self, decoded, verbose=0, pc=None):
+            for i in decoded:
+                tmp = '\t'
+                if i.address == pc:
+                    tmp = '-->\t'
+                print "%s0x%08x:\t%s\t%s" % (tmp, i.address, i.mnemonic, i.op_str)
+                if verbose and len(i.operands) > 0:
+                     print("\t\top_count: %u" % len(i.operands))
+                     c = -1
+                     for j in i.operands:
+                         c += 1
+                         if j.type == MIPS_OP_REG:
+                             print("\t\t\toperands[%u].type: REG = %s" % (c, i.reg_name(j.reg)))
+                         if j.type == MIPS_OP_IMM:
+                             print("\t\t\toperands[%u].type: IMM = %s" % (c, to_x(j.imm)))
+                         if j.type == MIPS_OP_MEM:
+                             print("\t\t\toperands[%u].type: MEM" % c)
+                             if j.mem.base != 0:
+                                 print("\t\t\t\toperands[%u].mem.base: REG = %s" \
+                                     % (c, i.reg_name(j.mem.base)))
+                             if j.mem.disp != 0:
+                                 print("\t\t\t\toperands[%u].mem.disp: %s" \
+                                     % (c, to_x(j.mem.disp)))
 
     def set_breakpoint(self, addr, enable = True, reset = False):
         if not self.breakpoint.disabled and not reset:
@@ -110,39 +161,4 @@ class Cpu(rflip.cpu):
         self.clear_events()
         self.resume()
 
-
-    def dis_addrs(self, addr, count=1):
-        raw = self._dev.mem.read(addr, count * 4)        
-        return self.md.disasm(raw, addr)
-
-    def dis_ir(self):
-        if not self.status.halted:
-            raise Exception("cpu not halted")
-
-        raw = struct.pack(">I", self.instruction)
-        return self.md.disasm(raw, self.pc)
-
-    def disp_dis(self, decoded, verbose=0, pc=None):
-        for i in decoded:
-            tmp = '\t'
-            if i.address == pc:
-                tmp = '-->\t'
-            print "%s0x%08x:\t%s\t%s" % (tmp, i.address, i.mnemonic, i.op_str)
-            if verbose and len(i.operands) > 0:
-                 print("\t\top_count: %u" % len(i.operands))
-                 c = -1
-                 for j in i.operands:
-                     c += 1
-                     if j.type == MIPS_OP_REG:
-                         print("\t\t\toperands[%u].type: REG = %s" % (c, i.reg_name(j.reg)))
-                     if j.type == MIPS_OP_IMM:
-                         print("\t\t\toperands[%u].type: IMM = %s" % (c, to_x(j.imm)))
-                     if j.type == MIPS_OP_MEM:
-                         print("\t\t\toperands[%u].type: MEM" % c)
-                         if j.mem.base != 0:
-                             print("\t\t\t\toperands[%u].mem.base: REG = %s" \
-                                 % (c, i.reg_name(j.mem.base)))
-                         if j.mem.disp != 0:
-                             print("\t\t\t\toperands[%u].mem.disp: %s" \
-                                 % (c, to_x(j.mem.disp)))
 

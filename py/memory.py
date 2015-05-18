@@ -17,7 +17,7 @@
 '''
 
 from ctypes import *
-
+from socket import htonl
 import struct
 
 def is_bf(t):
@@ -161,24 +161,47 @@ class Memory(object):
         return window, offset
 
     def read(self, addr, length, verbose = 0):
+        rr = False
+        if addr >= 0x08000000 and addr < 0x08010000:
+            print "redirecting from %08x to registers at" % addr,
+            addr = (addr & 0xffff) | 0x30000
+            print "%08x" % addr
+            rr = True
+        elif addr >= 0x40000000 and addr < 0x40005000:
+            print "redirecting from %08x to registers at" % addr,
+            addr = (addr & 0xffff) | 0x20000
+            print "%08x" % addr
+            rr = True
+
         rlength = length
 
-        window, offset = self._set_window(addr, verbose = verbose)
+        if not rr:
+            window, offset = self._set_window(addr, verbose = verbose)
+            rstart = offset
+            if offset % 4:
+                rstart -= offset % 4
+                rlength += offset % 4
 
-        rstart = offset
-        if offset % 4:
-            rstart -= offset % 4
-            rlength += offset % 4
-
-        if rlength % 4:
-            rlength += 4 - (rlength % 4)
-        
-        if verbose:
-            print "[.] reading memory length %x at %08x:%04x" % (rlength, addr ^ offset, rstart)
+            if rlength % 4:
+                rlength += 4 - (rlength % 4)
+            
+            if verbose:
+                print "[.] reading memory length %x at %08x:%04x" % (rlength, addr ^ offset, rstart)
 
         tmp = ''
         assert rlength > 0
-        if (rlength + rstart) <= 0x8000:
+        if rr:
+            tmp = []
+            for i in range(0, length, 4):
+                self.dev.pci.reg_base_addr = addr + i
+                _ = self.dev.pci.reg_base_addr
+                tmp += [htonl(self.dev.pci.reg_data)]
+            
+            tmp = (c_uint * (rlength >> 2))(*tmp)
+            tmp = cast(pointer(tmp), POINTER(c_char * rlength)).contents.raw
+            return tmp
+
+        elif (rlength + rstart) <= 0x8000:
             tmp = cast(self.dev.bar0 + 0x8000 + rstart, POINTER(c_uint * (rlength >> 2))).contents[:]
             tmp = (c_uint * (rlength >> 2))(*tmp)
             tmp = cast(tmp, POINTER(c_char * rlength)).contents.raw
@@ -196,6 +219,8 @@ class Memory(object):
         return struct.unpack("I", self.read(addr, 4))[0]
 
     def write(self, addr, value, verbose = 0):
+        if addr >= 0x08000000 and addr < 0x08010000:
+            addr = (addr & 0xffff) | 0x30000
         window, offset = self._set_window(addr)
         wstart = offset 
         if wstart % 4:

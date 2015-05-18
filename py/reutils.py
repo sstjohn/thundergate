@@ -22,6 +22,66 @@ import clib as c
 from device import tg3_blocks
 from rflip import rflip
 import struct
+import socket
+from time import sleep
+import hashlib
+
+usleep = lambda x: sleep(x / 1000000.0)
+
+def rread(dev, ofs, count=16):
+    dev.mem.write_dword(0xb54, ofs)
+    dev.mem.write_dword(0xb58, count)
+    dev.mem.write_dword(0xb50, 0x88b50003)
+
+    cnt = 0
+    while dev.mem.read_dword(0xb50) == 0x88b50003:
+        if dev.rxcpu.status.invalid_data_access:
+            raise Exception("invalid data access")
+        cnt += 1
+        if cnt > 10:
+            raise Exception("rxcpu read timed out")
+        usleep(10)
+
+    if dev.mem.read_dword(0xb50) != 0x88b50400:
+        print "unknown rxcpu response %08x" % dev.mem.read_dword(0xb50)
+        raise Exception("unknown rxcpu response found at 0xb50: %08x" % dev.mem.read_dword(0xb50))
+
+    return dev.mem.read(0xb54, 64)
+
+def try_read(dev, ofs, count = 16):
+    r = None
+    try:
+        r = rread(dev, ofs, count)
+    except:
+        dev.rxcpu.mode.halt = 1
+        dev.mem.write_dword(0xb50, 0x4b657654)
+        dev.rxcpu.mode.reset = 1
+        while dev.mem.read_dword(0xb50) != 0xb49a89ab:
+            usleep(10)
+
+    return r
+
+def map_mem(dev):
+    m = {}
+    with open("mem.map", "w") as f:
+        with open("data.rd", "w") as d:
+            for i in range(0xfffff):
+                addr = i << 12
+                if 0 == (i % 0x400):
+                    print "now at %x" % addr
+                v = try_read(dev, addr)
+                if v is None:
+                    d.write("%08x: \n" % addr)
+                    v = 0
+                else:
+                    d.write("%08x: %s\n" % (addr, ''.join(["%02x" % ord(j) for j in v])))
+                    v = hashlib.sha1(v).hexdigest()
+                d.flush()
+                try: m[v] += [addr]
+                except: m[v] = [addr]
+                f.write("%08x: %s\n" % (addr, v))
+                f.flush()
+    return m
 
 def state_save(dev):
     return (dev.mem.save_mem(), dev.reg_save())
@@ -43,6 +103,30 @@ def collect_unnamed_registers(dev):
                 if not bn in u:
                     u[bn] = {}
                 u[bn][br] = v
+
+def regsearch(dev, val, mask=0xffffffff):
+    for i in range(0, 0x8000, 4):
+        tmp = dev.reg[i >> 2]
+        if ((val ^ tmp) & mask) == 0:
+            print "value %08x found at register offset %04x" % (tmp, i)
+
+def regcheck(dev):
+    for i in range(0, 0x8000, 4):
+        tmp = dev.reg[i >> 2]
+        dev.pci.reg_base_addr = i
+        _ = dev.pci.reg_base_addr
+        tmp2 = dev.pci.reg_data
+        dev.interface.cfg_write(0x78, i)
+        tmp3 = dev.interface.cfg_read(0x80)
+        dev.mem.write_dword(0xb54, 0xc0000000 + i)
+        dev.mem.write_dword(0xb58, 1)
+        dev.mem.write_dword(0xb50, 0x88b50003)
+        while (dev.mem.read_dword(0xb50) == 0x88b50003):
+            usleep(10)
+        tmp4 = dev.mem.read_dword(0xb54)
+        if tmp != tmp2 or tmp2 != tmp3 or tmp3 != tmp4 or tmp4 != tmp:
+            block, name, _, _ = whats_at(i)
+            print "views differ at \"%s.%s\", offset %04x: %08x %08x %08x %08x" % (block, name, i, tmp, tmp2, tmp3, tmp4)
 
 def mem_diff(start, end):
     print "memory diff: "
