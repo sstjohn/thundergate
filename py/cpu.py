@@ -18,6 +18,26 @@
 
 import struct
 import rflip
+from socket import htonl
+from ctypes import c_char, c_uint, cast, pointer, POINTER
+from IPython.core.magic import (Magics, magics_class, line_magic,
+                        cell_magic, line_cell_magic)
+from bidict import bidict
+
+mips_regs = bidict(zero=0,
+                   at=1,
+                   v0=2, v1=3,
+                   a0=4, a1=5, a2=6, a3=7,
+                   t0=8, t1=9, t2=10, t3=11,
+                   t4=12, t5=13, t6=14, t7=15,
+                   s0=16, s1=17, s2=18, s3=19,
+                   s4=20, s5=21, s6=22, s7=23,
+                   t8=24, t9=25, 
+                   k0=26, k1=27,
+                   gp=28,
+                   sp=29,
+                   fp=30,
+                   ra=31)
 
 try:
     from capstone import *
@@ -53,20 +73,36 @@ class Cpu(rflip.cpu):
         def dis_at(self, addr, count=1, verbose=0, pc=None):
             if pc is None:
                 pc = self.pc
-            raw = self._dev.mem.read(addr, count * 4)
+
+            if addr >= 0x08000000 and addr < 0x08010000:
+                raddr = (addr & 0xffff) | 0x30000
+            elif addr >= 0x40000000 and addr < 0x40005000:
+                raddr = (addr & 0xffff) | 0x20000
+            
+            try:
+                tmp = []
+                for i in range(0, count * 4, 4):
+                    self._dev.pci.reg_base_addr = raddr + i
+                    _ = self._dev.pci.reg_base_addr
+                    tmp += [htonl(self._dev.pci.reg_data)]
+
+                tmp = (c_uint * count)(*tmp)
+                raw = cast(pointer(tmp), POINTER(c_char * (count * 4))).contents.raw
+            except:
+                raw = self._dev.mem.read(addr, count * 4)
+
             dis = self.md.disasm(raw, addr)
             dis = self._disp_dis(dis, verbose=verbose, pc=pc)
 
 
-        def dis_ir(self, context=0, verbose=1):
+        def dis_pc(self, context=0, verbose=1):
             if not self.status.halted:
                 raise Exception("cpu not halted")
             if context != 0:
                 pc = self.pc
                 self.dis_at(pc - context, count = context * 2, pc = pc)
             else:
-                raw = struct.pack(">I", self.instruction)
-                self._disp_dis(self.md.disasm(raw, self.pc), verbose=verbose, pc=self.pc)
+                self.dis_at(self.pc, verbose=verbose, pc=self.pc)
 
         def _disp_dis(self, decoded, verbose=0, pc=None):
             for i in decoded:
@@ -75,21 +111,21 @@ class Cpu(rflip.cpu):
                     tmp = '-->\t'
                 print "%s0x%08x:\t%s\t%s" % (tmp, i.address, i.mnemonic, i.op_str)
                 if verbose and len(i.operands) > 0:
-                     print("\t\top_count: %u" % len(i.operands))
                      c = -1
                      for j in i.operands:
                          c += 1
                          if j.type == MIPS_OP_REG:
-                             print("\t\t\toperands[%u].type: REG = %s" % (c, i.reg_name(j.reg)))
+                             val = getattr(self, "r%d" % (j.reg - 1))
+                             print("\t\toperand %u: REG %s (= %08x)" % (c, i.reg_name(j.reg), val))
                          if j.type == MIPS_OP_IMM:
-                             print("\t\t\toperands[%u].type: IMM = %s" % (c, to_x(j.imm)))
+                             print("\t\toperand %u: IMM = %s" % (c, to_x(j.imm)))
                          if j.type == MIPS_OP_MEM:
-                             print("\t\t\toperands[%u].type: MEM" % c)
+                             print("\t\toperand %u: MEM" % c)
                              if j.mem.base != 0:
-                                 print("\t\t\t\toperands[%u].mem.base: REG = %s" \
+                                 print("\t\t\toperand %u mem.base: REG %s"
                                      % (c, i.reg_name(j.mem.base)))
                              if j.mem.disp != 0:
-                                 print("\t\t\t\toperands[%u].mem.disp: %s" \
+                                 print("\t\t\toperands[%u].mem.disp: %s"
                                      % (c, to_x(j.mem.disp)))
 
     def set_breakpoint(self, addr, enable = True, reset = False):
@@ -161,4 +197,63 @@ class Cpu(rflip.cpu):
         self.clear_events()
         self.resume()
 
+    def tg3db(self, en=1):
+        @magics_class
+        class DebugMagic(Magics):
+
+                def __init__(self, shell, cpu):
+                        super(DebugMagic, self).__init__(shell)
+                        self.cpu = cpu
+
+                @line_magic
+                def u(self, addr = None):
+                        if None is addr or addr == '':
+                                self.cpu.dis_pc()
+                        else:
+                                self.cpu.dis_at(addr)
+
+                @line_magic
+                def s(self, arg):
+                    self.cpu.mode.single_step = 1
+                    self.cpu.dis_pc()
+
+                @line_magic
+                def h(self, arg):
+                    self.cpu.halt()
+
+                @line_magic
+                def g(self, addr):
+                    if '' == addr: addr = None
+                    self.cpu.go(addr)
+
+                @line_magic
+                def bp(self, arg):
+                    if None is arg or '' == arg:
+                        print "hardware breakpoint at %08x" % self.cpu.breakpoint.address,
+                        print "%s" % ("disabled" if self.cpu.breakpoint.disabled else "enabled")
+                    elif arg == '-':
+                        self.cpu.clear_breakpoint()
+                    else:
+                        self.cpu.set_breakpoint(int(arg, 0))
+
+                @line_magic
+                def reset(self, arg): self.cpu.reset()
+
+                @line_magic
+                def reg(self, arg):
+                    try:
+                        return getattr(self.cpu, "r%d" % int(arg))
+                    except:
+                        return getattr(self.cpu, "r%d" % mips_regs[arg])
+                
+                @line_magic
+                def pc(self, arg): return self.cpu.pc
+
+                @line_magic
+                def ir(self, arg): return self.cpu.instruction
+
+        print "[+] loading %s debug magics" % self.block_name
+        ip = get_ipython()
+        magics = DebugMagic(ip, self)
+        ip.register_magics(magics)
 

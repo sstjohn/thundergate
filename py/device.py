@@ -150,10 +150,10 @@ class Device(object):
                 print "[+] disabling memory space decode"
                 self.pci.command.memory_space = 0
 
-    def block_at(self, offset, t):
+    def block_at(self, name, offset, t):
         t.block_dump = block_utils.dump
         t.block_disp = block_utils.disp
-        t.block_name = t.__name__
+        t.block_name = name
         
         if t.__name__ == "ftq":
                 t.reset = block_utils.ftq_reset
@@ -209,7 +209,7 @@ class Device(object):
         self.reg = cast(self.bar0, POINTER(c_uint32 * (0x8000 / 4))).contents
 
         for (name, offset, t) in tg3_blocks:
-            setattr(self, name, self.block_at(offset, t))
+            setattr(self, name, self.block_at(name, offset, t))
             self.blocks += [getattr(self, name)]
 
     def map_memory(self):

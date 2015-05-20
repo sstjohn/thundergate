@@ -28,9 +28,7 @@ from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 
 class Nvram(rflip.nvram):
-    def __init__(self):
-        super(Nvram, self).__init__()
-        self._locked = 0
+    _locked = False
 
     def init(self, wr=0, lh=1):
         self.acquire_lock()
@@ -148,20 +146,25 @@ class Nvram(rflip.nvram):
 
     def __get_eeprom_len(self): 
         if not self.read_dword(0) == tg.TG3_MAGIC:
-            raise Exception("unknown eeprom format")
+            #raise Exception("unknown eeprom format")
+            return 64 * 1024
  
         return ((self.read_dword(0xf0) & 0xffff) >> 8) * 1024
 
     def load_eeprom_header(self):
         hdr_len = sizeof(tg.nvram_header)
         if tg.TG3_MAGIC != self.read_dword(0):
-            raise Exception("unknown nvram format")
+            #raise Exception("unknown nvram format")
+            return
 
         self._eeprom_hdr_buf = create_string_buffer(sizeof(tg.nvram_header))
         eeprom_words = cast(self._eeprom_hdr_buf, POINTER(c_uint32))
         for i in range(0, len(self._eeprom_hdr_buf), 4):
             eeprom_words[i >> 2] = self.read_dword(i)
         self.eeprom_hdr = cast(self._eeprom_hdr_buf, POINTER(tg.nvram_header))[0]
+
+    def clear_eeprom(self):
+        self.write_block(0, '\x00' * self.eeprom_len)
 
     def write_dword(self, offset, data, first=1, last=1):
         if self.write1.enable_command != 0x6:
@@ -233,6 +236,8 @@ class Nvram(rflip.nvram):
         return ret
 
     def show_directory(self):
+        try: self.eeprom_hdr
+        except: self.load_eeprom_header()
         for index in range(len(self.eeprom_hdr.directory)):
             dentry = self.eeprom_hdr.directory[index]
             nv_ofs = dentry.nvram_start

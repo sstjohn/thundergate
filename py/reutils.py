@@ -106,7 +106,9 @@ def collect_unnamed_registers(dev):
 
 def regsearch(dev, val, mask=0xffffffff):
     for i in range(0, 0x8000, 4):
-        tmp = dev.reg[i >> 2]
+        dev.pci.reg_base_addr = i
+        _ = dev.pci.reg_base_addr
+        tmp = dev.pci.reg_data
         if ((val ^ tmp) & mask) == 0:
             print "value %08x found at register offset %04x" % (tmp, i)
 

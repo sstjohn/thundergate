@@ -20,20 +20,20 @@
 #define _CPU_H_
 
 struct cpu_mode {
-    u32 reserved :17;
+    u32 reserved15 :17;
     u32 register_addr_trap_halt_en :1;
     u32 memory_addr_trap_halt_en :1;
     u32 invalid_instruction_fetch_halt_en :1;
 
     u32 invalid_data_access_halt_en :1;
     u32 halt :1;
-    u32 reserved2 :1;
-    u32 reserved3 :1;
+    u32 reserved9 :1;
+    u32 reserved8 :1;
     
     u32 watchdog_interrupt_en :1;
     u32 rom_fail :1;
-    u32 reserved4 :1;
     u32 reserved5 :1;
+    u32 reserved4 :1;
 
     u32 page_0_instr_halt_en :1;
     u32 page_0_data_halt_en :1;
@@ -49,12 +49,12 @@ struct cpu_status {
             u32 ma_data_bytemask_fifo_overflow :1;
             u32 ma_outstanding_read_fifo_overflow :1;
             u32 ma_outstanding_write_fifo_overflow :1;
-            u32 reserved :11;
+            u32 reserved16 :11;
             u32 instruction_fetch_stall :1;
             u32 data_access_stall :1;
-            u32 reserved2 :1;
+            u32 reserved13 :1;
             u32 interrupt_received :1;
-            u32 reserved3 :1;
+            u32 reserved11 :1;
             u32 halted :1;
             u32 register_address_trap :1;
             u32 memory_address_trap :1;
@@ -73,11 +73,11 @@ struct cpu_status {
 
 struct cpu_event_mask {
     u32 unknown :18;
-    u32 reserved :1;
+    u32 reserved13 :1;
     u32 interrupt :1;
     u32 spad_underflow :1;
     u32 soft_halted :1;
-    u32 reserved2 :1;
+    u32 reserved9 :1;
     u32 fio_abort :1;
     u32 align_halted :1;
     u32 bad_pc_halted  :1;
@@ -85,7 +85,7 @@ struct cpu_event_mask {
     u32 page_0_instr_halted :1;
     u32 page_0_data_halted :1;
     u32 bad_instr_halted :1;
-    u32 reserved3 :1;
+    u32 reserved1 :1;
     u32 breakpoint :1;
 };
 
@@ -101,9 +101,14 @@ struct cpu_breakpoint {
 };
 
 struct cpu_last_branch_address {
-    u32 addr_word :30;
-    u32 type :1;
-    u32 reserved :1;
+    union {
+        u32 address;
+	struct {
+	    u32 addr_word :30;
+	    u32 type :1;
+	    u32 reserved :1;
+	};
+    };
 };
 
 struct cpu_regs {

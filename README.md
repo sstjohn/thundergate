@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.4.0
+                                 Version 0.4.1
                         Copyright (c) 2015 Saul St John
 
                             <a href="http://thundergate.io">http://thundergate.io</a>
@@ -47,7 +47,7 @@ These instructions assume a Debian 8 host.
 $ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
             gnu-efi python python-ctypeslib libgmp-dev libmpfr-dev libmpc-dev \
             python-pip ipython
-$ sudo pip install capstone
+$ sudo pip install capstone bidict
 $ sudo easy_install git+http://github.com/nebula/python-eficompressor.git
     ~~~
 
