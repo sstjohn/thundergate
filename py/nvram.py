@@ -469,3 +469,14 @@ class Nvram(rflip.nvram):
             self.eeprom_hdr.mfg.feat_cfg |= tg.TG3_FEAT_PXE
 
         self._flush_mfg_feat_cfg()
+
+    def install_null_bc(self):
+        nvstart = self.eeprom_hdr.bs.bc_nvram_start
+        nvlen = self.eeprom_hdr.bs.bc_words * 4
+
+        nullcode = "\x0a\x00\x20\x02\x00\x00\x00\x00"
+        nullcode += "\x0a\x00\x20\x00\x00\x00\x00\x00"
+        nullcode += "\x00" * (nvlen - len(nullcode) - 4)
+        nullcode += struct.pack("i", zlib.crc32(nullcode))
+
+        self.write_block(nvstart, nullcode)

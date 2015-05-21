@@ -18,8 +18,6 @@
 
 import ctypes
 
-import device
-
 import sys
 import tglib as tg
 

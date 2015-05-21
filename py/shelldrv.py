@@ -28,10 +28,12 @@ pm.out_template = 'Out<\\#>: '
 cfg.PlainTextFormatter.type_printers = {int: lambda n, p, cycle: p.text("0x%x" % n),
                                         long: lambda n, p, cycle: p.text("0x%x" % n)}
 
-from IPython.terminal.embed import InteractiveShellEmbed
-embed = InteractiveShellEmbed(config = cfg,
-        banner1="[+] launching interactive shell",
-        exit_msg="[+] interactive shell terminating")
+cfg.InteractiveShellApp.exec_lines = ['from magic import _register_device_magic',
+                                      '_register_device_magic(dev)']
+
+cfg.TerminalInteractiveShell.banner1 = "[+] launching interactive shell"
+
+from IPython import start_ipython
 
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
@@ -52,10 +54,9 @@ class ShellDriver(object):
         with TestDriver(self.dev) as tdrv:
             tdrv.run()
 
-    def run(self, loc = None):
-        dev = self.dev
-        test = self.test
-        if loc is not None:
-            embed(local_ns=loc)
-        else:
-            embed()
+    def run(self, loc):
+        start_ipython(argv=[], 
+                      user_ns=loc, 
+                      config=cfg, 
+                      banner1="[+] launching interactive shell", 
+                      exit_msg="[+] interactive shell terminating")

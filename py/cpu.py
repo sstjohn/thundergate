@@ -20,8 +20,6 @@ import struct
 import rflip
 from socket import htonl
 from ctypes import c_char, c_uint, cast, pointer, POINTER
-from IPython.core.magic import (Magics, magics_class, line_magic,
-                        cell_magic, line_cell_magic)
 from bidict import bidict
 
 mips_regs = bidict(zero=0,
@@ -67,7 +65,7 @@ class Cpu(rflip.cpu):
     def tr_read(self, addr, count):
         if addr >= 0x08000000 and addr < 0x08010000:
             raddr = (addr & 0xffff) | 0x30000
-        elif addr >= 0x40000000 and addr < 0x40005000:
+        elif addr >= 0x40000000 and addr < 0x40010000:
             raddr = (addr & 0xffff) | 0x20000
         elif addr >= 0xc0000000:
             raddr = addr & 0xffff
@@ -221,82 +219,7 @@ class Cpu(rflip.cpu):
         self.resume()
 
     def tg3db(self, en=1):
-        @magics_class
-        class DebugMagic(Magics):
-
-                def __init__(self, shell, cpu):
-                        super(DebugMagic, self).__init__(shell)
-                        self.cpu = cpu
-
-                @line_magic
-                def u(self, addr = None):
-                        if None is addr or addr == '':
-                                self.cpu.dis_pc()
-                        else:
-                                self.cpu.dis_at(addr)
-
-                @line_magic
-                def s(self, arg):
-                    self.cpu.mode.single_step = 1
-                    self.cpu.dis_pc()
-
-                @line_magic
-                def h(self, arg):
-                    self.cpu.halt()
-
-                @line_magic
-                def g(self, addr):
-                    if '' == addr: addr = None
-                    self.cpu.go(addr)
-
-                @line_magic
-                def bp(self, arg):
-                    if None is arg or '' == arg:
-                        print "hardware breakpoint at %08x" % self.cpu.breakpoint.address,
-                        print "%s" % ("disabled" if self.cpu.breakpoint.disabled else "enabled")
-                    elif arg == '-':
-                        self.cpu.clear_breakpoint()
-                    else:
-                        self.cpu.set_breakpoint(int(arg, 0))
-
-                @line_magic
-                def reset(self, arg): self.cpu.reset()
-
-                @line_magic
-                def reg(self, arg):
-                    try:
-                        return getattr(self.cpu, "r%d" % int(arg))
-                    except:
-                        return getattr(self.cpu, "r%d" % mips_regs[arg])
-                
-                @line_magic
-                def pc(self, arg): return self.cpu.pc
-
-                @line_magic
-                def ir(self, arg): return self.cpu.instruction
-
-                @line_magic
-                def rh(self, arg):
-                    self.cpu._dev.grc.fastboot_pc.enable = 0
-                    self.cpu.status.word = 0xffffffff
-                    self.cpu.mode.reset = 1
-                    self.cpu.mode.halt = 1
-                    self.u(None)
-
-                @line_magic
-                def su(self, arg):
-                    if self.cpu.status.halted != 1:
-                        raise Exception("halt cpu first")
-                    lpc = self.cpu.pc
-                    t = eval('lambda x: x.%s' % arg)
-                    
-                    while not t(self.cpu):
-                        lpc = self.cpu.pc
-                        self.cpu.mode.single_step = 1
-
-                    print "%s became true at %08x" % (str(arg), lpc)
-                    self.u(lpc)
-
+        from magic import DebugMagic
         print "[+] loading %s debug magics" % self.block_name
         ip = get_ipython()
         magics = DebugMagic(ip, self)
