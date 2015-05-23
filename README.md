@@ -179,7 +179,7 @@ control of the device and host system by an Ethernet-connected peer.
 Currently supported actions include reading and writing from device and host
 memory, forging network traffic, sending host interrupts, and manipulation
 of PCI capabilities configuration. Please refer to ```fw/app.c```, 
-```include/proto.c```, and ```py/client.py``` for specifics.
+```include/proto.h```, and ```py/client.py``` for specifics.
 
 # Further Reading #
 
