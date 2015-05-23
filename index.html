@@ -49,10 +49,10 @@ engines, nonvolatile storage, and one or more MIPS processors.</p>
 <p>These features are exposed by ThunderGate through an easy-to-use Python
 interface, allowing for reverse engineering, development, and deployment of
 custom firmware and applications. Examples provided include a userspace VFIO
-tap driver, a firmware application capable of transparently monitoring
+tap driver, a firmware application capable of monitoring and manipulating
 network traffic and host memory, and a PCI option rom containing an EFI boot
-services driver which inhibits the employ of Intel I/O MMU address
-translation (VT-d).</p>
+services driver which can either inhibit the employ or compromise the
+effectivity of Intel I/O MMU address translation (VT-d).</p>
 
 <h1>
 <a id="warning" class="anchor" href="#warning" aria-hidden="true"><span class="octicon octicon-link"></span></a>Warning</h1>
@@ -62,9 +62,9 @@ the GPLv3. You assume all risks in using it. Please refer to the COPYING file
 for details.</p>
 
 <h1>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h1>
+<a id="host-installation" class="anchor" href="#host-installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Host Installation</h1>
 
-<p>These instructions assume a Debian 8 host.</p>
+<p>These instructions assume a Debian 8 x86_64 host.</p>
 
 <ol>
 <li>
@@ -73,7 +73,7 @@ for details.</p>
 <pre><code>$ sudo apt-get install build-essential curl texinfo flex git     \
       ca-certificates gnu-efi python python-ctypeslib libgmp-dev \
       libmpfr-dev libmpc-dev python-pip ipython
-$ sudo pip install capstone
+$ sudo pip install capstone bidict
 $ sudo easy_install git+http://github.com/nebula/python-eficompressor.git
 </code></pre>
 </li>
@@ -123,7 +123,7 @@ $ make
 </ol>
 
 <h1>
-<a id="setup" class="anchor" href="#setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setup</h1>
+<a id="host-setup" class="anchor" href="#host-setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Host Setup</h1>
 
 <p>You should begin by taking a backup image of the factory-released firmware as
 it was when you bought the device. This image can be used to restore the device
@@ -152,7 +152,7 @@ $ echo $BDF | sudo tee /sys/bus/pci/drivers/vfio-pci/bind
 <p>All other functionality is available regardless of the kernel driver in use.</p>
 
 <h1>
-<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
+<a id="local-usage" class="anchor" href="#local-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Local Usage</h1>
 
 <pre>$ py/main.py -h
 usage: main.py [-h] [-v] [-d] [-t] [-s] device
@@ -171,7 +171,7 @@ optional arguments:
 </pre>
 
 <h2>
-<a id="user-content-installing-thundergate-firmware" class="anchor" href="#installing-thundergate-firmware" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing ThunderGate Firmware</h2>
+<a id="user-content-firmware-installation" class="anchor" href="#firmware-installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Firmware Installation</h2>
 
 <p>The <code>-i</code> argument can be used to install all example firmware
 to a Thunderbolt Gigabit Ethernet adapter device as follows:</p>
@@ -201,6 +201,16 @@ Copyright (c) 2015 Saul St John
 [+] writing block length 1630 at offset 6c00.........
 [+] tg3 inspector terminated
 </pre>
+
+<h2>
+<a id="user-content-firmware-usage" class="anchor" href="#firmware-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Firmware Usage</h2>
+
+<pre>The ThunderGate firmware implements a network protocol allowing for remote
+control of the device and host system by an Ethernet-connected peer.
+Currently supported actions include reading and writing from device and host
+memory, forging network traffic, sending host interrupts, and manipulation
+of PCI capabilities configuration. Please refer to ```fw/app.c```,
+```include/proto.h```, and ```py/client.py``` for specifics.</pre>
 
 <h1>
 	<a id="user-content-further-reading" class="anchor" href="#further-reading" aria-hidden="true"><span class="octicon octicon-link"></span></a>Further Reading</h1>
