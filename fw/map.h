@@ -45,6 +45,7 @@
 #include "cpu.h"
 #include "ftq.h"
 #include "dmac.h"
+#include "msi.h"
 #include "grc.h"
 #include "otp.h"
 #include "tcp_seg_ctrl.h"
@@ -85,6 +86,7 @@ volatile struct cpu_regs rxcpu;
 volatile struct cpu_regs txcpu;
 volatile struct ftq_regs ftq;
 volatile struct dmac_regs dmac;
+volatile struct msi_regs msi;
 volatile struct grc_regs grc;
 volatile struct otp_regs otp;
 volatile u32 pci_debug[64];

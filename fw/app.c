@@ -16,12 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "map.h"
 #include "mbuf.h"
 #include "mbox.h"
 #include "rdi.h"
 #include "proto.h"
 #include "utypes.h"
+
+#define GATE_BASE_GCW 0xc
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
 
@@ -96,9 +99,9 @@ void post_buf(void *_src, u32 len, u8 cmd)
 
 	u32 *src = (u32 *)_src;
 	for (i = 0; i < len; i++)
-		gencomm[i + 1] = *src++;
+		gencomm[i + GATE_BASE_GCW + 1] = *src++;
 
-	gencomm[0] = 0x88b50000 | (cmd << 8);
+	gencomm[GATE_BASE_GCW] = 0x88b50000 | (cmd << 8);
 }
 	
 void send_buf(void *_src, u32 len, u8 cmd)
@@ -135,7 +138,41 @@ void send_buf(void *_src, u32 len, u8 cmd)
     ftq.mac_tx.q.word = (buf << 16) | buf;
 }
 
-int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2)
+void send_msi(u32 addr_hi, u32 addr_low, u32 data)
+{
+    pci.msi_upper_address = addr_hi;
+    pci.msi_lower_address = addr_low;
+    pci.msi_data = data;
+    msi.mode.msi_message = 0;
+
+    pci.command.bus_master = 1;
+    pci.msi_cap_hdr.msi_enable = 1;
+    msi.mode.enable = 1;
+    msi.status.msi_pci_request = 1;
+}
+
+void cap_ctrl(u32 cap, u32 enabled)
+{
+	u32 mask = 0;
+	
+	if (cap & CAP_POWER_MANAGEMENT)
+		mask |= 0x8;
+	if (cap & CAP_VPD)
+		mask |= 0x4;
+	if (cap & CAP_MSI)
+		mask |= 0x2;
+	if (cap & CAP_MSIX)
+		mask |= 0x1;
+
+	u32 tmp = regs[0x6440 >> 2];
+	if (enabled)
+		tmp |= mask;
+	else
+		tmp &= ~mask;
+	regs[0x6440 >> 2] = tmp;
+}
+
+int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2, u32 arg3)
 {
     u64 data;
     u32 *data_hi, *data_low;
@@ -160,6 +197,16 @@ int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2)
 
             dma_read_qword(arg1, arg2, data_hi, data_low);
             (*reply)(&data, 2, READ_DMA_REPLY);
+            break;
+
+	case SEND_MSI_CMD:
+	    send_msi(arg1, arg2, arg3);
+	    (*reply)(0, 0, SEND_MSI_ACK);
+	    break;
+
+	case CAP_CTRL_CMD:
+	    cap_ctrl(arg1, arg2);
+	    (*reply)(0, 0, CAP_CTRL_ACK);
             break;
 
         default:
@@ -234,6 +281,8 @@ void dev_init()
     set_and_wait(rdma.mode.enable);
 
     mac_cpy((void *)0xc0000412, my_mac);
+
+    gencomm[GATE_BASE_GCW] = 0x88b50000;
 }
 
 u16 phy_read(u16 reg)
@@ -353,7 +402,7 @@ int app()
 
     setup_rx_rules();
     
-    reset_timer();
+    /* reset_timer(); */
 
     while (1) {
         if (grc.rxcpu_event.timer) {
@@ -376,25 +425,29 @@ int app()
 			u8 cmd = tmp & 0xff;
 			u32 arg1 = rxmbuf[mbuf].data.word[14];
 			u32 arg2 = rxmbuf[mbuf].data.word[15];
+			u32 arg3 = rxmbuf[mbuf].data.word[16];
 
 			mac_cpy(((u8 *)&rxmbuf[mbuf].data.word[11]) + 2, remote_mac);
-			
+
 			ftq.rdiq.peek.skip = 1;
 			
 			ftq.mbuf_clust_free.q.word = mbufs;
-			
-			handle(send_buf, cmd, arg1, arg2);
+
+			handle(send_buf, cmd, arg1, arg2, arg3);
 		}
 	    }
 	    grc.rxcpu_event.rdiq = 0;
 	}
-	if ((gencomm[0] >> 16) == 0x88b5) {
-		if (!(gencomm[0] & 0xff00)) {
-			u8 cmd = gencomm[0] & 0xff;
-			u32 arg1 = gencomm[1];
-			u32 arg2 = gencomm[2];
+	if ((gencomm[GATE_BASE_GCW] >> 16) == 0x88b5) {
+		if (!(gencomm[GATE_BASE_GCW] & 0xff00)) {
+			u8 cmd = gencomm[GATE_BASE_GCW] & 0xff;
+			if (cmd) {
+				u32 arg1 = gencomm[GATE_BASE_GCW + 1];
+				u32 arg2 = gencomm[GATE_BASE_GCW + 2];
+				u32 arg3 = gencomm[GATE_BASE_GCW + 3];
 
-			handle(post_buf, cmd, arg1, arg2);
+				handle(post_buf, cmd, arg1, arg2, arg3);
+			}
 		}
 	}
     } 
