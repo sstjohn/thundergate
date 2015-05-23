@@ -24,6 +24,9 @@
 #include <wchar.h>
 #include "acpi.h"
 
+#define DISABLE_DMAR 1
+#define IDENTITY_MAP_FIRST_16M 1
+#define IDENTITY_MAP_DRHD 1
 
 u32 tg_dp[12] = {0};
 u32 tg_dp_len = 0;
@@ -227,13 +230,18 @@ void walk_dmar(void *a)
 	    offset += ln;
 	} while(offset < tbl_sz);
 
-	u32 rmrr_sz = create_rmrr(a + offset, 0, 0xffffff);
+	u32 rmrr_sz = 0;
+
+#if !DISABLE_DMAR
+#if IDENTITY_MAP_FIRST_16M
+	rmrr_sz = create_rmrr(a + offset, 0, 0xffffff);
 	if (rmrr_sz) {
 		dmar_tbl->length += rmrr_sz;
 		Print(L"\n\nnew rmrr created: \n");
 		walk_rmrr(a + offset);
 	} 
-
+#endif
+#if IDENTITY_MAP_DRHD
 	if (drhd_base != 0) {
 		rmrr_sz = create_rmrr(a + dmar_tbl->length, drhd_base, drhd_base + 0x1000);
 
@@ -243,7 +251,8 @@ void walk_dmar(void *a)
 			dmar_tbl->length += rmrr_sz;
 		}
 	}
-	
+#endif
+#endif
 	if (!rmrr_sz) {
 	    Print(L"\n\nDMARF!\n");
 	    CopyMem(dmar_tbl->sig, "RAMD", 4);

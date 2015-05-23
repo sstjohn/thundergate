@@ -21,16 +21,26 @@
 
 #define PROTO_VER		1
 
-#define PING_CMD    		1
-#define PING_REPLY  		2
+#define PING_CMD    		0x01
+#define PING_REPLY  		0x02
 
-#define READ_LOCAL_CMD    	3
-#define READ_LOCAL_REPLY	4
+#define READ_LOCAL_CMD    	0x03
+#define READ_LOCAL_REPLY	0x04
 
-#define WRITE_LOCAL_CMD		5
-#define WRITE_LOCAL_ACK		6
+#define WRITE_LOCAL_CMD		0x05
+#define WRITE_LOCAL_ACK		0x06
 
-#define READ_DMA_CMD		7
-#define	READ_DMA_REPLY		8
+#define READ_DMA_CMD		0x07
+#define	READ_DMA_REPLY		0x08
+
+#define SEND_MSI_CMD		0x09
+#define SEND_MSI_ACK		0x0a
+
+#define CAP_CTRL_CMD		0x0b
+#define CAP_CTRL_ACK		0x0c
+# define CAP_POWER_MANAGEMENT 		0x8
+# define CAP_VPD			0x4
+# define CAP_MSI			0x2
+# define CAP_MSIX			0x1
 
 #endif

@@ -95,11 +95,11 @@ class TestDriver(object):
         for tl in (False, True):
             for pl in (False, True):
                 for hi in (False, True):
-                    dev.grc.pcie_tl_sel = 1 if tl else 0
-                    dev.grc.pcie_pl_sel = 1 if pl else 0
-                    dev.grc.pcie_hi1k_en = 1 if hi else 0
+                    dev.grc.mode.pcie_tl_sel = 1 if tl else 0
+                    dev.grc.mode.pcie_pl_sel = 1 if pl else 0
+                    dev.grc.mode.pcie_hi1k_en = 1 if hi else 0
 
-                    for i in range(0x6100, 0x6800, 4):
+                    for i in range(0x7c00, 0x8000, 4):
                         if 0 == i % 32:
                             print
                             print "%04x'%d%d%d: " % (i, 1 if hi else 0, 1 if pl else 0, 1 if tl else 0),

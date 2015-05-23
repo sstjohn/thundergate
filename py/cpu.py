@@ -88,15 +88,34 @@ class Cpu(rflip.cpu):
         md.detail = True
         md.skipdata = True
 
-        def dis_at(self, addr, count=1, verbose=0, pc=None, bp=None):
-            if pc is None:
-                pc = self.pc
+        def get_ir_dis(self):
+            if not self.status.halted:
+                raise Exception("cpu not halted")
+
+            i = struct.pack(">I", self.ir)
+            r = self.md.disasm(i, 4).next()
+            if r.operands > 0:
+                 for j in r.operands:
+                     eff = 0
+                     if j.type == MIPS_OP_REG:
+                         eff = getattr(self, "r%d" % (j.reg - 1))
+                     if j.type == MIPS_OP_IMM:
+                         eff = j.imm
+                     if j.type == MIPS_OP_MEM:
+                         eff = getattr(self, "r%d" % (j.reg - 1))
+                         eff += int(j.mem.disp)
+                     j.eff = eff
+            return r
+
+        ird = property(get_ir_dis, None)
+
+        def dis_at(self, addr, count=1, verbose=0):
+            pc = self.pc
             
             raw = self.tr_read(addr, count)
 
             dis = self.md.disasm(raw, addr)
-            dis = self._disp_dis(dis, verbose=verbose, pc=pc, bp=bp)
-
+            dis = self._disp_dis(dis, verbose=verbose)
 
         def dis_pc(self, context=0, verbose=1):
             if not self.status.halted:
@@ -104,9 +123,9 @@ class Cpu(rflip.cpu):
             pc = self.pc
             bp = self.breakpoint.address
             if context != 0:
-                self.dis_at(pc - (context * 4), count = (context * 2) + 1, pc = pc, bp = bp)
+                self.dis_at(pc - (context * 4), count = (context * 2) + 1)
             else:
-                self.dis_at(self.pc, verbose=verbose, pc = pc, bp = bp)
+                self.dis_at(self.pc, verbose=verbose)
 
         def _disp_dis(self, decoded, verbose=0, pc=None, bp=None):
             for i in decoded:

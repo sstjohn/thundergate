@@ -45,6 +45,29 @@ class PCI_PCIe_cap(object):
         self.extended_tag_field_supported = (tmp >> 5) & 0x1
         # etc...
 
+    def set_relaxed_ordering(self, val = 0, verbose = 1):
+        tmp = self.cfg.read(self.offset + 8)
+        ns = (tmp >> 4) & 1
+        val = 1 if val > 0 else 0
+        if ns != val:
+            if verbose:
+                print "[+] %s no snoop bit" % ("setting" if val == 1 else "clearing")
+            tmp &= (~0x10 | val << 4)
+            self.cfg.write(self.offset + 8, tmp)
+        elif verbose > 1:
+            print "[-] not touching no snoop bit"
+
+    def set_no_snoop(self, val = 0, verbose = 1):
+        r = self.cfg.read(self.offset + 8)
+        tgt = (r & ~0x800) | (0x800 if val > 0 else 0)
+        if r != tgt:
+            if verbose:
+                print "[+] %s relaxed ordering" % ("enabling" if val > 0 else "disabling")
+            self.cfg.write(self.offset + 8, tgt)
+        elif verbose > 1:
+            print "[-] not touching relaxed ordering bit"
+
+
 class PCI_MSIX_cap(object):
     def __init__(self, cfg, offset):
         self.cfg = cfg

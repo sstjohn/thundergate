@@ -19,6 +19,7 @@
 from IPython.core.magic import (Magics, magics_class, line_magic,
                         cell_magic, line_cell_magic)
 from cpu import mips_regs
+import reutils
 
 @magics_class
 class DeviceMagic(Magics):
@@ -27,12 +28,12 @@ class DeviceMagic(Magics):
         self.dev = dev
 
     @line_magic
-    def bd(self, arg):
+    def d(self, arg):
         b = getattr(self.dev, arg)
         b.block_disp()
 
     @line_magic
-    def rxcpudbg(self, arg):
+    def rxdbg(self, arg):
         self.dev.rxcpu.tg3db()
 
 def _register_device_magic(dev):
@@ -48,9 +49,17 @@ class DebugMagic(Magics):
         @line_magic
         def u(self, addr = None):
                 if None is addr or addr == '':
-                        self.cpu.dis_pc()
+                    self.cpu.dis_pc()
                 else:
-                        self.cpu.dis_at(addr)
+                    cnt = 1
+                    try:
+                        args = addr.split()
+                        addr = int(args[0], 0)
+                        if (len(args) > 1):
+                            cnt = int(args[1], 0)
+                    except:
+                        pass
+                    self.cpu.dis_at(addr, cnt)
 
         @line_magic
         def s(self, arg):
@@ -64,6 +73,9 @@ class DebugMagic(Magics):
         @line_magic
         def g(self, addr):
             if '' == addr: addr = None
+            else:
+                try: addr = int(addr, 0)
+                except: pass
             self.cpu.go(addr)
 
         @line_magic
@@ -90,7 +102,7 @@ class DebugMagic(Magics):
         def pc(self, arg): return self.cpu.pc
 
         @line_magic
-        def ir(self, arg): return self.cpu.instruction
+        def ir(self, arg): return self.cpu.ir
 
         @line_magic
         def rh(self, arg):
@@ -101,15 +113,29 @@ class DebugMagic(Magics):
             self.u(None)
 
         @line_magic
-        def su(self, arg):
+        def su(self, arg, verbose=1):
             if self.cpu.status.halted != 1:
                 raise Exception("halt cpu first")
             lpc = self.cpu.pc
-            t = eval('lambda x: x.%s' % arg)
+            t = eval('lambda cpu: cpu.%s' % arg)
             
             while not t(self.cpu):
                 lpc = self.cpu.pc
                 self.cpu.mode.single_step = 1
 
-            print "%s became true at %08x" % (str(arg), lpc)
-            self.u(lpc)
+            if verbose:
+                print "\"%s\" became true after %08x:" % (str(arg), lpc)
+                self.u(lpc)
+
+                print "\npc now %08x: " % self.cpu.pc
+                self.u(None)
+
+        @cell_magic
+        def tr(self, line, cell):
+            if self.cpu.status.halted != 1:
+                raise Exception("cpu not halted")
+
+            while True:
+                self.su(line, verbose=0)
+                exec cell
+                self.cpu.mode.single_step = 1

@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.4.3
+                                 Version 0.5.0
                         Copyright (c) 2015 Saul St John
 
                             <a href="http://thundergate.io">http://thundergate.io</a>
@@ -26,10 +26,10 @@ engines, nonvolatile storage, and one or more MIPS processors.
 These features are exposed by ThunderGate through an easy-to-use Python
 interface, allowing for reverse engineering, development, and deployment of
 custom firmware and applications. Examples provided include a userspace VFIO
-tap driver, a firmware application capable of transparently monitoring
+tap driver, a firmware application capable of monitoring and manipulating
 network traffic and host memory, and a PCI option rom containing an EFI boot
-services driver which inhibits the employ of Intel I/O MMU address
-translation (VT-d).
+services driver which can either inhibit the employ or compromise the 
+effectivity of Intel I/O MMU address translation (VT-d).
 
 # Warning #
 
@@ -37,7 +37,7 @@ This is experimental software made available to you under the terms of
 the GPLv3. You assume all risks in using it. Please refer to the COPYING file
 for details.
 
-# Installation #
+# Host Installation #
 
 These instructions assume a Debian 8 host.
 
@@ -93,7 +93,7 @@ $ cd thundergate
 $ make
     ~~~
 
-# Setup #
+# Host Setup #
 
 You should begin by taking a backup image of the factory-released firmware as
 it was when you bought the device. This image can be used to restore the device
@@ -122,7 +122,7 @@ $ echo $BDF | sudo tee /sys/bus/pci/drivers/vfio-pci/bind
 
 All other functionality is available regardless of the kernel driver in use.
 
-# Usage #
+# Local Usage #
 
 <pre>
 $ py/main.py -h
@@ -141,7 +141,7 @@ optional arguments:
   -s, --shell    ipython cli
 </pre>
 
-## Installing ThunderGate Firmware ##
+## Firmware Installation ##
 
 The ```-i``` argument can be used to install all example firmware
 to a Thunderbolt Gigabit Ethernet adapter device as follows:
@@ -149,7 +149,7 @@ to a Thunderbolt Gigabit Ethernet adapter device as follows:
  $ sudo py/main.py -i 0a:00.0
 
           ThunderGate
-	 Version 0.3.3
+	 Version 0.5.0
 Copyright (c) 2015 Saul St John
      http://thundergate.io
 
@@ -171,6 +171,15 @@ Copyright (c) 2015 Saul St John
 [+] writing block length 1630 at offset 6c00.........
 [+] tg3 inspector terminated
 </pre>
+
+## Firmware Usage ##
+
+The ThunderGate firmware implements a network protocol allowing for remote
+control of the device and host system by an Ethernet-connected peer.
+Currently supported actions include reading and writing from device and host
+memory, forging network traffic, sending host interrupts, and manipulation
+of PCI capabilities configuration. Please refer to ```fw/app.c```, 
+```include/proto.c```, and ```py/client.py``` for specifics.
 
 # Further Reading #
 

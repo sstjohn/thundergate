@@ -122,7 +122,7 @@ struct cpu_regs {
     u32 ofs_18;
     u32 pc;
     
-    u32 instruction;
+    u32 ir;
     u32 spad_uflow;
     u32 watchdog_enable;
     u32 watchdog_vector;
