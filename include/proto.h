@@ -19,28 +19,35 @@
 #ifndef _PROTO_H_
 #define _PROTO_H_
 
-#define PROTO_VER		1
+#define CMD_REPLY		0x8000
+#define ERROR_REPLY		0xffff
 
 #define PING_CMD    		0x01
-#define PING_REPLY  		0x02
+#define PING_REPLY  		PING_CMD | CMD_REPLY
 
-#define READ_LOCAL_CMD    	0x03
-#define READ_LOCAL_REPLY	0x04
+#define READ_LOCAL_CMD    	0x02
+#define READ_LOCAL_REPLY	READ_LOCAL_CMD | CMD_REPLY
 
-#define WRITE_LOCAL_CMD		0x05
-#define WRITE_LOCAL_ACK		0x06
+#define WRITE_LOCAL_CMD		0x03
+#define WRITE_LOCAL_ACK		WRITE_LOCAL_CMD | CMD_REPLY
 
-#define READ_DMA_CMD		0x07
-#define	READ_DMA_REPLY		0x08
+#define READ_DMA_CMD		0x04
+#define	READ_DMA_REPLY		READ_DMA_CMD | CMD_REPLY
 
-#define SEND_MSI_CMD		0x09
-#define SEND_MSI_ACK		0x0a
+#define SEND_MSI_CMD		0x05
+#define SEND_MSI_ACK		SEND_MSI_CMD | CMD_REPLY
 
-#define CAP_CTRL_CMD		0x0b
-#define CAP_CTRL_ACK		0x0c
+#define CAP_CTRL_CMD		0x06
+#define CAP_CTRL_ACK		CAP_CTRL_CMD | CMD_REPLY
 # define CAP_POWER_MANAGEMENT 		0x8
 # define CAP_VPD			0x4
 # define CAP_MSI			0x2
 # define CAP_MSIX			0x1
+
+#define HIDE_FUNC_CMD		0x07
+#define HIDE_FUNC_ACK		HIDE_FUNC_CMD | CMD_REPLY
+
+#define PME_ASSERT_CMD		0x08
+#define PME_ASSERT_ACK		PME_ASSERT_CMD | CMD_REPLY
 
 #endif

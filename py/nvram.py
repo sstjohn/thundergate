@@ -471,12 +471,15 @@ class Nvram(rflip.nvram):
         self._flush_mfg_feat_cfg()
 
     def install_null_bc(self):
-        nvstart = self.eeprom_hdr.bs.bc_nvram_start
-        nvlen = self.eeprom_hdr.bs.bc_words * 4
-
         nullcode = "\x0a\x00\x20\x02\x00\x00\x00\x00"
         nullcode += "\x0a\x00\x20\x00\x00\x00\x00\x00"
-        nullcode += "\x00" * (nvlen - len(nullcode) - 4)
-        nullcode += struct.pack("i", zlib.crc32(nullcode))
+        self.install_bc(nullcode)
 
-        self.write_block(nvstart, nullcode)
+    def install_bc(self, image):
+        iwords = len(image) >> 2
+        image += struct.pack("i", zlib.crc32(image))
+        nvstart = self.eeprom_hdr.bs.bc_nvram_start
+        self.write_block(nvstart, image)
+        self.eeprom_hdr.bs.bc_words = iwords
+        self._flush_eeprom_header(8, 4)
+

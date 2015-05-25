@@ -24,10 +24,15 @@ import sys
 import ctypes
 import device
 
+xtra = [("reg", 0xc0000000),
+        ("rom", 0x40000000),
+        ("scratchpad", 0x08000000)]
+
 if __name__ == "__main__":
     for m in device.tg3_mem:
         print "%s = 0x%x;" % (m[0], m[2])
     for r in device.tg3_blocks:
         print "%s = 0x%x;" % (r[0], r[1] + 0xc0000000)
-
+    for x in xtra:
+        print "%s = 0x%x;" % (x[0], x[1])
 

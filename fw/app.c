@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "map.h"
 #include "mbuf.h"
 #include "mbox.h"
@@ -88,9 +87,9 @@ void local_write_dword(u32 addr, u32 val)
 	*p = val;
 }
 
-typedef void (*reply_t)(void *src, u32 len, u8 cmd);
+typedef void (*reply_t)(void *src, u32 len, u16 cmd);
 
-void post_buf(void *_src, u32 len, u8 cmd)
+void post_buf(void *_src, u32 len, u16 cmd)
 {
 	int i;
 
@@ -101,10 +100,10 @@ void post_buf(void *_src, u32 len, u8 cmd)
 	for (i = 0; i < len; i++)
 		gencomm[i + GATE_BASE_GCW + 1] = *src++;
 
-	gencomm[GATE_BASE_GCW] = 0x88b50000 | (cmd << 8);
+	gencomm[GATE_BASE_GCW] = 0x88b50000 | cmd;
 }
 	
-void send_buf(void *_src, u32 len, u8 cmd)
+void send_buf(void *_src, u32 len, u16 cmd)
 {
     int i;
     u32 buf = 0xad;
@@ -125,7 +124,7 @@ void send_buf(void *_src, u32 len, u8 cmd)
 
     mac_cpy(remote_mac, (u8 *)(&mb->data.word[10]));
     mac_cpy(my_mac, ((u8 *)&mb->data.word[11]) + 2);
-    mb->data.word[13] = 0x88b50000 | (PROTO_VER << 8) | cmd;
+    mb->data.word[13] = 0x88b50000 | cmd;
 
     u32 *src = (u32 *)_src;
     i = 4;
@@ -164,15 +163,33 @@ void cap_ctrl(u32 cap, u32 enabled)
 	if (cap & CAP_MSIX)
 		mask |= 0x1;
 
-	u32 tmp = regs[0x6440 >> 2];
+	u32 tmp = reg[0x6440 >> 2];
 	if (enabled)
 		tmp |= mask;
 	else
 		tmp &= ~mask;
-	regs[0x6440 >> 2] = tmp;
+	reg[0x6440 >> 2] = tmp;
 }
 
-int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2, u32 arg3)
+void hide_func(u32 func, u32 hidden)
+{
+    u32 mask = (1 << (func - 1)) & 7;
+    u32 val = cpmu.control.hide_pcie_function;
+    if (hidden)
+	val |= mask;
+    else
+        val &= ~mask;
+    cpmu.control.hide_pcie_function = val;
+}
+
+void pme_assert()
+{
+	if (!pci.pm_ctrl_status.pme_enable)
+		pci.pm_ctrl_status.pme_enable = 1;
+	grc.misc_local_control.pme_assert = 1;
+}
+
+int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 {
     u64 data;
     u32 *data_hi, *data_low;
@@ -209,8 +226,18 @@ int handle(reply_t reply, u8 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    (*reply)(0, 0, CAP_CTRL_ACK);
             break;
 
+	case HIDE_FUNC_CMD:
+	    hide_func(arg1, arg2);
+	    (*reply)(0, 0, HIDE_FUNC_ACK);
+	    break;
+
+	case PME_ASSERT_CMD:
+	    pme_assert();
+	    (*reply)(0, 0, PME_ASSERT_ACK);
+	    break;
+
         default:
-	    (*reply)(&arg1, 2, 0xff);
+	    (*reply)(&arg1, 2, ERROR_REPLY);
             break;
     }
 }
@@ -359,7 +386,6 @@ void check_link()
 	if (grc.mode.host_stack_up)
 		return;
 
-
 	if (!emac.tx_mac_status.link_up) {
 		emac.status.link_state_changed = 1;
 		return;
@@ -421,8 +447,7 @@ int app()
 		} else { 
 			u32 mbufs = ftq.rdiq.peek.word & 0x3ffff;
 			u32 tmp = rxmbuf[mbuf].data.word[13];
-			u8 ver = (tmp & 0xff00) >> 8;
-			u8 cmd = tmp & 0xff;
+			u16 cmd = tmp & 0xffff;
 			u32 arg1 = rxmbuf[mbuf].data.word[14];
 			u32 arg2 = rxmbuf[mbuf].data.word[15];
 			u32 arg3 = rxmbuf[mbuf].data.word[16];
@@ -439,8 +464,8 @@ int app()
 	    grc.rxcpu_event.rdiq = 0;
 	}
 	if ((gencomm[GATE_BASE_GCW] >> 16) == 0x88b5) {
-		if (!(gencomm[GATE_BASE_GCW] & 0xff00)) {
-			u8 cmd = gencomm[GATE_BASE_GCW] & 0xff;
+		if (!(gencomm[GATE_BASE_GCW] & 0x8000)) {
+			u16 cmd = gencomm[GATE_BASE_GCW] & 0xffff;
 			if (cmd) {
 				u32 arg1 = gencomm[GATE_BASE_GCW + 1];
 				u32 arg2 = gencomm[GATE_BASE_GCW + 2];

@@ -50,18 +50,13 @@
 #include "otp.h"
 #include "tcp_seg_ctrl.h"
 
-volatile u32 page_zero[64];
-volatile struct rcb send_ring[16];
-volatile struct rcb recv_ret_ring[16];
 volatile u32 gencomm[300];
-volatile u32 buf_desc[4096];
-volatile u32 std_rr[4096];
+volatile struct mbuf txmbuf0[0];
 volatile struct mbuf txmbuf1[0];
-volatile struct mbuf txmbuf2[0];
 volatile struct mbuf rxmbuf[0];
-volatile u32 scratchpad[0];
 volatile u32 rom[0];
-volatile u32 regs[0];
+volatile u32 reg[0];
+volatile u32 scratchpad[0];
 volatile struct pci_regs pci;
 volatile u32 hpmb[0];
 volatile struct lpmb_regs lpmb;
@@ -83,13 +78,11 @@ volatile struct bufman_regs bufman;
 volatile struct rdma_regs rdma;
 volatile struct wdma_regs wdma;
 volatile struct cpu_regs rxcpu;
-volatile struct cpu_regs txcpu;
 volatile struct ftq_regs ftq;
 volatile struct dmac_regs dmac;
 volatile struct msi_regs msi;
 volatile struct grc_regs grc;
 volatile struct otp_regs otp;
-volatile u32 pci_debug[64];
 volatile struct tcp_seg_ctrl_regs tcp_seg_ctrl;
 
 #endif
