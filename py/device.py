@@ -333,7 +333,7 @@ class Device(object):
                 if 0 == res:
                     print "[+] firmware compilation successful"
                     self.nvram.init(wr=1)
-                    self.nvram.load_rxcpu_fw("fw/fw.img")
+                    self.nvram.install_thundergate()
                     self.reset()
                 else:
                     print "[-] firmware compilation failed!"

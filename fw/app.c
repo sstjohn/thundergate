@@ -309,6 +309,9 @@ void dev_init()
 
     mac_cpy((void *)0xc0000412, my_mac);
 
+    if (gencomm[0] == 0x4b657654)
+	gencomm[0] = ~0x4b657654;
+
     gencomm[GATE_BASE_GCW] = 0x88b50000;
 }
 
@@ -428,7 +431,7 @@ int app()
 
     setup_rx_rules();
     
-    /* reset_timer(); */
+    reset_timer();
 
     while (1) {
         if (grc.rxcpu_event.timer) {

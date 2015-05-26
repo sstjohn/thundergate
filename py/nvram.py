@@ -17,15 +17,17 @@
 '''
 
 import struct
+from struct import pack, unpack
 import rflip
 import block_utils
 import sys
 import tglib as tg
-import zlib
+from zlib import crc32
 from ctypes import *
 from efirom import build_efi_rom
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
+from socket import htonl, ntohl
 
 class Nvram(rflip.nvram):
     _locked = False
@@ -324,7 +326,7 @@ class Nvram(rflip.nvram):
             self.write_dword(ofs + i, data)
 
     def write_dir_image(self, index, data, itype = 0, sram_ofs = 0x10000, xa = False, xb = False, nv_ofs = None):
-        data += struct.pack("i", zlib.crc32(data))
+        data += struct.pack("i", crc32(data))
 
         if nv_ofs == None:
             nv_ofs = self.eeprom_hdr.directory[index].nvram_start
@@ -335,16 +337,6 @@ class Nvram(rflip.nvram):
         self._set_dir_entry(index, nv_ofs, nv_len, itype, sram_ofs, xa, xb)
         self.write_block(nv_ofs, data)
         return nv_len
-
-    def load_image(self, fname, itype = 0, sram_ofs = 0x10000, xa = False, xb = False):
-        data = ''
-        with open(fname, "rb") as f:
-            data = f.read()
-
-        if len(data) == 0:
-            raise Exception("no data to write")
-
-        self.write_dir_image(0, data, itype, sram_ofs, xa, xb)
 
     def load_efi_drv(self, fname, compress=0):
         data = ''
@@ -360,38 +352,21 @@ class Nvram(rflip.nvram):
         if not self.getpxe():
             self.setpxe()
 
-    def load_rxcpu_fw(self, fname):
-        data = ''
-        with open(fname, "rb") as f:
-            data = f.read()
-
-        if len(data) == 0:
-            raise Exception("failed to load firmware image")
-
-        self.write_dir_image(1, data, 1, 0x08008000, True)
-        
-        if not self.getasf():
-            self.setasf()
-
     def install_thundergate(self, efidrv="efi/dmarf.efi", cpufw="fw/fw.img"):
         start = self.eeprom_hdr.directory[0].nvram_start
         
         data = ''
+        with open(cpufw, "rb") as f:
+            data = f.read()
+        print "[+] installing thundergate rxcpu firmware"
+        self.install_bc(data)
+        bclen = len(data) + 0x204
+
         with open(efidrv, "rb") as f:
             data = f.read()
         oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
         print "[+] installing thundergate oprom"
-        start += self.write_dir_image(0, oprom, nv_ofs=start)
-        
-        with open(cpufw, "rb") as f:
-            data = f.read()
-        print "[+] installing thundergate rxcpu firmware"
-        self.write_dir_image(1, data, 1, 0x08008000, True, nv_ofs=start)
-
-        if not self.getpxe():
-            self.setpxe()
-        if not self.getasf():
-            self.setasf()
+        start += self.write_dir_image(0, oprom, nv_ofs=bclen)
     
     def dump_eeprom(self, fname):
         with open(fname, "wb") as f:
@@ -428,7 +403,7 @@ class Nvram(rflip.nvram):
         data = self._eeprom_hdr_buf[mfg_start:mfg_start + mfg_len - 4]
         rdata = ''.join([data[i:i+4][::-1] for i in range(0, len(data), 4)])
         
-        crc = struct.unpack("I", struct.pack("!i", zlib.crc32(rdata)))[0]
+        crc = struct.unpack("I", struct.pack("!i", crc32(rdata)))[0]
         self.eeprom_hdr.mfg.crc = crc
 
         update_ofs = mfg_start + self.eeprom_hdr.mfg.__class__.crc.offset
@@ -476,10 +451,13 @@ class Nvram(rflip.nvram):
         self.install_bc(nullcode)
 
     def install_bc(self, image):
+        image += struct.pack("i", crc32(image))
         iwords = len(image) >> 2
-        image += struct.pack("i", zlib.crc32(image))
         nvstart = self.eeprom_hdr.bs.bc_nvram_start
         self.write_block(nvstart, image)
         self.eeprom_hdr.bs.bc_words = iwords
-        self._flush_eeprom_header(8, 4)
+        crc = crc32(pack("<IIII", *unpack(">IIII", self._eeprom_hdr_buf[0:0x10])))
+        crc = unpack("<I", pack(">i", crc))[0]
+        self.eeprom_hdr.bs.crc = crc 
+        self._flush_eeprom_header(8, 0xc)
 

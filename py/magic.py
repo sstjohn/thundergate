@@ -33,6 +33,28 @@ class DeviceMagic(Magics):
         b.block_disp()
 
     @line_magic
+    def rd(self, line):
+        parts = line.split()
+        if len(parts) == 0:
+            pass 
+        elif len(parts) == 1:
+            ofs = int(parts[0], 0)
+            print "%04x: %08x" % (ofs, self.dev.reg[ofs >> 2])
+        else:
+            start = int(parts[0], 0)
+            end = int(parts[1], 0)
+            i = 0
+            for ofs in range(start, end, 4):
+                if i % 0x20 == 0:
+                    print "\n%04x: " % ofs,
+                elif i % 0x10 == 0:
+                    print "   ",
+                elif i % 8 == 0:
+                    print " ",
+                print "%08x" % self.dev.reg[ofs >> 2],
+                i += 4
+
+    @line_magic
     def rxdbg(self, arg):
         self.dev.rxcpu.tg3db()
 
