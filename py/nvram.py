@@ -358,7 +358,7 @@ class Nvram(rflip.nvram):
         data = ''
         with open(cpufw, "rb") as f:
             data = f.read()
-        print "[+] installing thundergate rxcpu firmware"
+        print "[+] installing thundergate bootcode"
         self.install_bc(data)
         bclen = len(data) + 0x204
 

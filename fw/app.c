@@ -23,6 +23,7 @@
 #include "proto.h"
 #include "utypes.h"
 
+
 #define GATE_BASE_GCW 0xc
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
@@ -270,21 +271,65 @@ void reset_timer()
     grc.rxcpu_event_enable.timer = 1;
 }
 
+void nv_load_mac(u8 *mac)
+{
+    u64 tmp;
+
+    while (nvram.auto_sense_status.busy);
+    nvram.sw_arb.req_set0 = 1;
+    while (!nvram.sw_arb.arb_won0);
+    nvram.access.enable = 1;
+
+    nvram.command.wr = 0;
+    nvram.command.erase = 0;
+    nvram.command.first = 1;
+    nvram.command.last = 1;
+
+    nvram.data_address = 0x7c;
+    nvram.command.doit = 1;
+    while (!nvram.command.done);
+
+    tmp = nvram.read_data;
+    tmp <<= 32;
+
+    nvram.command.done = 1;
+
+    nvram.data_address = 0x80;
+    nvram.command.doit = 1;
+    while (!nvram.command.done);
+    tmp |= nvram.read_data;
+
+    nvram.access.enable = 0;
+    nvram.sw_arb.req_clr0 = 1;
+
+    for (int i = 5; i >= 0; i--) {
+	mac[i] = tmp & 0xff;
+	tmp >>= 8;
+    }
+}
+
 void dev_init() 
 {
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
+
 
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
     grc.rxcpu_event_enable.word = 0;    
     grc.rxcpu_event_enable.emac = 1;
+
+    grc.misc_local_control.auto_seeprom = 1;
     grc.misc_config.gphy_keep_power_during_reset = 1;
+    grc.misc_config.disable_grc_reset_on_pcie_block = 1;
+    grc.misc_config.timer_prescaler = 0x7f;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
     while (ftq.reset.word);
+
+    emac.mode.port_mode = 2;
 
     set_and_wait(emac.mode.en_fhde);
     set_and_wait(emac.mode.en_rde);
@@ -301,18 +346,25 @@ void dev_init()
     emac.tx_mac_lengths.ipg_crs = 0x2;
     emac.tx_mac_lengths.ipg = 0x6;
 
+    emac.mii_mode.enable_constant_mdc_clock_speed = 1;
+    emac.mii_mode.phy_address = 1;
+    emac.mii_mode.mii_clock_count = 0xb;
+
     set_and_wait(emac.tx_mac_mode.enable);
     set_and_wait(emac.rx_mac_mode.enable);
 
     set_and_wait(wdma.mode.enable);
     set_and_wait(rdma.mode.enable);
 
-    mac_cpy((void *)0xc0000412, my_mac);
+    nv_load_mac(my_mac);
+
+    mac_cpy(my_mac, (void *)0xc0000412);
+
+    gencomm[GATE_BASE_GCW] = 0x88b50000;
 
     if (gencomm[0] == 0x4b657654)
 	gencomm[0] = ~0x4b657654;
 
-    gencomm[GATE_BASE_GCW] = 0x88b50000;
 }
 
 u16 phy_read(u16 reg)
@@ -434,13 +486,13 @@ int app()
     reset_timer();
 
     while (1) {
+	if (grc.rxcpu_event.emac) {
+		check_link();
+	}
         if (grc.rxcpu_event.timer) {
             send_buf(test_buf, 13, 0);
 	    reset_timer();
         }
-	if (grc.rxcpu_event.emac) {
-		check_link();
-	}
 	if (grc.rxcpu_event.rdiq) {
 	    if (ftq.rdiq.peek.valid == 1 && ftq.rdiq.peek.pass == 0) {
 		u32 mbuf = ftq.rdiq.peek.head_rxmbuf_ptr;

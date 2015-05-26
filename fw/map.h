@@ -49,6 +49,7 @@
 #include "grc.h"
 #include "otp.h"
 #include "tcp_seg_ctrl.h"
+#include "nvram.h"
 
 volatile u32 gencomm[300];
 volatile struct mbuf txmbuf0[0];
@@ -83,6 +84,7 @@ volatile struct dmac_regs dmac;
 volatile struct msi_regs msi;
 volatile struct grc_regs grc;
 volatile struct otp_regs otp;
+volatile struct nvram_regs nvram;
 volatile struct tcp_seg_ctrl_regs tcp_seg_ctrl;
 
 #endif

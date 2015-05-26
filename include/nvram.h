@@ -172,6 +172,18 @@ struct nvram_arbitration_watchdog {
 	u32 reserved_4_0 :5;
 };
 
+struct nvram_auto_sense_status {
+	u32 reserved21 :11;
+	u32 device_id :5;
+	u32 reserved13 :3;
+	u32 state :5;
+	u32 reserved6 :2;
+	u32 successful :1;
+	u32 enable :1;
+	u32 reserved1 :3;
+	u32 busy :1;
+};
+
 struct nvram_regs {
 	struct nvram_command command;
 	struct nvram_status status;
@@ -190,6 +202,6 @@ struct nvram_regs {
 
 	u32 address_lockout_boundary;
 	u32 address_lockout_address_counter_debug;
-        u32 auto_sense_status;
+        struct nvram_auto_sense_status auto_sense_status;
 };
 #endif
