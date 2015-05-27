@@ -27,7 +27,11 @@
 #define GATE_BASE_GCW 0xc
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
-
+#define wait(x) do { \
+			u32 start = *timer; \
+			while (*timer >= start && *timer < (start + x)); \
+		} while (0)
+	
 char *test_buf = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
 
 u8 my_mac[6] = { 0 };
@@ -60,17 +64,11 @@ void dma_read_qword(u32 addr_hi, u32 addr_low, u32 *data_hi, u32 *data_low)
 	
 	lpmb.box[mb_rbd_standard_producer].low = 1;
 
-	while (!ma.mode.enable)
-		ma.mode.enable = 1;
-	while (!bufman.mode.enable)
-		bufman.mode.enable = 1;
-	while (!rdma.mode.enable)
-		rdma.mode.enable = 1;
-	while (!rbdi.mode.enable)
-		rbdi.mode.enable = 1;
+    	pci.command.bus_master = 1;
+	rdma.mode.enable = 1;
+	rbdi.mode.enable = 1;
 
-	u32 start = *timer;
-	while (*timer >= start && *timer < (start + 100));
+	wait(100);
 
 	*data_hi = *((u32 *)0x6000);
 	*data_low = *((u32 *)0x6004);	
@@ -149,6 +147,16 @@ void send_msi(u32 addr_hi, u32 addr_low, u32 data)
     pci.msi_cap_hdr.msi_enable = 1;
     msi.mode.enable = 1;
     msi.status.msi_pci_request = 1;
+}
+
+void nmi(u32 did)
+{
+	u32 addr = 0xfee00300;
+	u32 data = 2;
+	data |= (4 << 8);
+	data |= (1 << 14);
+	data |= (2 << 18);
+	send_msi(0, addr, data);
 }
 
 void cap_ctrl(u32 cap, u32 enabled)
@@ -237,6 +245,11 @@ int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    (*reply)(0, 0, PME_ASSERT_ACK);
 	    break;
 
+	case SEND_NMI_CMD:
+	    nmi(0);
+            (*reply)(0, 0, SEND_NMI_ACK);
+	    break;
+
         default:
 	    (*reply)(&arg1, 2, ERROR_REPLY);
             break;
@@ -310,9 +323,10 @@ void nv_load_mac(u8 *mac)
 
 void dev_init() 
 {
+    grc.power_management_debug.perst_override = 1;
+
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
-
 
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
@@ -518,18 +532,14 @@ int app()
 	    }
 	    grc.rxcpu_event.rdiq = 0;
 	}
-	if ((gencomm[GATE_BASE_GCW] >> 16) == 0x88b5) {
-		if (!(gencomm[GATE_BASE_GCW] & 0x8000)) {
-			u16 cmd = gencomm[GATE_BASE_GCW] & 0xffff;
-			if (cmd) {
-				u32 arg1 = gencomm[GATE_BASE_GCW + 1];
-				u32 arg2 = gencomm[GATE_BASE_GCW + 2];
-				u32 arg3 = gencomm[GATE_BASE_GCW + 3];
+	u32 gb = gencomm[GATE_BASE_GCW];
+	if (((gb >> 15) == (0x88b5 << 1)) && (gb & 0x7fff)) {
+		u32 arg1 = gencomm[GATE_BASE_GCW + 1];
+		u32 arg2 = gencomm[GATE_BASE_GCW + 2];
+		u32 arg3 = gencomm[GATE_BASE_GCW + 3];
 
-				handle(post_buf, cmd, arg1, arg2, arg3);
-			}
-		}
-	}
+		handle(post_buf, gb & 0xffff, arg1, arg2, arg3);
+        }
     } 
 
     return 0;

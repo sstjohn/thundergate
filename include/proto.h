@@ -20,7 +20,7 @@
 #define _PROTO_H_
 
 #define CMD_REPLY		0x8000
-#define ERROR_REPLY		0xffff
+#define ERROR_REPLY		0xf001
 
 #define PING_CMD    		0x01
 #define PING_REPLY  		PING_CMD | CMD_REPLY
@@ -49,5 +49,8 @@
 
 #define PME_ASSERT_CMD		0x08
 #define PME_ASSERT_ACK		PME_ASSERT_CMD | CMD_REPLY
+
+#define SEND_NMI_CMD		0x09
+#define SEND_NMI_ACK		SEND_NMI_CMD | CMD_REPLY
 
 #endif

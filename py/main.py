@@ -45,7 +45,7 @@ if __name__ == "__main__":
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.6.0
+                                 Version 0.6.1
                         Copyright (c) 2015 Saul St John
                              http://thundergate.io
 """
