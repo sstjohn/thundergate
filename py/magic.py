@@ -129,6 +129,7 @@ class DebugMagic(Magics):
         @line_magic
         def rh(self, arg):
             self.cpu._dev.grc.fastboot_pc.enable = 0
+            self.cpu._dev.mem.write_dword(0xb50, 0)
             self.cpu.status.word = 0xffffffff
             self.cpu.mode.reset = 1
             self.cpu.mode.halt = 1

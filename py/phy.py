@@ -20,47 +20,16 @@ from time import sleep
 
 usleep = lambda x: sleep(x / 1000000.0)
 
-class Phy(object):
-    def __init__(self, dev, phyaddr):
-        self.emac = dev.emac
-        self.addr = phyaddr
+class GPhy(object):
+    def __init__(self, bus, port):
+        self._smi_bus = bus
+        self._smi_port = port
 
-    def read_reg(self, reg, addr = None):
-        if None == addr:
-            addr = self.addr
-        self.emac.mii_communication.phy_addr = addr
-        self.emac.mii_communication.reg_addr = reg
-        self.emac.mii_communication.write_command = 0
-        self.emac.mii_communication.read_command = 1
-        self.emac.mii_communication.start_busy = 1
-        cnt = 0
-        while self.emac.mii_communication.start_busy:
-            if cnt > 20:
-                raise Exception("mii communication timed out")
-            usleep(100)
-            cnt += 1
+    def read_reg(self, addr):
+        return self._smi_bus.read_reg(self._smi_port, addr)
 
-        if self.emac.mii_communication.read_failed:
-            raise Exception("mii read failed")
-
-        return self.emac.mii_communication.data
-       
-    def write_reg(self, reg, val, addr = None):
-        assert val & ~0xffff == 0
-        if None == addr:
-            addr = self.addr
-        self.emac.mii_communication.phy_addr = addr
-        self.emac.mii_communication.reg_addr = reg
-        self.emac.mii_communication.data = val
-        self.emac.mii_communication.write_command = 1
-        self.emac.mii_communication.read_command = 0
-        self.emac.mii_communication.start_busy = 1
-        cnt = 0
-        while self.emac.mii_communication.start_busy:
-            if cnt > 100:
-                raise Exception("mii communication timed out")
-            usleep(100)
-            cnt += 1
+    def write_reg(self, addr, val):
+        self._smi_bus.write_reg(self._smi_port, addr, val)
 
     def reset(self):
         self.write_reg(0, 0x8000)
@@ -123,28 +92,25 @@ class Phy(object):
         assert val == ((self.read_reg(19) & 2) != 0)
         return val
 
-    def dump_regs(self, addr=None):
-        if None == addr:
-            addr = self.addr
+    def get_eee_cap(self):
+        val = self._smi_bus.read_cl45(self._smi_port, 3, 0x14)
+        return {'gig': 4 == (val & 4), 'fast': 2 == (val & 2)}
 
-        for i in range(0, 32):
-            if addr == 1 and i == 0x18:
-                for j in range(0, 8):
-                    self.write_reg(0x18, j << 12 | 7, addr=addr)
-                    val = self.read_reg(0x18, addr=addr)
-                    print "%02x.%x : %04x" % (0x18, j, val)
-            elif addr == 1 and i == 0x1c:
-                for j in range(0, 32):
-                    self.write_reg(0x1c, j << 10, addr=addr)
-                    val = self.read_reg(0x1c, addr=addr)
-                    print "%02x.%02x : %04x" % (0x1c, j, val)
-            elif addr == 1 and i == 0x1d:
-                self.write_reg(0x1d, 0, addr=addr)
-                val = self.read_reg(0x1d, addr=addr)
-                print "1d.00 : %04x" % val
-                self.write_reg(0x1d, 0x8000, addr=addr)
-                val = self.read_reg(0x1d, addr=addr)
-                print "1d.01 : %04x" % val
-            else:
-                val = self.read_reg(i, addr=addr)
-                print "%02x   : %04x" % (i, val)
+    def get_eee_adv(self):
+        val = self._smi_bus.read_cl45(self._smi_port, 7, 0x3c)
+        return {'gig': 4 == (val & 4), 'fast': 2 == (val & 2)}
+    
+    def set_eee_adv(self, gig, fast):
+        val = (4 if gig else 0) | (2 if fast else 0)
+        self._smi_bus.write_cl45(self._smi_port, 7, 0x3c, val)
+
+    def get_eee_res(self):
+        val = self._smi_bus.read_cl45(self._smi_port, 7, 0x803e)
+        return {'gig': 4 == (val & 4), 'fast': 2 == (val & 2)}
+
+    def get_eee_ctrl(self):
+        val = self._smi_bus.read_cl45(self._smi_port, 7, 0x803d)
+        return {'lpi': 0 != (val & 0x8000), 'sgmii_an': 0 != (val & 0x4000)}
+
+    def dump_regs(self):
+        self._smi_bus.dump_regs(self._smi_port, True, True, True)
