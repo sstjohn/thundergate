@@ -108,16 +108,7 @@ class Smi(object):
         self._setup_cl45(port, devad, reg)
         self.write_reg(port, 0x0e, val)
 
-    def dump_regs(self, port, exp18=None, exp1c=None, exp1d=None):
-        if exp18 == None:
-            exp18 = (addr == 1)
-
-        if exp1c == None:
-            exp1c = (addr == 1)
-
-        if exp1d == None:
-            exp1d = (addr == 1)
-
+    def dump_regs(self, port, exp18=False, exp1c=False, exp1d=False):
         for i in range(0, 32):
             if exp18 and i == 0x18:
                 for j in range(0, 8):

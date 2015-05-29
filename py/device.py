@@ -27,7 +27,8 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 import rflip
 from memory import Memory
-from phy import GPhy
+from gphy import GPhy
+from pciephy import PCIePhy
 from smi import Smi
 from cpu import Cpu
 from nvram import Nvram
@@ -123,9 +124,11 @@ class Device(object):
 
         self.map_registers()
         self.map_memory()
+
         self.smi = Smi(self)
-        self.phy = GPhy(self.smi, 1)
+        self.gphy = GPhy(self.smi, 1)
         self.top = TopLevel(self.smi)
+        self.pcie_phy = PCIePhy(self.smi)
 
         return self
 

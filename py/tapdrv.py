@@ -445,7 +445,7 @@ class TapDriver(object):
 
     def _link_detect(self):
         print "[+] detecting link"
-        res = self.dev.phy.autonegotiate()
+        res = self.dev.gphy.autonegotiate()
         if not res & 0x8000:
             print "[-] no link detected"
             self._hcd = 0
@@ -453,8 +453,8 @@ class TapDriver(object):
             hcd = (res & 0x700) >> 8
             self._hcd = hcd
             if (hcd & 0x6) == 6:
-                txpause = self.dev.phy.may_send_pause()
-                rxpause = self.dev.phy.may_recv_pause()
+                txpause = self.dev.gphy.may_send_pause()
+                rxpause = self.dev.gphy.may_recv_pause()
                 if hcd & 1:
                     print "[+] full duplex gige link negotated (res: %08x, txpause: %s, rxpause: %s)" % (res, txpause, rxpause)
                     self.dev.emac.mode.half_duplex = 1
