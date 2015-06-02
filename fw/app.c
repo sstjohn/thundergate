@@ -149,14 +149,53 @@ void send_msi(u32 addr_hi, u32 addr_low, u32 data)
     msi.status.msi_pci_request = 1;
 }
 
-void nmi(u32 did)
+u32 read_nvram(u32 ofs)
 {
-	u32 addr = 0xfee00300;
-	u32 data = 2;
-	data |= (4 << 8);
-	data |= (1 << 14);
-	data |= (2 << 18);
-	send_msi(0, addr, data);
+	u32 r;
+
+	nvram.sw_arb.req_set0 = 1;
+	while (!nvram.sw_arb.arb_won0);
+	nvram.access.enable = 1;
+
+	nvram.data_address = ofs;
+
+	nvram.command.last = 1;
+	nvram.command.first = 1;
+	nvram.command.erase = 0;
+	nvram.command.wr = 0;
+	nvram.command.doit = 1;
+
+	while (!nvram.command.done);
+	r = nvram.read_data;
+
+	nvram.access.enable = 0;
+	nvram.sw_arb.req_clr0 = 1;
+
+	return r;
+}
+
+void write_nvram(u32 ofs, u32 val)
+{
+	nvram.sw_arb.req_set0 = 1;
+	while (!nvram.sw_arb.arb_won0);
+	
+	nvram.access.enable = 1;
+	nvram.access.write_enable = 1;
+	
+	nvram.data_address = ofs;
+	nvram.write_data = val;
+
+	nvram.command.last = 1;
+	nvram.command.first = 1;
+	nvram.command.erase = 0;
+	nvram.command.wr = 1;
+	nvram.command.doit = 1;
+
+	while (!nvram.command.done);
+
+	nvram.access.write_enable = 1;
+	nvram.access.enable = 0;
+	nvram.sw_arb.req_clr0 = 1;
 }
 
 void cap_ctrl(u32 cap, u32 enabled)
@@ -202,6 +241,7 @@ int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 {
     u64 data;
     u32 *data_hi, *data_low;
+    u32 tmp;
 
     switch(cmd) {
         case PING_CMD:
@@ -245,9 +285,14 @@ int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    (*reply)(0, 0, PME_ASSERT_ACK);
 	    break;
 
-	case SEND_NMI_CMD:
-	    nmi(0);
-            (*reply)(0, 0, SEND_NMI_ACK);
+	case READ_NVRAM_CMD:
+	    tmp = read_nvram(arg1);
+            (*reply)(&tmp, 1, READ_NVRAM_ACK);
+	    break;
+
+	case WRITE_NVRAM_CMD:
+	    write_nvram(arg1, arg2);
+	    (*reply)(0, 0, WRITE_NVRAM_ACK);
 	    break;
 
         default:
