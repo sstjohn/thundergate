@@ -19,10 +19,25 @@
 #ifndef _CFG_PORT_H_
 #define _CFG_PORT_H_
 
+struct cfg_port_cap_ctrl {
+	u32 unknown4 :28;
+	u32 pm_en :1;
+	u32 vpd_en :1;
+	u32 msi_en :1;
+	u32 msix_en :1;
+};
+
+struct cfg_port_bar_ctrl {
+	u32 unknown12 :20;
+	u32 rom_bar_sz :4;
+	u32 unknown4 :4;
+	u32 bar0_sz :4;
+};
+
 struct cfg_port_regs {
     u32 ofs_00;
     u32 ofs_04;
-    u32 ofs_08;
+    struct cfg_port_bar_ctrl bar_ctrl;
     u32 ofs_0c;
 
     u32 ofs_10;
@@ -40,7 +55,7 @@ struct cfg_port_regs {
     u32 ofs_38;
     u32 ofs_3c;
 
-    u32 ofs_40;
+    struct cfg_port_cap_ctrl cap_ctrl;
     u32 ofs_44;
     u32 ofs_48;
     u32 ofs_4c;

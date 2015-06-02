@@ -23,7 +23,6 @@
 #include "proto.h"
 #include "utypes.h"
 
-
 #define GATE_BASE_GCW 0xc
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
@@ -200,23 +199,14 @@ void write_nvram(u32 ofs, u32 val)
 
 void cap_ctrl(u32 cap, u32 enabled)
 {
-	u32 mask = 0;
-	
 	if (cap & CAP_POWER_MANAGEMENT)
-		mask |= 0x8;
+		cfg_port.cap_ctrl.pm_en = !!enabled;
 	if (cap & CAP_VPD)
-		mask |= 0x4;
+		cfg_port.cap_ctrl.vpd_en = !!enabled;
 	if (cap & CAP_MSI)
-		mask |= 0x2;
+		cfg_port.cap_ctrl.msi_en = !!enabled;
 	if (cap & CAP_MSIX)
-		mask |= 0x1;
-
-	u32 tmp = reg[0x6440 >> 2];
-	if (enabled)
-		tmp |= mask;
-	else
-		tmp &= ~mask;
-	reg[0x6440 >> 2] = tmp;
+		cfg_port.cap_ctrl.msix_en = !!enabled;
 }
 
 void hide_func(u32 func, u32 hidden)
@@ -384,7 +374,7 @@ void dev_init()
     grc.misc_config.disable_grc_reset_on_pcie_block = 1;
     grc.misc_config.timer_prescaler = 0x7f;
 
-    *((u32 *)0xc0006408) = 0x00010691;
+    cfg_port.bar_ctrl.rom_bar_sz = 0x6;    
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;

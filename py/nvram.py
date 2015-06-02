@@ -156,8 +156,7 @@ class Nvram(rflip.nvram):
     def load_eeprom_header(self):
         hdr_len = sizeof(tg.nvram_header)
         if tg.TG3_MAGIC != self.read_dword(0):
-            #raise Exception("unknown nvram format")
-            return
+            print "[-] warning: unknown nvram format"
 
         self._eeprom_hdr_buf = create_string_buffer(sizeof(tg.nvram_header))
         eeprom_words = cast(self._eeprom_hdr_buf, POINTER(c_uint32))

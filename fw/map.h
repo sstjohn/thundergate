@@ -50,6 +50,7 @@
 #include "otp.h"
 #include "tcp_seg_ctrl.h"
 #include "nvram.h"
+#include "cfg_port.h"
 
 volatile u32 gencomm[300];
 volatile struct mbuf txmbuf0[0];
@@ -82,6 +83,7 @@ volatile struct cpu_regs rxcpu;
 volatile struct ftq_regs ftq;
 volatile struct dmac_regs dmac;
 volatile struct msi_regs msi;
+volatile struct cfg_port_regs cfg_port;
 volatile struct grc_regs grc;
 volatile struct otp_regs otp;
 volatile struct nvram_regs nvram;
