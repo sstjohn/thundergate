@@ -25,17 +25,17 @@ class TopLevel(object):
         self._smi_bus = bus
 
     def _set_access(self, val):
-        self._smi_bus.write_exp1c(5, 0xb, val)
+        self._smi_bus.write_shd1c(5, 0xb, val)
 
     def _get_access(self):
-        return self._smi_bus.read_exp1c(5, 0xb)
+        return self._smi_bus.read_shd1c(5, 0xb)
 
     access = property(_get_access, _set_access)
 
     def _set_data(self, val):
-        self._smi_bus.write_exp1c(6, 0xc, val)
+        self._smi_bus.write_shd1c(6, 0xc, val)
 
     def _get_data(self):
-        return self._smi_bus.read_exp1c(6, 0xc)
+        return self._smi_bus.read_exp(3, 0xb)
 
     data = property(_get_data, _set_data)

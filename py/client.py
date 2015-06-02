@@ -21,14 +21,14 @@
 import argparse
 import socket
 from fcntl import ioctl
-import struct
+from struct import pack, unpack
 
 from clib import SIOCGIFHWADDR
 
 class Client(object):
     def __init__(self, iface):
         s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x88b5))
-        info = ioctl(s.fileno(), SIOCGIFHWADDR, struct.pack('256s', iface[:15]))
+        info = ioctl(s.fileno(), SIOCGIFHWADDR, pack('256s', iface[:15]))
         self.local_mac = info[18:24]
         print "local if mac is %s" % ':'.join(["%02x" % ord(i) for i in self.local_mac])
 
@@ -46,22 +46,38 @@ class Client(object):
             pkt += ('\x00' * (80 - len(pkt)))
         self.s.send(pkt)
 
-    def run(self):
-        print "Sending ping..."
-        test_pkt = '\x01\x01'
+    def run(self, cmd, args):
+        print "sending ping..."
+        test_pkt = '\x00\x01'
         self.send(test_pkt)
-        resp = self.s.recv(128)
+        while True:
+            resp = self.s.recv(128)
+            if resp[12:14] == '\x88\xb5' and resp[14:16] == '\x80\x01':
+                break
+
         remote_mac = resp[6:12]
         print "found thundergate at %s" % ":".join(["%02x" % ord(i) for i in remote_mac]) 
 
-        test_pkt = '\x01\x03\x00\x00\x00\x0c'
-        self.send(test_pkt, dst=remote_mac)
+        if cmd > 1:
+            pkt = pack(">H", cmd)
+            for a in args:
+                pkt += pack(">I", a)
 
-        resp = self.s.recv(128)
-        print "received response: %s" % repr(resp)
+            print "sending cmd type 0x%04x" % cmd
+            self.send(pkt, dst=remote_mac)
+            while True:
+                resp = self.s.recv(128)
+                if resp[12:14] == '\x88\xb5' and unpack(">H", resp[14:16])[0] == (0x8000 | cmd):
+                    break
+            print "response recvd: %s" % ''.join(["%02x" % ord(i) for i in resp[16:]])
+
+def auto_int(x):
+   return int(x, 0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='tg client')
     parser.add_argument('iface')
+    parser.add_argument('cmd', nargs='?', type=auto_int, default=0)
+    parser.add_argument('args', nargs='*', type=auto_int, default=[])
     args = parser.parse_args()
-    Client(args.iface).run()
+    Client(args.iface).run(args.cmd, args.args)

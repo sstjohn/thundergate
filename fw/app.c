@@ -323,10 +323,10 @@ void nv_load_mac(u8 *mac)
 
 void dev_init() 
 {
-    grc.power_management_debug.perst_override = 1;
-
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
+    
+    grc.power_management_debug.perst_override = 1;
 
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
@@ -338,6 +338,8 @@ void dev_init()
     grc.misc_config.gphy_keep_power_during_reset = 1;
     grc.misc_config.disable_grc_reset_on_pcie_block = 1;
     grc.misc_config.timer_prescaler = 0x7f;
+
+    *((u32 *)0xc0006408) = 0x00010691;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
@@ -378,7 +380,6 @@ void dev_init()
 
     if (gencomm[0] == 0x4b657654)
 	gencomm[0] = ~0x4b657654;
-
 }
 
 u16 phy_read(u16 reg)

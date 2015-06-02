@@ -57,22 +57,22 @@ class Smi(object):
             usleep(100)
             cnt += 1
 
-    def read_exp18(self, port, shadow):
+    def read_shd18(self, port, shadow):
         assert 0 <= shadow and shadow <= 7
         self.write_reg(port, 0x18, shadow << 12 | 7)
         return self.read_reg(port, 0x18)
 
-    def write_exp18(self, port, shadow, val):
+    def write_shd18(self, port, shadow, val):
         if val & shadow != shadow:
             raise Exception("shadow selector does not match parameter")
         self.write_reg(port, 0x18, val)
 
-    def read_exp1c(self, port, shadow):
+    def read_shd1c(self, port, shadow):
         assert 0 <= shadow and shadow <= 31
         self.write_reg(port, 0x1c, shadow << 10)
         return self.read_reg(port, 0x1c)
 
-    def write_exp1c(self, port, shadow, val):
+    def write_shd1c(self, port, shadow, val):
         assert 0 <= shadow and shadow <= 31
         assert 0 <= val
         val &= 0x7fff
@@ -82,12 +82,12 @@ class Smi(object):
             raise Exception("shadow selector does not match parameter")
         self.write_reg(port, 0x1c, 0x8000 | val)
 
-    def read_exp1d(self, port, shadow):
+    def read_shd1d(self, port, shadow):
         assert 0 <= shadow and shadow <= 1
         self.write_reg(port, 0x1d, shadow << 15)
         return self.read_reg(port, 0x1d)
 
-    def write_exp1d(self, port, shadow, val):
+    def write_shd1d(self, port, shadow, val):
         assert 0 <= shadow and shadow <= 1
         val = (val & 0x7fff) | (0x8000 if shadow > 1 else 0)
         self.write_reg(port, 0x1d, val)
@@ -108,17 +108,33 @@ class Smi(object):
         self._setup_cl45(port, devad, reg)
         self.write_reg(port, 0x0e, val)
 
+    def read_exp(self, port, reg):
+        o = self.read_reg(port, 0x17)
+        self.write_reg(port, 0x17, 0x0f00 | (reg & 0xff))
+        r = self.read_reg(port, 0x15)
+        self.write_reg(port, 0x17, o)
+        return r
+
+    def write_exp(self, port, reg, val):
+        assert 0 <= reg <= 0xffff
+        o = self.read_reg(port, 0x17)
+        self.write_reg(port, 0x17, 0x0f00 | (reg & 0xff))
+        self.write_reg(port, 0x15, val)
+        self.write_reg(port, 0x17, o)
+        return r
+
+
     def dump_regs(self, port, exp18=False, exp1c=False, exp1d=False):
         for i in range(0, 32):
             if exp18 and i == 0x18:
                 for j in range(0, 8):
-                    print "%02x.%x : %04x" % (0x18, j, self.read_exp18(port, j))
+                    print "%02x.%x : %04x" % (0x18, j, self.read_shd18(port, j))
             elif exp1c and i == 0x1c:
                 for j in range(0, 32):
-                    print "%02x.%02x : %04x" % (0x1c, j, self.read_exp1c(port, j))
+                    print "%02x.%02x : %04x" % (0x1c, j, self.read_shd1c(port, j))
             elif exp1d and i == 0x1d:
                 for j in range(0, 2):
-                    print "1d.%x : %04x" % (j, self.read_exp1d(port, j))
+                    print "1d.%x : %04x" % (j, self.read_shd1d(port, j))
             else:
                 val = self.read_reg(port, i)
                 print "%02x   : %04x" % (i, val)
