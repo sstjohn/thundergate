@@ -285,7 +285,6 @@ def analyze_diff(diff):
     print
 
 def whats_at(addr):
-    assert addr < 0x8000
     block_name = "unknown"
     reg_name = "unknown"
     b = tg3_blocks[0]

@@ -34,6 +34,38 @@ struct cfg_port_bar_ctrl {
 	u32 bar0_sz :4;
 };
 
+struct cfg_port_pci_id {
+    union {
+        struct {
+		u16 vid;
+		u16 did;
+	};
+	u32 word;
+    };
+};
+
+struct cfg_port_pci_sid {
+    union {
+        struct {
+            u16 ssid;
+            u16 svid;
+        };
+        u32 word;
+    };
+};
+
+struct cfg_port_pci_class {
+    union {
+        struct {
+	    u32 unknown24 :8;
+            u32 class_code :8;
+	    u32 subclass_code :8;
+	    u32 unknown0 :8;
+        };
+        u32 word;
+    };
+};
+ 
 struct cfg_port_regs {
     u32 ofs_00;
     u32 ofs_04;
@@ -51,9 +83,9 @@ struct cfg_port_regs {
     u32 ofs_2c;
 
     u32 ofs_30;
-    u32 ofs_34;
-    u32 ofs_38;
-    u32 ofs_3c;
+    struct cfg_port_pci_id pci_id;
+    struct cfg_port_pci_sid pci_sid;
+    struct cfg_port_pci_class pci_class;
 
     struct cfg_port_cap_ctrl cap_ctrl;
     u32 ofs_44;

@@ -20,6 +20,7 @@ from IPython.core.magic import (Magics, magics_class, line_magic,
                         cell_magic, line_cell_magic)
 from cpu import mips_regs
 import reutils
+from struct import pack, unpack
 
 @magics_class
 class DeviceMagic(Magics):
@@ -128,7 +129,6 @@ class DebugMagic(Magics):
 
         @line_magic
         def rh(self, arg):
-            self.cpu._dev.grc.fastboot_pc.enable = 0
             self.cpu._dev.mem.write_dword(0xb50, 0)
             self.cpu.status.word = 0xffffffff
             self.cpu.mode.reset = 1
@@ -162,3 +162,31 @@ class DebugMagic(Magics):
                 self.su(line, verbose=0)
                 exec cell
                 self.cpu.mode.single_step = 1
+    
+        @line_magic
+        def tr2(self, line):
+            if self.cpu.status.halted != 1:
+                raise Exception("cpu not halted")
+
+            while True:
+                self.cpu.mode.single_step = 1
+                i = self.cpu.ird
+                pc = self.cpu.pc
+                if i.mnemonic == 'lw':
+                    eff = i.operands[1].eff
+                    val = unpack(">I", self.cpu.tr_read(eff, 1))[0]
+                    if eff & 0xffff8000 == 0xc0000000:
+                        eff &= 0xffff
+                        b, n, _, _ = reutils.whats_at(eff)
+                        print "%08x: lw %08x from reg %04x (%s.%s)" % (pc, val, eff, b, n)
+                    else:
+                        print "%08x: lw %08x from %08x" % (pc, val, eff)
+                elif i.mnemonic == 'sw':
+                    eff = i.operands[1].eff
+                    val = i.operands[0].eff
+                    if eff & 0xffff8000 == 0xc0000000:
+                        eff &= 0xffff
+                        b, n, _, _ = reutils.whats_at(eff)
+                        print "%08x: sw %08x to reg %04x (%s.%s)" % (pc, val, eff, b, n)
+                    else:
+                        print "%08x: sw %08x to %08x" % (pc, val, eff)

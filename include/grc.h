@@ -111,14 +111,14 @@ struct grc_misc_local_control {
 struct grc_cpu_event {
     union {
         struct {
-            u32 sw_event_13 :1;
-            u32 reserved1 :1;
+            u32 flash :1;
+            u32 vpd :1;
             u32 timer :1;
             u32 sw_event_11 :1;
             u32 flow_attn :1;
             u32 rx_cpu_attn :1;
             u32 emac :1;
-            u32 reserved2 :1;
+            u32 reserved24 :1;
             u32 sw_event_10 :1;
             u32 hi_prio_mbox :1;
             u32 low_prio_mbox :1;
@@ -176,35 +176,35 @@ struct grc_cpu_event_enable {
     union {
         struct {
             u32 flash :1;
-            u32 reserved :1;
+            u32 vpd :1;
             u32 timer :1;
             u32 rom :1;
             u32 hc_module :1;
             u32 rx_cpu_module :1;
             u32 emac :1;
             u32 memory_map_enable :1;
-            u32 reserved2 :1;
+            u32 reserved23 :1;
             u32 high_prio_mbox :1;
             u32 low_prio_mbox :1;
             u32 dma :1;
-            u32 reserved3 :1;
-            u32 reserved4 :1;
-            u32 reserved5 :1;
+            u32 reserved19 :1;
+            u32 reserved18 :1;
+            u32 reserved17 :1;
             u32 asf_location_15 :1;
             u32 tpm_interrupt_enable :1;
             u32 asf_location_14 :1;
-            u32 reserved6 :1;
+            u32 reserved13 :1;
             u32 asf_location_13 :1;
             u32 unused_sdi :1;
             u32 sdc :1;
             u32 sdi :1;
             u32 rdiq :1;
             u32 asf_location_12 :1;
-            u32 reserved7 :1;
+            u32 reserved6 :1;
             u32 asf_location_11 :1;
-            u32 reserved8 :1;
+            u32 reserved4 :1;
             u32 asf_location_10 :1;
-            u32 reserved9 :1;
+            u32 reserved2 :1;
             u32 asf_location_9 :1;
             u32 asf_location_8 :1;
         };

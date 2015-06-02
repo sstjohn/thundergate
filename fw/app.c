@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "map.h"
 #include "mbuf.h"
 #include "mbox.h"
@@ -361,8 +362,6 @@ void dev_init()
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
     
-    grc.power_management_debug.perst_override = 1;
-
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
@@ -373,8 +372,13 @@ void dev_init()
     grc.misc_config.gphy_keep_power_during_reset = 1;
     grc.misc_config.disable_grc_reset_on_pcie_block = 1;
     grc.misc_config.timer_prescaler = 0x7f;
-
-    cfg_port.bar_ctrl.rom_bar_sz = 0x6;    
+    
+    grc.power_management_debug.perst_override = 1;
+   
+    cfg_port.pci_id.word = 0x88b51682;
+    cfg_port.pci_class.word = 0x00088000;
+    
+    cfg_port.bar_ctrl.rom_bar_sz = 0x6;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
