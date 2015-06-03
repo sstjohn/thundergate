@@ -419,6 +419,15 @@ void dev_init()
 
     if (gencomm[0] == 0x4b657654)
 	gencomm[0] = ~0x4b657654;
+    else {
+	    do {
+		    u32 tmp = *((u32 *)0xc0000088);
+		    tmp |= *((u32 *)0xc000008c);
+		    tmp |= *((u32 *)0xc0000090);
+		    if (tmp)
+			    asm("break");
+	    } while (1);
+    }
 }
 
 u16 phy_read(u16 reg)

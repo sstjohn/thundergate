@@ -41,7 +41,14 @@ class MemMgr(object):
             self.memfd = None
 
     def __attempt_hugetlb(self):
-        flags = c.MAP_ANONYMOUS | c.MAP_PRIVATE | c.MAP_LOCKED | c.MAP_HUGETLB
+        try:
+            with open("/proc/sys/vm/nr_hugepages", "r+") as hp:
+                a = int(hp.read())
+                if a < 20:
+                    hp.seek(0)
+                    hp.write('20')
+        except: pass
+        flags = c.MAP_ANONYMOUS | c.MAP_PRIVATE | c.MAP_LOCKED | c.MAP_HUGETLB | c.MAP_32BIT
         flags |= (21 << c.MAP_HUGE_SHIFT)
         prot = c.PROT_READ | c.PROT_WRITE
         sz = 2048 * 1024
@@ -123,7 +130,7 @@ class MemMgr(object):
         if self._hugetlb_available:
             assert self.page_sz == self._hugetlb_pgsz
             prot = c.PROT_READ | c.PROT_WRITE
-            flags = c.MAP_ANONYMOUS | c.MAP_PRIVATE | c.MAP_LOCKED | c.MAP_HUGETLB
+            flags = c.MAP_ANONYMOUS | c.MAP_PRIVATE | c.MAP_LOCKED | c.MAP_HUGETLB | c.MAP_32BIT
             flags |= (21 << c.MAP_HUGE_SHIFT)
             sz = self._hugetlb_pgsz
             page = c.mmap(0, sz, prot, flags, -1, 0)
