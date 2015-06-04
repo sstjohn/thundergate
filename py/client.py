@@ -25,51 +25,105 @@ from struct import pack, unpack
 
 from clib import SIOCGIFHWADDR
 
-class Client(object):
+def get_bytes_strs(a):
+    try:
+        return ["%02x" % o for o in a]
+    except:
+        return ["%02x" % ord(o) for o in a]
+
+class ThunderGateInterface:
     def __init__(self, iface):
+        self._socket_setup(iface)
+        self._find_gate()
+
+    def _socket_setup(self, iface):
         s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x88b5))
-        info = ioctl(s.fileno(), SIOCGIFHWADDR, pack('256s', iface[:15]))
-        self.local_mac = info[18:24]
-        print "local if mac is %s" % ':'.join(["%02x" % ord(i) for i in self.local_mac])
-
+        info = ioctl(s.fileno(), SIOCGIFHWADDR, pack('256s', iface[:15].encode('utf-8')))
+        self._local_mac = info[18:24]
+        print("local if mac is %s" % ':'.join(get_bytes_strs(self._local_mac)))
+        
         s.bind((iface, 0))
-        self.s = s
+        self._socket = s
 
-    def send(self, payload, src = None,
-            dst = '\xff\xff\xff\xff\xff\xff', etype = "\x88\xb5"):
+    def _find_gate(self):
+        print("sending ping...")
+        self._send_cmd(1)
+        resp = self._recv_resp()
+        self._tg_mac = resp[6:12]
+        print("found thundergate at %s" % ":".join(get_bytes_strs((self._tg_mac))))
+
+    def _send_pkt(self, payload, src = None,
+            dst = None, etype = b"\x88\xb5"):
 
         if src == None:
-            src = self.local_mac
+            src = self._local_mac
+
+        if dst == None:
+            try:
+                dst = self._tg_mac
+            except:
+                dst = b'\xff' * 6
 
         pkt = dst+src+etype+payload
         if len(pkt) < 80:
-            pkt += ('\x00' * (80 - len(pkt)))
-        self.s.send(pkt)
+            pkt += (b'\x00' * (80 - len(pkt)))
+        self._socket.send(pkt)
 
-    def run(self, cmd, args):
-        print "sending ping..."
-        test_pkt = '\x00\x01'
-        self.send(test_pkt)
+    def _send_cmd(self, cmd, args = [], src = None, dst = None,
+                etype = b"\x88\xb5"):
+        payload = pack(">H", cmd)
+        for a in args:
+            payload += pack(">I", a)
+        self._send_pkt(payload, src, dst, etype)
+        self._last_cmd = cmd
+
+    def _recv_resp(self, cmd_t = None, tg_mac = None):
+        if tg_mac == None:
+            try: tg_mac = self._tg_mac
+            except: pass
+        
+        if tg_mac == b'\xff' * 6:
+            tg_mac = None
+
+        if cmd_t == None:
+            try: cmd_t = self._last_cmd
+            except: pass
+
+        if cmd_t != None:
+            cmd_t |= 0x8000
+
         while True:
-            resp = self.s.recv(128)
-            if resp[12:14] == '\x88\xb5' and resp[14:16] == '\x80\x01':
+            resp = self._socket.recv(128)
+            if resp[12:14] == b'\x88\xb5':
+                if tg_mac != None and resp[6:12] != tg_mac:
+                    continue
+                if cmd_t != None and unpack(">H", resp[14:16])[0] != cmd_t:
+                    continue
                 break
 
-        remote_mac = resp[6:12]
-        print "found thundergate at %s" % ":".join(["%02x" % ord(i) for i in remote_mac]) 
+        return resp
 
-        if cmd > 1:
-            pkt = pack(">H", cmd)
-            for a in args:
-                pkt += pack(">I", a)
+    def read(self, addr, numb, buf=None):
+        addr_hi = addr >> 32
+        addr_lo = addr & 0xffffffff
+        args = [addr_hi, addr_lo, numb]
+        self._send_cmd(4, args)
+        r = self._recv_resp()
+        return r[16:]
+    
+    def readv(self, req):
+        for r in req:
+            yield (r[0], self.read(r[0], r[1]))
+    
+    def close(self):
+        pass
 
-            print "sending cmd type 0x%04x" % cmd
-            self.send(pkt, dst=remote_mac)
-            while True:
-                resp = self.s.recv(128)
-                if resp[12:14] == '\x88\xb5' and unpack(">H", resp[14:16])[0] == (0x8000 | cmd):
-                    break
-            print "response recvd: %s" % ''.join(["%02x" % ord(i) for i in resp[16:]])
+def client_main(gate, cmd, args):
+    if cmd > 1:
+        print("sending cmd type 0x%04x" % cmd)
+        gate._send_cmd(cmd, args)
+        resp = gate._recv_resp()
+        print("response recvd: %s" % ''.join(get_bytes_strs(resp[16:])))
 
 def auto_int(x):
    return int(x, 0)
@@ -80,4 +134,4 @@ if __name__ == "__main__":
     parser.add_argument('cmd', nargs='?', type=auto_int, default=0)
     parser.add_argument('args', nargs='*', type=auto_int, default=[])
     args = parser.parse_args()
-    Client(args.iface).run(args.cmd, args.args)
+    client_main(ThunderGateInterface(args.iface), args.cmd, args.args)

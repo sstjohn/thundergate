@@ -50,10 +50,10 @@ void dma_read_qword(u32 addr_hi, u32 addr_low, u32 *data_hi, u32 *data_low)
 	while (rbdi.mode.enable)
 		rbdi.mode.enable = 0;
 
-	lpmb.box[mb_rbd_standard_producer].low = 0;
-
 	rbdi.mode.reset = 1;
 	while (rbdi.mode.reset);
+
+	lpmb.box[mb_rbd_standard_producer].low = 0;
 
 	rdi.std_rcb.host_addr_hi = addr_hi;
 	rdi.std_rcb.host_addr_low = addr_low;
@@ -61,12 +61,10 @@ void dma_read_qword(u32 addr_hi, u32 addr_low, u32 *data_hi, u32 *data_low)
 	rdi.std_rcb.max_frame_len = 0;
 	rdi.std_rcb.nic_addr = 0x6000;
 	rdi.std_rcb.disable_ring = 0;
-	
-	lpmb.box[mb_rbd_standard_producer].low = 1;
 
-    	pci.command.bus_master = 1;
-	rdma.mode.enable = 1;
 	rbdi.mode.enable = 1;
+
+	lpmb.box[mb_rbd_standard_producer].low = 1;
 
 	wait(100);
 
@@ -143,7 +141,6 @@ void send_msi(u32 addr_hi, u32 addr_low, u32 data)
     pci.msi_data = data;
     msi.mode.msi_message = 0;
 
-    pci.command.bus_master = 1;
     pci.msi_cap_hdr.msi_enable = 1;
     msi.mode.enable = 1;
     msi.status.msi_pci_request = 1;
@@ -415,19 +412,14 @@ void dev_init()
 
     mac_cpy(my_mac, (void *)0xc0000412);
 
+    pci.command.bus_master = 1;
+
     gencomm[GATE_BASE_GCW] = 0x88b50000;
 
     if (gencomm[0] == 0x4b657654)
 	gencomm[0] = ~0x4b657654;
-    else {
-	    do {
-		    u32 tmp = *((u32 *)0xc0000088);
-		    tmp |= *((u32 *)0xc000008c);
-		    tmp |= *((u32 *)0xc0000090);
-		    if (tmp)
-			    asm("break");
-	    } while (1);
-    }
+
+
 }
 
 u16 phy_read(u16 reg)

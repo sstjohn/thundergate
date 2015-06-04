@@ -20,7 +20,7 @@
 #define _PROTO_H_
 
 #define CMD_REPLY		0x8000
-#define ERROR_REPLY		0xf001
+#define ERROR_REPLY		0xffff
 
 #define PING_CMD    		0x01
 #define PING_REPLY  		PING_CMD | CMD_REPLY
@@ -55,5 +55,6 @@
 
 #define WRITE_NVRAM_CMD		0x0a
 #define WRITE_NVRAM_ACK		WRITE_NVRAM_CMD | CMD_REPLY
+
 
 #endif

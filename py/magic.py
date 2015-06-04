@@ -18,6 +18,9 @@
 
 from IPython.core.magic import (Magics, magics_class, line_magic,
                         cell_magic, line_cell_magic)
+from elftools.elf.elffile import ELFFile
+from StringIO import StringIO
+
 from cpu import mips_regs
 import reutils
 from struct import pack, unpack
@@ -164,7 +167,18 @@ class DebugMagic(Magics):
                 self.su(line, verbose=0)
                 exec cell
                 self.cpu.mode.single_step = 1
-    
+   
+        @line_magic
+        def elf(self, line):
+            with open(line, "r") as f:
+                elf_data = StringIO(f.read())
+
+            self.elf = ELFFile(elf_data)
+            try:
+                self.dwarf = self.elf.get_dwarf_info()
+            except:
+                print "%s does not contain DWARF info" % line
+
         @line_magic
         def tr2(self, line):
             if self.cpu.status.halted != 1:
