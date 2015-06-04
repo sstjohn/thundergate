@@ -23,7 +23,31 @@ import socket
 from fcntl import ioctl
 from struct import pack, unpack
 
-from clib import SIOCGIFHWADDR
+try:
+    from inception import cfg, terminal
+    from inception.exceptions import InceptionException
+    _inception_support = True
+except:
+    _inception_support = False
+
+try: from clib import SIOCGIFHWADDR
+except: SIOCGIFHWADDR = 35111
+
+if _inception_support:
+    def initialize(opts, module):
+        if not opts.filename:
+            raise InceptionException('You must specify a network interface to use'
+                                     'this interface.')
+
+        try:
+            dry_run = opts.dry_run
+        except AttributeError:
+            dry_run = False
+
+        device = ThunderGateInterface(opts.filename)
+        memsize = 8 * 1024 * 1024 * 1024
+        return device, memsize
+
 
 def get_bytes_strs(a):
     try:
@@ -104,12 +128,21 @@ class ThunderGateInterface:
         return resp
 
     def read(self, addr, numb, buf=None):
-        addr_hi = addr >> 32
-        addr_lo = addr & 0xffffffff
-        args = [addr_hi, addr_lo, numb]
-        self._send_cmd(4, args)
-        r = self._recv_resp()
-        return r[16:]
+        data = b''
+        end = addr + numb
+        for ofs in range(0, numb, 0x40):
+            a = addr + ofs
+            addr_hi = a >> 32
+            addr_lo = a & 0xffffffff
+            cnt = 0x40 if a + 0x40 < end else end - a 
+            args = [addr_hi, addr_lo, cnt]
+            self._send_cmd(4, args)
+            r = self._recv_resp()
+            for i in range(16, len(r), 4):
+                if a + (i - 16) >= end:
+                    break
+                data += r[i+3:i+4] + r[i+2:i+3] + r[i+1:i+2] + r[i:i+1]
+        return data
     
     def readv(self, req):
         for r in req:

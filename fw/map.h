@@ -40,6 +40,7 @@
 #include "hc.h"
 #include "ma.h"
 #include "bufman.h"
+#include "bdrdma.h"
 #include "rdma.h"
 #include "wdma.h"
 #include "cpu.h"
@@ -88,5 +89,6 @@ volatile struct grc_regs grc;
 volatile struct otp_regs otp;
 volatile struct nvram_regs nvram;
 volatile struct tcp_seg_ctrl_regs tcp_seg_ctrl;
+volatile struct bdrdma_regs bdrdma;
 
 #endif

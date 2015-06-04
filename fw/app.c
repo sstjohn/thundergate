@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "map.h"
 #include "mbuf.h"
 #include "mbox.h"
@@ -43,15 +42,16 @@ void mac_cpy(const u8 *src, u8 *dst)
 		dst[i] = src[i];
 }
 
-void dma_read_qword(u32 addr_hi, u32 addr_low, u32 *data_hi, u32 *data_low)
+typedef void (*reply_t)(void *src, u32 len, u16 cmd);
+
+void dma_read(u32 addr_hi, u32 addr_low, u32 length, reply_t reply)
 {
 	volatile u32 *timer = &grc.timer;
-
-	while (rbdi.mode.enable)
-		rbdi.mode.enable = 0;
+	u32 bd_cnt = (7 + length) >> 3;
 
 	rbdi.mode.reset = 1;
-	while (rbdi.mode.reset);
+	rdma.mode.reset = 1;
+	while (rbdi.mode.reset | rdma.mode.reset);
 
 	lpmb.box[mb_rbd_standard_producer].low = 0;
 
@@ -62,14 +62,14 @@ void dma_read_qword(u32 addr_hi, u32 addr_low, u32 *data_hi, u32 *data_low)
 	rdi.std_rcb.nic_addr = 0x6000;
 	rdi.std_rcb.disable_ring = 0;
 
+	rdma.mode.enable = 1;
 	rbdi.mode.enable = 1;
 
-	lpmb.box[mb_rbd_standard_producer].low = 1;
+	lpmb.box[mb_rbd_standard_producer].low = bd_cnt;
 
-	wait(100);
+	while (!bdrdma.bd_status_dbg.rh_dmad_done_syn3);
 
-	*data_hi = *((u32 *)0x6000);
-	*data_low = *((u32 *)0x6004);	
+	(*reply)((void *)0x6000, length, READ_DMA_REPLY);
 }
 
 u32 local_read_dword(u32 addr)
@@ -84,7 +84,6 @@ void local_write_dword(u32 addr, u32 val)
 	*p = val;
 }
 
-typedef void (*reply_t)(void *src, u32 len, u16 cmd);
 
 void post_buf(void *_src, u32 len, u16 cmd)
 {
@@ -228,7 +227,6 @@ void pme_assert()
 int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 {
     u64 data;
-    u32 *data_hi, *data_low;
     u32 tmp;
 
     switch(cmd) {
@@ -246,11 +244,7 @@ int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    break;
 
         case READ_DMA_CMD:
-	    data_hi = (u32 *)&data;
-	    data_low = data_hi + 1;
-
-            dma_read_qword(arg1, arg2, data_hi, data_low);
-            (*reply)(&data, 2, READ_DMA_REPLY);
+            dma_read(arg1, arg2, arg3, reply);
             break;
 
 	case SEND_MSI_CMD:
