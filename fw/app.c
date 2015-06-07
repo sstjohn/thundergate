@@ -26,15 +26,42 @@
 #define GATE_BASE_GCW 0xc
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
-#define wait(x) do { \
-			u32 start = *timer; \
-			while (*timer >= start && *timer < (start + x)); \
-		} while (0)
 	
 char *test_buf = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
 
 u8 my_mac[6] = { 0 };
-u8 remote_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+u8 broadcast_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+u8 remote_mac[6] = { 0 };
+
+u8 *dest_mac = broadcast_mac;
+
+
+void stall(u32 count)
+{
+    for (int i = count; i > 0; i--);
+}
+
+
+void wait(u32 count)
+{
+    volatile u32 *timer = &grc.timer;
+    u32 start = *timer;
+    u32 end;
+    if (0xffffffff - count < start)
+	end = 0xffffffff - count;
+    else
+	end = start + count;
+    do {
+        u32 now = *timer;
+        if (end < start) {
+            if ((now >= end) && (now < start))
+	        break;
+        } else {
+            if (now >= end) 
+	        break;
+        } 
+    } while (1);
+}
 
 void mac_cpy(const u8 *src, u8 *dst)
 {
@@ -46,7 +73,6 @@ typedef void (*reply_t)(void *src, u32 len, u16 cmd);
 
 void dma_read(u32 addr_hi, u32 addr_low, u32 length, reply_t reply)
 {
-	volatile u32 *timer = &grc.timer;
 	u32 bd_cnt = (7 + length) >> 3;
 
 	rbdi.mode.reset = 1;
@@ -67,7 +93,6 @@ void dma_read(u32 addr_hi, u32 addr_low, u32 length, reply_t reply)
 
 	lpmb.box[mb_rbd_standard_producer].low = bd_cnt;
 
-	while (!bdrdma.bd_status_dbg.rh_dmad_done_syn3);
 
 	(*reply)((void *)0x6000, length, READ_DMA_REPLY);
 }
@@ -118,7 +143,7 @@ void send_buf(void *_src, u32 len, u16 cmd)
     
     mb->data.frame.mbuf = 1;
 
-    mac_cpy(remote_mac, (u8 *)(&mb->data.word[10]));
+    mac_cpy(dest_mac, (u8 *)(&mb->data.word[10]));
     mac_cpy(my_mac, ((u8 *)&mb->data.word[11]) + 2);
     mb->data.word[13] = 0x88b50000 | cmd;
 
@@ -131,6 +156,8 @@ void send_buf(void *_src, u32 len, u16 cmd)
         mb->data.word[10 + i++] = 0;
 
     ftq.mac_tx.q.word = (buf << 16) | buf;
+
+    dest_mac = broadcast_mac;
 }
 
 void send_msi(u32 addr_hi, u32 addr_low, u32 data)
@@ -352,7 +379,10 @@ void dev_init()
 {
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
-    
+  
+    cpmu.override_policy.mac_clock_switch = 0;
+    cpmu.override_enable.mac_clock_speed_override_enable = 1; 
+
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
@@ -557,6 +587,7 @@ int app()
 			u32 arg3 = rxmbuf[mbuf].data.word[16];
 
 			mac_cpy(((u8 *)&rxmbuf[mbuf].data.word[11]) + 2, remote_mac);
+			dest_mac = remote_mac;
 
 			ftq.rdiq.peek.skip = 1;
 			

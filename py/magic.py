@@ -169,15 +169,95 @@ class DebugMagic(Magics):
                 self.cpu.mode.single_step = 1
    
         @line_magic
-        def elf(self, line):
+        def elfload(self, line):
             with open(line, "r") as f:
                 elf_data = StringIO(f.read())
 
-            self.elf = ELFFile(elf_data)
+            self._elf = ELFFile(elf_data)
             try:
-                self.dwarf = self.elf.get_dwarf_info()
+                self._dwarf = self._elf.get_dwarf_info()
             except:
                 print "%s does not contain DWARF info" % line
+
+        @line_magic
+        def elf(self, line):
+            try: return self._elf
+            except: print "no elf file loaded"
+
+        @line_magic
+        def dwarf(self, line):
+            try: return self._dwarf
+            except: print "no dwarf loaded"
+
+        def _build_funcache(self):
+            try: dw = self._dwarf
+            except: 
+                print "no dwarf loaded"
+                return None
+            fc = []
+            for c in dw.iter_CUs():
+                for d in c.iter_DIEs():
+                    if d.tag == 'DW_TAG_subprogram':
+                        lpc = d.attributes['DW_AT_low_pc'].value
+                        hpc = d.attributes['DW_AT_high_pc'].value
+                        if hpc < lpc:
+                            hpc += lpc
+                        n = d.attributes['DW_AT_name'].value
+                        fc += [(lpc, hpc, n)]
+            self._funcache = fc
+            return fc
+
+        @line_magic
+        def funcs(self, line):
+            try:
+                fc = self._funcache
+            except:
+                fc = self._build_funcache()
+                if fc == None:
+                    return
+
+            for f in fc:
+                lpc, hpc, n = f
+                print "%s: %x - %x" % (n, lpc, hpc)
+
+        @line_magic
+        def func_at(self, line):
+            try:
+                fc = self._funcache
+            except:
+                fc = self._build_funcache()
+                if fc == None:
+                    return
+
+            pc = int(line, 0)
+
+            for f in fc:
+                lpc, hpc, n = f
+                if lpc <= pc and pc < hpc:
+                    return n
+
+            return "(unknown)"
+
+        @line_magic
+        def sloc_at(self, line):
+            try: dw = self._dwarf
+            except:
+                print "no dwarf loaded"
+                return
+
+            pc = int(line, 0)
+            for c in dw.iter_CUs():
+                    lp = dw.line_program_for_CU(c)
+                    ps = None
+                    for e in lp.get_entries():
+                        if e.state is None or e.state.end_sequence:
+                            continue
+                        if ps and ps.address <= pc < e.state.address:
+                            fn = lp['file_entry'][ps.file - 1].name
+                            l = ps.line
+                            return fn, l
+                        ps = e.state
+            return None, None
 
         @line_magic
         def tr2(self, line):
