@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.7.95
+                                 Version 0.7.96
                         Copyright (c) 2015 Saul St John
 
                             <a href="http://thundergate.io">http://thundergate.io</a>
@@ -97,8 +97,10 @@ $ make
 
 You should begin by taking a backup image of the factory-released firmware as
 it was when you bought the device. This image can be used to restore the device
-to a working state in the event that you should break it using ThunderGate.
-See `man ethtool` for details on conducting a device firmware dump.
+to a working state in the event that you should break it using ThunderGate, or
+should you wish to restore its original functionality. You will be presented
+with the option to create such a backup if the file 'eeprom.bak' does not 
+exist in the project root; it is highly recommended that you do so.
 
 In order to launch ThunderGate, you will need to know the BDF
 (Bus-Device-Function) of your Tigon3 device. This information can be

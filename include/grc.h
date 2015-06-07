@@ -329,6 +329,35 @@ struct grc_power_management_debug {
 	u32 pll_is_up :1;
 };
 
+struct grc_seeprom_addr {
+	u32 not_write :1;
+	u32 complete :1;
+	u32 reset :1;
+	u32 device_id :3;
+	u32 start_access :1;
+	u32 half_clock_period :9;
+	u32 addr :14;
+	u32 reserved0 :2;
+};
+
+struct grc_seeprom_ctrl {
+	u32 reserved6 :26;
+	u32 data_input :1;
+	u32 data_output :1;
+	u32 data_output_tristate :1;
+	u32 clock_input :1;
+	u32 clock_output :1;
+	u32 clock_output_tristate :1;
+};
+
+struct grc_mdi_ctrl { 
+	u32 reserved4 :28;
+	u32 mdi_clk :1;
+	u32 mdi_sel :1;
+	u32 mdi_en :1;
+	u32 mdi_data :1;
+};
+
 struct grc_regs {
     struct grc_mode mode;
     struct grc_misc_config misc_config;
@@ -347,12 +376,12 @@ struct grc_regs {
 
     u32 ofs_30;
     u32 ofs_34;
-    u32 ofs_38;
-    u32 ofs_3c;
+    struct grc_seeprom_addr seeprom_addr;
+    u32 seeprom_data;
 
-    u32 ofs_40;
-    u32 ofs_44;
-    u32 ofs_48;
+    struct grc_seeprom_ctrl seeprom_ctrl;
+    struct grc_mdi_ctrl mdi_ctrl;
+    u32 seeprom_delay;
     struct grc_cpu_event_enable rxcpu_event_enable;
 
     u32 ofs_50;
@@ -365,8 +394,8 @@ struct grc_regs {
     u32 ofs_68;
     u32 ofs_6c;
 
-    u32 ofs_70;
-    u32 ofs_74;
+    u32 msg_xchng_out;
+    u32 msg_xchng_in;
     u32 ofs_78;
     u32 ofs_7c;
 

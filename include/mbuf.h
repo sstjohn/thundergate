@@ -101,7 +101,8 @@ struct mbuf {
     u32 next_frame_ptr;
     union {
         struct mbuf_frame_desc frame;
-        u32 word[30];
+	u32 word[30];
+        u8 byte[120];
     } data;
 };
 

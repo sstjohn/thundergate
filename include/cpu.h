@@ -27,13 +27,13 @@ struct cpu_mode {
 
     u32 invalid_data_access_halt_en :1;
     u32 halt :1;
-    u32 reserved9 :1;
-    u32 reserved8 :1;
+    u32 flush_icache :1;
+    u32 icache_pref_en :1;
     
-    u32 watchdog_interrupt_en :1;
+    u32 watchdog_en :1;
     u32 rom_fail :1;
-    u32 reserved5 :1;
-    u32 reserved4 :1;
+    u32 data_cache_en :1;
+    u32 write_post_en :1;
 
     u32 page_0_instr_halt_en :1;
     u32 page_0_data_halt_en :1;

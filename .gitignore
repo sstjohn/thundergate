@@ -18,3 +18,4 @@ efi/*.efi
 efi/*.so
 efi/*.o
 efi/*.rom
+eeprom.bak

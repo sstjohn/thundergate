@@ -282,20 +282,14 @@ struct emac_autopolling_status {
 };
 
 struct emac_mii_communication {
-    union {
-        struct {
-	    u32 reserved30 :2;
-	    u32 start_busy :1;
-	    u32 read_failed :1;
-	    u32 read_command :1;
-	    u32 write_command :1;
-	    u32 phy_addr :5;
-	    u32 reg_addr :5;
-	    u32 data :16;
-	};
-
-	u32 word;
-    };
+    u32 reserved30 :2;
+    u32 start_busy :1;
+    u32 read_failed :1;
+    u32 read_command :1;
+    u32 write_command :1;
+    u32 phy_addr :5;
+    u32 reg_addr :5;
+    u32 data :16;
 };
 
 struct emac_regulator_voltage_control {

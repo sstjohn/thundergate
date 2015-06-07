@@ -26,8 +26,15 @@
 #define GATE_BASE_GCW 0xc
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
-	
-char *test_buf = "aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz";
+
+
+char *test_buf = 
+	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
+	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
+	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
+	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
+	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
+	"0123456789012345678901234567890123456789012$";
 
 u8 my_mac[6] = { 0 };
 u8 broadcast_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -40,7 +47,6 @@ void stall(u32 count)
 {
     for (int i = count; i > 0; i--);
 }
-
 
 void wait(u32 count)
 {
@@ -126,11 +132,14 @@ void post_buf(void *_src, u32 len, u16 cmd)
 	
 void send_buf(void *_src, u32 len, u16 cmd)
 {
-    int i;
+    int i = 0;
     u32 buf = 0xad;
     struct mbuf *mb = (struct mbuf *)(0x8000 + (buf << 7));
+    u32 sub = buf << 16 | buf;
 
-    mb->hdr.c = 0;
+    u32 blen = len << 2;
+
+    mb->hdr.c = blen > 80 ? 1 : 0;
     mb->hdr.f = 1;
     mb->hdr.length = 80;
     mb->next_frame_ptr = 0;
@@ -138,24 +147,51 @@ void send_buf(void *_src, u32 len, u16 cmd)
 
     mb->data.frame.status_ctrl = 0;
     
-    mb->data.frame.len = 80;
+    mb->data.frame.len = (blen + 16) < 64 ? 64 : (blen + 16);
     mb->data.frame.qids = 0xc;
     
-    mb->data.frame.mbuf = 1;
+    mb->data.frame.mbuf = blen <= 80 ? 1 : (blen <= 200 ? 2 : 3);
 
-    mac_cpy(dest_mac, (u8 *)(&mb->data.word[10]));
-    mac_cpy(my_mac, ((u8 *)&mb->data.word[11]) + 2);
-    mb->data.word[13] = 0x88b50000 | cmd;
+    i = sizeof(mb->data.frame);
+    mac_cpy(dest_mac, &mb->data.byte[i]);
+    i += 6;
+    mac_cpy(my_mac, &mb->data.byte[i]);
+    i += 6;
+    mb->data.word[i >> 2] = 0x88b50000 | cmd;
+    i += 4;
 
-    u32 *src = (u32 *)_src;
-    i = 4;
-    while (i < 20 && (i - 4) < len)
-	    mb->data.word[10 + i++] = *src++;
+    u8 *src = (u8 *)_src;
+    for (; i < 120 && blen > 0; i++, blen--)
+	    mb->data.byte[i] = *src++;
 
-    while (i < 20)
-        mb->data.word[10 + i++] = 0;
+    while (i < 100)
+	mb->data.byte[i++] = 0;
 
-    ftq.mac_tx.q.word = (buf << 16) | buf;
+    if (blen > 0) {
+	mb++;
+	mb->hdr.c = 1;
+	mb->hdr.f = 0;
+	mb->hdr.length = blen > 120 ? 120 : blen;
+	mb->hdr.next_mbuf = blen > 120 ? buf + 2 : 0;
+	for (i = 0; i < 120 && blen > 0; i++, blen--)
+		mb->data.byte[i] = *src++;
+        sub++;
+    }
+
+    if (blen > 0) {
+	mb++;
+	mb->hdr.c = 1;
+	mb->hdr.f = 0;
+	mb->hdr.length = blen;
+	mb->hdr.next_mbuf = 0;
+	for (i = 0;  blen > 0; i++, blen--)
+	    mb->data.byte[i] = *src++;
+        sub++;
+    }
+
+    __sync_synchronize();
+
+    ftq.mac_tx.q.word = sub;
 
     dest_mac = broadcast_mac;
 }
@@ -383,6 +419,10 @@ void dev_init()
     cpmu.override_policy.mac_clock_switch = 0;
     cpmu.override_enable.mac_clock_speed_override_enable = 1; 
 
+    rxcpu.mode.icache_pref_en = 1;
+    rxcpu.mode.data_cache_en = 1;
+    rxcpu.mode.write_post_en = 1;
+
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
@@ -569,7 +609,7 @@ int app()
 		check_link();
 	}
         if (grc.rxcpu_event.timer) {
-            send_buf(test_buf, 13, 0);
+            send_buf(test_buf, 76, 0);
 	    reset_timer();
         }
 	if (grc.rxcpu_event.rdiq) {

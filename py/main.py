@@ -45,7 +45,7 @@ if __name__ == "__main__":
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.7.95
+                                 Version 0.7.96
                         Copyright (c) 2015 Saul St John
                              http://thundergate.io
 """
@@ -58,6 +58,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
     parser.add_argument("-s", "--shell", help="ipython cli", action="store_true")
+    parser.add_argument("-b", "--backup", help="create eeprom backup", action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -86,7 +87,18 @@ if __name__ == "__main__":
             raise Exception("device %s currently bound by %s, bind to uio_pci_generic instead")
         dev_interface = UioInterface(dbdf)
 
+    if not args.backup:
+        if not os.path.exists("eeprom.bak"):
+            print "[!] you do not currently have a backup eeprom image saved."
+            if raw_input("[?] would you like to create a backup image (y/n): ")[0] in "yY":
+                args.backup = True
+
     with Device(dev_interface) as dev:
+        if args.backup:
+            dev.nvram.init()
+            dev.nvram.dump_eeprom("eeprom.bak")
+            print "[+] eeprom backup saved as 'eeprom.bak'"
+
         if args.install:
             with TgInstaller(dev) as i:
                 i.run()

@@ -124,16 +124,25 @@ struct pci_dma_rw_ctrl {
 };
 
 struct pci_state {
-    u32 reserved14 :16;
-    u32 unused4 :1;
+    u32 reserved20 :12;
+    
+    u32 generate_reset_pulse :1;
+    u32 ape_ps_wr_en :1;
+    u32 ape_shm_wr_en :1;
+    u32 ape_ctrl_reg_wr_en :1; 
+
+    u32 config_retry :1;
     u32 reserved15 :2;
     u32 pci_vaux_present :1;
-    u32 unused5 :3;
-    u32 flat_mode :1;
-    u32 reserved16 :1;
+    
+    u32 max_retry :3;
+    u32 flat_view :1;
+    
+    u32 vpd_available :1;
     u32 rom_retry_enable :1;
     u32 rom_enable :1;
     u32 bus_32_bit :1;
+    
     u32 bus_speed_hi :1;
     u32 conv_pci_mode :1;
     u32 int_not_active :1;
