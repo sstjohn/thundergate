@@ -242,31 +242,46 @@ class Device(object):
 
     
     
-    def reset(self):
+    def reset(self, cold = None, quick = False):
+	if cold == None:
+	    cold = not hasattr(self, "drv")
+
         magic = self.mem.read_dword(0xb50)	
-        if magic == 0x4b657654:
-            print "[.] found magic number at offset 0xb50"
-        else:
-            print "[+] found %08x at offset 0xb50, writing 0x4b657654" % magic
+        print "[+] found %08x at offset 0xb50," % magic, 
+	if not cold:
+	    print "writing 0x4b657654"
             self.mem.write_dword(0xb50, 0x4b657654)
+	else:
+	    print "clearing"
+	    self.mem.write_dword(0xb50, 0)
 
-        self.nvram.acquire_lock()
+        if not cold:
+	    try:
+		self.nvram.acquire_lock()
+	    except:
+		print "\n[-] failed to acquire nvram lock"
+		self.rxcpu.halt()
+		self.nvram.reset()
+		self.nvram.acquire_lock()
 
-        print "[+] clearing fast boot program counter register, was", 
-        pfbreg = cast(self.bar0 + 0x6894, POINTER(c_uint32))
-        print "0x%08x" % pfbreg[0]
-        pfbreg[0] = 0
+	print "[+] clearing fast boot program counter register,",
+	print "was %08x" % self.grc.fastboot_pc.word
+	self.grc.fastboot_pc.word = 0
 
-        if self.grc.misc_config.disable_grc_reset_on_pcie_block == 0:
-            print "[+] disabling grc reset on pcie block"
-            self.grc.misc_config.disable_grc_reset_on_pcie_block = 1
+	if not cold:
+		if self.grc.misc_config.disable_grc_reset_on_pcie_block == 0:
+		    print "[+] disabling grc reset on pcie block"
+		    self.grc.misc_config.disable_grc_reset_on_pcie_block = 1
 
-        #if self.grc.misc_config.gphy_keep_power_during_reset == 0:
-        #    print "[+] enabling gphy power during reset"
-        #    self.grc.misc_config.gphy_keep_power_during_reset = 1
+		if self.grc.misc_config.gphy_keep_power_during_reset == 0:
+		    print "[+] enabling gphy power during reset"
+		    self.grc.misc_config.gphy_keep_power_during_reset = 1
 
         print "[+] resetting core clocks"
         self.grc.misc_config.grc_reset = 1
+        if quick:
+            self.init()
+            return
 
         usleep(1000)
 
@@ -274,15 +289,15 @@ class Device(object):
         
         print "[+] polling for bootcode completion...",
         cntr = 0
-        while self.mem.read_dword(0xb50) == 0x4b657654:
+        while self.mem.read_dword(0xb50) != 0xb49a89ab:
             cntr += 1
             if cntr > 5000:
                 raise Exception("timed out waiting for bootcode completion")
-            usleep(1000)
+            usleep(100)
         if cntr == 0:
             print "complete."
         else:
-            print "completed after %d.%d ms." % (cntr / 10, cntr % 10)
+            print "completed after %d.%d ms." % (cntr / 100, cntr % 100)
 
     def init_pci_host_ctrl(self):
         if self.pci.misc_host_ctrl.enable_pci_state_register_rw_cap == 0:

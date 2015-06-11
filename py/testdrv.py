@@ -48,8 +48,123 @@ class TestDriver(object):
         #self.test_rdmar()
         #self.test_dmaw()
         #self.reg_finder()
-        self.msi_wr()
+        #self.msi_wr()
+	#self.asfdiff()
+        #self.pxediff()
+        self.pxeidiff()
 
+    def pxeidiff(self):
+	dev = self.dev
+	cpu = dev.rxcpu
+
+	dev.nvram.init(wr=1)
+	if dev.nvram.getpxe():
+		was_enabled = True
+		dev.nvram.setpxe(1)
+	else:
+		was_enabled = False
+
+        dev.reset(quick=True)
+        cpu.mode.halt = 1
+        insns = []
+        for i in range(50000):
+            insns += [cpu.pc]
+            cpu.mode.single_step = 1
+
+        self.norom_insns = insns
+
+        dev.reset()
+	usleep(1000)
+	dev.reset(cold = False)
+	usleep(1000)
+
+	dev.nvram.init(wr=1)
+	dev.nvram.setpxe()
+        dev.reset(quick=True)
+        cpu.mode.halt = 1
+
+        insns = []
+        for i in range(50000):
+            insns += [cpu.pc]
+            cpu.mode.single_step = 1
+
+        self.rom_insns = insns
+
+    def pxediff(self):
+	dev = self.dev
+	cpu = dev.rxcpu
+
+	dev.nvram.init(wr=1)
+	if dev.nvram.getpxe():
+		was_enabled = True
+		dev.nvram.setpxe(1)
+	else:
+		was_enabled = False
+
+	dev.reset()
+	sleep(5)
+	
+	cpu.halt()
+	initial = reutils.state_save(dev)
+
+	dev.reset()
+	usleep(1000)
+	dev.reset(cold = False)
+	usleep(1000)
+
+	dev.nvram.init(wr=1)
+	dev.nvram.setpxe()
+	
+	dev.reset()
+	sleep(5)
+	
+	cpu.halt()
+	wasf = reutils.state_diff(dev, initial)
+
+	if not was_enabled:
+		dev.nvram.init(wr=1)
+		dev.nvram.setpxe(1)
+		dev.reset()
+
+    def asfdiff(self):
+	dev = self.dev
+	cpu = dev.rxcpu
+
+	dev.nvram.init(wr=1)
+	if dev.nvram.getasf():
+		was_enabled = True
+		dev.nvram.setasf(1)
+	else:
+		was_enabled = False
+
+	self.clear_txmbufs()
+	self.clear_txbds()
+	dev.reset()
+	sleep(5)
+	
+	cpu.halt()
+	initial = reutils.state_save(dev)
+
+	dev.reset()
+	usleep(1000)
+	dev.reset(cold = False)
+	usleep(1000)
+
+	dev.nvram.init(wr=1)
+	dev.nvram.setasf()
+	self.clear_txmbufs()
+	self.clear_txbds()
+	
+	dev.reset()
+	sleep(5)
+	
+	cpu.halt()
+	wasf = reutils.state_diff(dev, initial)
+
+	if not was_enabled:
+		dev.nvram.init(wr=1)
+		dev.nvram.setasf(1)
+		dev.reset()
 
     def clear_txmbufs(self):
         for i in range(0x8000, 0x10000, 4):

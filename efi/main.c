@@ -21,6 +21,7 @@
 #include <efi/efilib.h>
 #include <efi/efiprot.h>
 #include <efi/efipciio.h>
+#include <efi/eficon.h>
 #include <wchar.h>
 #include "acpi.h"
 
@@ -28,9 +29,101 @@
 #define IDENTITY_MAP_FIRST_16M 1
 #define IDENTITY_MAP_DRHD 1
 
+#if VERBOSE
+#define DbgPrint(x, ...) Print(x, ...)
+#else
+#define DbgPrint(x, ...)
+#endif
+
+wchar_t *splash_logo[] = {
+L"         __ __| |                     |            ___|       |",        
+L"            |   __ \\  |   | __ \\   _` |  _ \\  __| |      _` | __|  _ \\", 
+L"            |   | | | |   | |   | (   |  __/ |    |   | (   | |    __/", 
+L"           _|  _| |_|\\__,_|_|  _|\\__,_|\\___|_|   \\____|\\__,_|\\__|\\___|" ,
+};
+
+#define SPLASH_LOGO_LINES 4
+#define SPLASH_TOP 10
+#define SPLASH_LOGO_COLOR EFI_RED | EFI_BRIGHT
+
+
 u32 tg_dp[12] = {0};
 u32 tg_dp_len = 0;
 u64 drhd_base = 0;
+
+#define EFI_CONSOLE_CONTROL_PROTOCOL_GUID \
+	{ 0xf42f7782, 0x12e, 0x4c12, { 0x99, 0x56, 0x49, 0xf9, 0x43, 0x4, 0xf7, 0x21 } }
+EFI_GUID EfiConsoleControlProtocolGuid = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
+
+struct _EFI_CONSOLE_CONTROL_PROTOCOL;
+
+typedef
+EFI_STATUS (EFIAPI *EFI_CONSOLE_CONTROL_PROTOCOL_GET_MODE) (
+		struct _EFI_CONSOLE_CONTROL_PROTOCOL *,
+		int *,
+		int *,  
+		int *);
+
+typedef 
+EFI_STATUS (EFIAPI *EFI_CONSOLE_CONTROL_PROTOCOL_SET_MODE) (
+		struct _EFI_CONSOLE_CONTROL_PROTOCOL *,
+		int);
+
+typedef
+EFI_STATUS (EFIAPI *EFI_CONSOLE_CONTROL_PROTOCOL_LOCK_STD_IN) (
+		struct _EFI_CONSOLE_CONTROL_PROTOCOL *,
+		CHAR16 *);
+
+typedef struct _EFI_CONSOLE_CONTROL_PROTOCOL {
+	EFI_CONSOLE_CONTROL_PROTOCOL_GET_MODE GetMode;
+	EFI_CONSOLE_CONTROL_PROTOCOL_SET_MODE SetMode;
+	EFI_CONSOLE_CONTROL_PROTOCOL_LOCK_STD_IN LockStdIn;
+} EFI_CONSOLE_CONTROL_PROTOCOL;
+
+void splash()
+{
+	EFI_CONSOLE_CONTROL_PROTOCOL *cc;
+	UINTN col = 0, row = 0;
+
+	ST->ConOut->ClearScreen(ST->ConOut);
+
+	if (EFI_SUCCESS == BS->LocateProtocol(&EfiConsoleControlProtocolGuid, 
+			NULL, (void *)&cc))
+	{
+		int cur_mode = 0;
+		cc->GetMode(cc, &cur_mode, NULL, NULL);
+		if (cur_mode == 1)
+			cc->SetMode(cc, 0);
+	}	
+	if (EFI_SUCCESS == ST->ConOut->QueryMode(ST->ConOut, 2, &col, &row)) {
+		if (EFI_SUCCESS != ST->ConOut->SetMode(ST->ConOut, 2)) {
+			col = 0;
+			row = 0;
+		}
+	}
+	if (0 == col || 0 == row) {
+		if (EFI_SUCCESS == ST->ConOut->QueryMode(ST->ConOut, 1, &col, &row)) {
+			if (EFI_SUCCESS != ST->ConOut->SetMode(ST->ConOut, 1)) {
+				col = 0;
+				row = 0;
+			}
+		}
+	}
+	if (0 == col || 0 == row) {
+		ST->ConOut->SetMode(ST->ConOut, 0);
+		col = 80;
+		row = 25;
+	}
+	ST->ConOut->EnableCursor(ST->ConOut, 0);
+
+	int st = (col / 2) - 40;
+	ST->ConOut->SetAttribute(ST->ConOut, SPLASH_LOGO_COLOR);
+	for (int ln = 0; ln < SPLASH_LOGO_LINES; ln++) {
+		ST->ConOut->SetCursorPosition(ST->ConOut, st, SPLASH_TOP + ln);
+		ST->ConOut->OutputString(ST->ConOut, splash_logo[ln]);
+	}
+	ST->ConOut->SetAttribute(ST->ConOut, EFI_WHITE);
+}
 
 u32 walk_dev_scope(void *a)
 {
@@ -38,38 +131,38 @@ u32 walk_dev_scope(void *a)
 	u32 ds_sz = ds->length;
 	u32 offset = 0;
 
-	Print(L"\n");
-	Print(L"device scope type: %d ", ds->type);
+	DbgPrint(L"\n");
+	DbgPrint(L"device scope type: %d ", ds->type);
 	switch (ds->type) {
-		case 1: Print(L"(pcie endpoint)\n"); break;
-		case 2: Print(L"(pcie subtree)\n"); break;
-		case 3: Print(L"(ioapic)\n"); break;
-		case 4: Print(L"(msi capable hpet)\n"); break;
-		case 5: Print(L"(acpi namespace device)\n"); break;
-		default: Print(L"unknown)\n"); break;
+		case 1: DbgPrint(L"(pcie endpoint)\n"); break;
+		case 2: DbgPrint(L"(pcie subtree)\n"); break;
+		case 3: DbgPrint(L"(ioapic)\n"); break;
+		case 4: DbgPrint(L"(msi capable hpet)\n"); break;
+		case 5: DbgPrint(L"(acpi namespace device)\n"); break;
+		default: DbgPrint(L"unknown)\n"); break;
 	}
-	Print(L"device scope length: %d\n", ds->length);
-	Print(L"device scope reserved: %d\n", ds->reserved);
-	Print(L"device scope enum id: %02x ", ds->enum_id);
+	DbgPrint(L"device scope length: %d\n", ds->length);
+	DbgPrint(L"device scope reserved: %d\n", ds->reserved);
+	DbgPrint(L"device scope enum id: %02x ", ds->enum_id);
 	switch (ds->type) {
-		case 3: Print(L"(io apic id)\n"); break;
-		case 4: Print(L"(hpet number)\n"); break;
-		case 5: Print(L"(acpi device number)\n"); break;
-		default: Print(L"(reserved)\n"); break;
+		case 3: DbgPrint(L"(io apic id)\n"); break;
+		case 4: DbgPrint(L"(hpet number)\n"); break;
+		case 5: DbgPrint(L"(acpi device number)\n"); break;
+		default: DbgPrint(L"(reserved)\n"); break;
 	}
-	Print(L"device scope start bus num: %02x\n", ds->start_bus_number);
+	DbgPrint(L"device scope start bus num: %02x\n", ds->start_bus_number);
 	
 	offset += sizeof(struct dmar_dev_scope);
 	
-	Print(L"device scope path: ");
+	DbgPrint(L"device scope path: ");
 	while (offset < ds_sz) {
 		u16 tmp = *((u16 *)(a + offset));
 		u8 dev = tmp >> 8;
 		u8 fun = tmp & 0xff;
-		Print(L"%02x:%02x ", dev, fun);
+		DbgPrint(L"%02x:%02x ", dev, fun);
 		offset += 2;
 	}
-	Print(L"\n");	
+	DbgPrint(L"\n");	
 
 	return ds_sz;
 }
@@ -117,12 +210,12 @@ void walk_rmrr(void *a)
 	u32 r_sz = r->length;
 	u32 offset = 0;
 
-	Print(L"\n");
-	Print(L"rmrr length: %d\n", r->length);
-	Print(L"rmrr reserved: %d\n", r->reserved);
-	Print(L"rmrr segment num: %04x\n", r->seg_no);
-	Print(L"rmrr base addr: %lx\n", r->base_addr);
-	Print(L"rmrr limit addr: %lx\n", r->limit_addr);
+	DbgPrint(L"\n");
+	DbgPrint(L"rmrr length: %d\n", r->length);
+	DbgPrint(L"rmrr reserved: %d\n", r->reserved);
+	DbgPrint(L"rmrr segment num: %04x\n", r->seg_no);
+	DbgPrint(L"rmrr base addr: %lx\n", r->base_addr);
+	DbgPrint(L"rmrr limit addr: %lx\n", r->limit_addr);
 
 	offset += sizeof(struct dmar_rmrr);
 
@@ -136,20 +229,20 @@ void walk_drhd(void *a)
 	u32 drhd_sz = drhd->length;
 	u32 offset = 0;
 
-	Print(L"\n");
-	Print(L"drhd length: %d\n", drhd->length);
-	Print(L"drhd flags: %d", drhd->flags);
+	DbgPrint(L"\n");
+	DbgPrint(L"drhd length: %d\n", drhd->length);
+	DbgPrint(L"drhd flags: %d", drhd->flags);
 	if (drhd->flags != 0) {
-		Print(L": ");
+		DbgPrint(L": ");
 		if (drhd->flags & 1)
-			Print(L"include_pci_all ");
+			DbgPrint(L"include_pci_all ");
 		if (drhd->flags & ~1)
-			Print(L"unknown_flagset_%x", drhd->flags);
+			DbgPrint(L"unknown_flagset_%x", drhd->flags);
 	};
-	Print(L"\n");
-	Print(L"drhd reserved: %d\n", drhd->reserved);
-	Print(L"drhd seg num: %04x\n", drhd->seg_no);
-	Print(L"drhd base addr: %lx\n", drhd->base_address);
+	DbgPrint(L"\n");
+	DbgPrint(L"drhd reserved: %d\n", drhd->reserved);
+	DbgPrint(L"drhd seg num: %04x\n", drhd->seg_no);
+	DbgPrint(L"drhd base addr: %lx\n", drhd->base_address);
 
 	offset += sizeof(struct dmar_drhd);
 
@@ -178,28 +271,28 @@ void walk_dmar(void *a)
 	u32 tbl_sz = dmar_tbl->length;
 	u32 offset = 0;
 
-	Print(L"table sig: %.4a\n", dmar_tbl->sig);
-	Print(L"table len: %d\n", dmar_tbl->length);
-	Print(L"table rev: %d\n", dmar_tbl->rev);
-	Print(L"table sum: %d\n", dmar_tbl->cksum);
-	Print(L"\n");
-	Print(L"oemid: %.6a\n", dmar_tbl->oemid);
-	Print(L"oemtableid: %.8a\n", dmar_tbl->oemtableid);
-	Print(L"oemrev: %d\n", dmar_tbl->oem_rev);
-	Print(L"creator id: %.4a\n", dmar_tbl->creator_id);
-	Print(L"creator rev: %d\n", dmar_tbl->creator_rev);
-	Print(L"host addr width: %d\n", (u32)(dmar_tbl->host_addr_width + 1));
-	Print(L"flags: %d ", dmar_tbl->flags);
+	DbgPrint(L"table sig: %.4a\n", dmar_tbl->sig);
+	DbgPrint(L"table len: %d\n", dmar_tbl->length);
+	DbgPrint(L"table rev: %d\n", dmar_tbl->rev);
+	DbgPrint(L"table sum: %d\n", dmar_tbl->cksum);
+	DbgPrint(L"\n");
+	DbgPrint(L"oemid: %.6a\n", dmar_tbl->oemid);
+	DbgPrint(L"oemtableid: %.8a\n", dmar_tbl->oemtableid);
+	DbgPrint(L"oemrev: %d\n", dmar_tbl->oem_rev);
+	DbgPrint(L"creator id: %.4a\n", dmar_tbl->creator_id);
+	DbgPrint(L"creator rev: %d\n", dmar_tbl->creator_rev);
+	DbgPrint(L"host addr width: %d\n", (u32)(dmar_tbl->host_addr_width + 1));
+	DbgPrint(L"flags: %d ", dmar_tbl->flags);
 	if (dmar_tbl->flags > 0) {
 		if (dmar_tbl->flags & 1)
-			Print(L"intr_remap ");
+			DbgPrint(L"intr_remap ");
 		if (dmar_tbl->flags & 2)
-			Print(L"x2apic_opt_out ");
+			DbgPrint(L"x2apic_opt_out ");
 		if (dmar_tbl->flags & ~3)
-			Print(L"unknown_flagset_%x", dmar_tbl->flags);
+			DbgPrint(L"unknown_flagset_%x", dmar_tbl->flags);
 	};
-	Print(L"\n");
-	Print(L"reserved: %.10a\n", dmar_tbl->reserved);
+	DbgPrint(L"\n");
+	DbgPrint(L"reserved: %.10a\n", dmar_tbl->reserved);
 
 	offset += sizeof(struct dmar_tbl_hdr);
 
@@ -211,19 +304,19 @@ void walk_dmar(void *a)
 	    u16 ln = tmp >> 16;
 	    u16 nt = tmp & 0xffff;
 
-	    Print(L"\n\n");
+	    DbgPrint(L"\n\n");
 	    
 	    switch(nt) {
 	    case 0:
-		Print(L"drhd at offset %d\n", offset);
+		DbgPrint(L"drhd at offset %d\n", offset);
 		walk_drhd(a+offset);
 		break;
 	    case 1:
-		Print(L"rmrr at offset %d\n", offset);
+		DbgPrint(L"rmrr at offset %d\n", offset);
 		walk_rmrr(a+offset);
 		break;
 	    default:
-		Print(L"type %d at offset %d\n", nt, offset);
+		DbgPrint(L"type %d at offset %d\n", nt, offset);
 		break;
 	    }
 	    
@@ -237,7 +330,7 @@ void walk_dmar(void *a)
 	rmrr_sz = create_rmrr(a + offset, 0, 0xffffff);
 	if (rmrr_sz) {
 		dmar_tbl->length += rmrr_sz;
-		Print(L"\n\nnew rmrr created: \n");
+		DbgPrint(L"\n\nnew rmrr created: \n");
 		walk_rmrr(a + offset);
 	} 
 #endif
@@ -246,7 +339,7 @@ void walk_dmar(void *a)
 		rmrr_sz = create_rmrr(a + dmar_tbl->length, drhd_base, drhd_base + 0x1000);
 
 		if (rmrr_sz) {
-			Print(L"\n\nnew rmrr created: \n");
+			DbgPrint(L"\n\nnew rmrr created: \n");
 			walk_rmrr(a + dmar_tbl->length);
 			dmar_tbl->length += rmrr_sz;
 		}
@@ -254,7 +347,7 @@ void walk_dmar(void *a)
 #endif
 #endif
 	if (!rmrr_sz) {
-	    Print(L"\n\nDMARF!\n");
+	    DbgPrint(L"\n\nDMARF!\n");
 	    CopyMem(dmar_tbl->sig, "RAMD", 4);
 	}
 	update_tbl_cksum(a);
@@ -266,12 +359,12 @@ void walk_xsdt(struct xsdt *xsdt)
 
     int count = (xsdt->h.length - sizeof(struct acpi_sdt_hdr)) / 8;
 
-    Print(L"enumerating %d sdts in xsdt at %lx\n\n", count, xsdt);
+    DbgPrint(L"enumerating %d sdts in xsdt at %lx\n\n", count, xsdt);
 
     for (i = 0; i < count; i++) {
         struct acpi_sdt_hdr *sdt = xsdt->sdt[i];
 
-	Print(L"table at %lx signature %.4a\n", sdt, sdt->sig);
+	DbgPrint(L"table at %lx signature %.4a\n", sdt, sdt->sig);
 
         if (strncmpa(sdt->sig, "DMAR", 4) == 0) {
 	    walk_dmar(sdt);
@@ -288,6 +381,7 @@ static EFI_GUID gAcpi20TableGuid = ACPI_20_TABLE_GUID;
 
 void EFIAPI werk(EFI_EVENT Event, VOID *Context)
 {
+    splash();
     for (int i = 0; i < ST->NumberOfTableEntries; i++) {
 	    if (CompareGuid(&ST->ConfigurationTable[i].VendorGuid,
 			&gAcpi20TableGuid) == 0) {
@@ -304,12 +398,12 @@ static EFI_STATUS EFI_FUNCTION DmarfUnload(IN EFI_HANDLE ImageHandle)
 
   if (orig_unload) {
 	EFI_STATUS tmp;
-	Print(L"calling original unload handler\n");
+	DbgPrint(L"calling original unload handler\n");
 	tmp = (*orig_unload)(ImageHandle);
-	Print(L"original unload handler returned %x\n", tmp);
+	DbgPrint(L"original unload handler returned %x\n", tmp);
   }
 
-  Print(L"dmarf unloading\n");
+  DbgPrint(L"dmarf unloading\n");
   
   return EFI_SUCCESS;
 }
@@ -417,7 +511,7 @@ EFI_STATUS EFIAPI drv_supported(
 		if (EFI_ERROR(s)) {
 			goto done;
 		}
-		Print(L"found a tb gige adapter at %02x:%02x.%02x.\n", bus, dev, fun);
+		DbgPrint(L"found a tb gige adapter at %02x:%02x.%02x.\n", bus, dev, fun);
 
 		s = uefi_call_wrapper(BS->HandleProtocol, 3,
 				hController,
@@ -425,26 +519,26 @@ EFI_STATUS EFIAPI drv_supported(
 				(void **)&dp);
 
 		if (EFI_ERROR(s)) {
-			Print(L"does not support device path protocol\n");
+			DbgPrint(L"does not support device path protocol\n");
 			goto done;
 		}
 
 		while (dp->DevPath.Type != 0x7f) {
-			Print(L"device path type: %x, subtype: %x, l1: %x, l2: %x ",
+			DbgPrint(L"device path type: %x, subtype: %x, l1: %x, l2: %x ",
 					dp->DevPath.Type, dp->DevPath.SubType, dp->DevPath.Length[0], dp->DevPath.Length[1]);
 
 			switch(dp->DevPath.Type) {
 				case 1:
-					Print(L"pci dev %02x fn %02x\n", dp->Pci.Device,
+					DbgPrint(L"pci dev %02x fn %02x\n", dp->Pci.Device,
 							dp->Pci.Function);
 					tg_dp[tg_dp_len++] = dp->Pci.Device << 16 | dp->Pci.Function;
 					break;
 				case 2:
-					Print(L"acpi hid %08x, uid %08x\n",
+					DbgPrint(L"acpi hid %08x, uid %08x\n",
 							dp->Acpi.HID, dp->Acpi.UID);
 					break;
 				default:
-					Print(L"\n");
+					DbgPrint(L"\n");
 					break;
 			}
 			dp = (EFI_DEV_PATH *)(((void *)dp) + dp->DevPath.Length[0]);
@@ -499,8 +593,6 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SysTab)
 
   InitializeLib(ImageHandle, SysTab);
 
-  Print(L"dmarf initialized\n");
-
   dmarf_driver_binding.ImageHandle = ImageHandle;
   dmarf_driver_binding.DriverBindingHandle = ImageHandle;
 
@@ -509,17 +601,17 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SysTab)
 		  &ImageHandle, &EfiDriverBindingProtocolGuid,
 		  0, (void *)&dmarf_driver_binding);
   if (EFI_ERROR(Status))
-	  Print(L"failed to install driver binding protocol handler: %r\n", Status);
+	  DbgPrint(L"failed to install driver binding protocol handler: %r\n", Status);
   else
-	  Print(L"installed driver binding protocol handler to image handle\n");
+	  DbgPrint(L"installed driver binding protocol handler to image handle\n");
 
   Status = uefi_call_wrapper(BS->InstallProtocolInterface, 4,
 		  &ImageHandle, &EfiComponentNameProtocolGuid,
 		  0, (void *)&dmarf_component_name);
   if (EFI_ERROR(Status))
-	  Print(L"failed to install component name protocol handler: %r\n", Status);
+	  DbgPrint(L"failed to install component name protocol handler: %r\n", Status);
   else
-	  Print(L"installed component name protocol handler to image handle\n");
+	  DbgPrint(L"installed component name protocol handler to image handle\n");
 
 
   Status = uefi_call_wrapper(BS->HandleProtocol, 3,
@@ -527,20 +619,20 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SysTab)
                              (void **)&LoadedImage);
 
   if (EFI_ERROR(Status)) {
-	  Print(L"loaded image protocol fail: %r\n", Status);
+	  DbgPrint(L"loaded image protocol fail: %r\n", Status);
 	  return EFI_SUCCESS;
   }
 
   if (LoadedImage->Unload) {
-	  Print(L"replacing unload handler\n");
+	  DbgPrint(L"replacing unload handler\n");
 	  orig_unload = LoadedImage->Unload;
   } else {
-	  Print(L"installing unload handler\n");
+	  DbgPrint(L"installing unload handler\n");
   }
 
   LoadedImage->Unload = (EFI_IMAGE_UNLOAD)DmarfUnload;
  
-  Print(L"installing boot services exit signal handler\n");
+  DbgPrint(L"installing boot services exit signal handler\n");
 
   Status = uefi_call_wrapper(BS->CreateEvent, 5, 
           EVT_SIGNAL_EXIT_BOOT_SERVICES, TPL_NOTIFY,

@@ -303,8 +303,13 @@ struct grc_misc_control {
 };
 
 struct grc_fastboot_program_counter {
-	u32 enable :1;
-	u32 addr :31;
+	union {
+		struct {
+			u32 enable :1;
+			u32 addr :31;
+		};
+		u32 word;
+	};
 };
 
 struct grc_power_management_debug {
@@ -413,6 +418,31 @@ struct grc_regs {
     struct grc_power_management_debug power_management_debug;
     u32 ofs_a8;
     u32 ofs_ac;
+
+    u32 ofs_b0;
+    u32 ofs_b4;
+    u32 ofs_b8;
+    u32 ofs_bc;
+
+    u32 ofs_c0;
+    u32 ofs_c4;
+    u32 ofs_c8;
+    u32 ofs_cc;
+
+    u32 ofs_d0;
+    u32 ofs_d4;
+    u32 ofs_d8;
+    u32 ofs_dc;
+
+    u32 ofs_e0;
+    u32 ofs_e4;
+    u32 ofs_e8;
+    u32 ofs_ec;
+
+    u32 ofs_f0;
+    u32 ofs_f4;
+    u32 ofs_f8;
+    u32 ofs_fc;
 };
 
 #endif

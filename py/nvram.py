@@ -39,10 +39,34 @@ class Nvram(rflip.nvram):
 
         self.acquire_lock()
         self.access_enable()
-        self.eeprom_len = self.__get_eeprom_len()
+        self.eeprom_len = self._get_eeprom_len()
 
         if wr: self.write_enable()
         if lh: self.load_eeprom_header()
+
+    def _dump_sw_arb(self):
+	print "[.] sw_arb:",
+	tmp = "r"
+	if self.sw_arb.req3: tmp += "3"
+	if self.sw_arb.req2: tmp += "2"
+	if self.sw_arb.req1: tmp += "1"
+	if self.sw_arb.req0: tmp += "0"
+	tmp += " w"
+	if self.sw_arb.arb_won3: tmp += "3"
+	if self.sw_arb.arb_won2: tmp += "2"
+	if self.sw_arb.arb_won1: tmp += "1"
+	if self.sw_arb.arb_won0: tmp += "0"
+	tmp += " c"
+	if self.sw_arb.req_clr3: tmp += "3"
+	if self.sw_arb.req_clr2: tmp += "2"
+	if self.sw_arb.req_clr1: tmp += "1"
+	if self.sw_arb.req_clr0: tmp += "0"
+	tmp += " s"
+	if self.sw_arb.req_set3: tmp += "3"
+	if self.sw_arb.req_set2: tmp += "2"
+	if self.sw_arb.req_set1: tmp += "1"
+	if self.sw_arb.req_set0: tmp += "0"
+	print tmp
 
     def reset(self):
         self.acquire_lock()
@@ -74,7 +98,9 @@ class Nvram(rflip.nvram):
         self.sw_arb.req_set1 = 1
         while not self.sw_arb.arb_won1:
             cntr += 1
-            if cntr > 20:
+            if cntr > 1000:
+		print "\n[!] nvram arbitration timed out"
+		self._dump_sw_arb()
                 raise Exception("timed out waiting for nvram arbitration")
             usleep(10)
         if cntr == 0:
@@ -83,6 +109,14 @@ class Nvram(rflip.nvram):
             print "granted after %d us." % (cntr * 10)
 
         self._locked = 1
+
+    def relinquish_lock(self):
+	if self.sw_arb.req_set1:
+		print "[-] clearing nvram arbitration request 1"
+		self.sw_arb.req_clr1 = 1
+	if self.sw_arb.req1:
+		print "[-] relinquishing nvram lock"
+		self.sw_arb.req1 = 1
 
     def access_enable(self):
         if not self._dev.grc.misc_local_control.auto_seeprom:
@@ -146,12 +180,19 @@ class Nvram(rflip.nvram):
 
         return self.read_data
 
-    def __get_eeprom_len(self): 
-        if not self.read_dword(0) == tg.TG3_MAGIC:
-            #raise Exception("unknown eeprom format")
-            return 64 * 1024
+    def _get_eeprom_len(self): 
+	sz = 0
+        if self.read_dword(0) == tg.TG3_MAGIC:
+            sz = ((self.read_dword(0xf0) & 0xffff) >> 8) * 1024
+	if sz == 0:
+	    if self._dev.pci.did == 0x1682:
+             	sz = 64 * 1024
+	    elif self._dev.pci.did == 0x16b4:
+		sz = 256 * 1024
+	    else:
+		raise Exception("nvram of unknown length")
+	return sz
  
-        return ((self.read_dword(0xf0) & 0xffff) >> 8) * 1024
 
     def load_eeprom_header(self):
         hdr_len = sizeof(tg.nvram_header)

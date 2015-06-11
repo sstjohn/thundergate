@@ -135,8 +135,8 @@ class DebugMagic(Magics):
             self.cpu._dev.grc.fastboot_pc.enable = 0
             self.cpu._dev.grc.fastboot_pc.addr = 0
             self.cpu._dev.mem.write_dword(0xb50, 0)
-            self.cpu.status.word = 0xffffffff
-            self.cpu.mode.reset = 1
+            self.cpu._dev.grc.misc_config.grc_reset = 1
+	    self.cpu._dev.init()
             self.cpu.mode.halt = 1
             self.u(None)
 

@@ -164,7 +164,8 @@ class TapDriver(object):
     def _device_setup(self):
         dev = self.dev
         mm = self.mm
-        print "[+] initializing device"
+        dev.drv = self
+	print "[+] initializing device"
         dev.init()
         print "[+] resetting device"
         dev.reset()

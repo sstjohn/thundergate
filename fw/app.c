@@ -420,8 +420,6 @@ void dev_init()
     cpmu.override_enable.mac_clock_speed_override_enable = 1; 
 
     rxcpu.mode.icache_pref_en = 1;
-    rxcpu.mode.data_cache_en = 1;
-    rxcpu.mode.write_post_en = 1;
 
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
@@ -436,10 +434,12 @@ void dev_init()
     
     grc.power_management_debug.perst_override = 1;
    
-    cfg_port.pci_id.word = 0x88b51682;
-    cfg_port.pci_class.word = 0x00088000;
+    //cfg_port.pci_id.word = 0x88b51682;
+    //cfg_port.pci_class.word = 0x00088000;
     
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
+    grc.ofs_ec = 0x25fc;
+    pci.state.rom_enable = 1;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
