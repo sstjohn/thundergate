@@ -378,7 +378,6 @@ void nv_load_mac(u8 *mac)
 {
     u64 tmp;
 
-    while (nvram.auto_sense_status.busy);
     nvram.sw_arb.req_set0 = 1;
     while (!nvram.sw_arb.arb_won0);
     nvram.access.enable = 1;
@@ -414,38 +413,39 @@ void nv_load_mac(u8 *mac)
 void dev_init() 
 {
     set_and_wait(ma.mode.enable);
-    set_and_wait(bufman.mode.enable);
-  
-    cpmu.override_policy.mac_clock_switch = 0;
-    cpmu.override_enable.mac_clock_speed_override_enable = 1; 
-
+    //set_and_wait(bufman.mode.enable);
+    cpmu.megabit_policy.mac_clock_switch = 0;
+    cpmu.link_aware_policy.mac_clock_switch = 0;
+    cpmu.d0u_policy.mac_clock_switch = 0;
+    cpmu.link_idle_policy.mac_clock_switch = 0;
+ 
     rxcpu.mode.icache_pref_en = 1;
 
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
-    grc.rxcpu_event_enable.word = 0;    
-    grc.rxcpu_event_enable.emac = 1;
+    //grc.rxcpu_event_enable.word = 0;    
+    //grc.rxcpu_event_enable.emac = 1;
 
-    grc.misc_local_control.auto_seeprom = 1;
     grc.misc_config.gphy_keep_power_during_reset = 1;
     grc.misc_config.disable_grc_reset_on_pcie_block = 1;
     grc.misc_config.timer_prescaler = 0x7f;
     
     grc.power_management_debug.perst_override = 1;
-   
+     
+    while (nvram.auto_sense_status.busy);
     //cfg_port.pci_id.word = 0x88b51682;
     //cfg_port.pci_class.word = 0x00088000;
     
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
-    grc.ofs_ec = 0x25fc;
+    grc.ofs_ec = read_nvram(0x1c);
     pci.state.rom_enable = 1;
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
     while (ftq.reset.word);
 
-    emac.mode.port_mode = 2;
+    /* emac.mode.port_mode = 2;
 
     set_and_wait(emac.mode.en_fhde);
     set_and_wait(emac.mode.en_rde);
@@ -470,20 +470,17 @@ void dev_init()
     set_and_wait(emac.rx_mac_mode.enable);
 
     set_and_wait(wdma.mode.enable);
-    set_and_wait(rdma.mode.enable);
+    set_and_wait(rdma.mode.enable); */
 
     nv_load_mac(my_mac);
 
     mac_cpy(my_mac, (void *)0xc0000412);
 
-    pci.command.bus_master = 1;
+    //pci.command.bus_master = 1;
 
-    gencomm[GATE_BASE_GCW] = 0x88b50000;
+    //gencomm[GATE_BASE_GCW] = 0x88b50000;
 
-    if (gencomm[0] == 0x4b657654)
-	gencomm[0] = ~0x4b657654;
-
-
+    gencomm[0] = ~0x4b657654;
 }
 
 u16 phy_read(u16 reg)
@@ -597,6 +594,8 @@ void check_link()
 int app() 
 {
     dev_init();
+
+    while (1);
 
     check_link();
 

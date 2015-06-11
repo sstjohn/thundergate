@@ -28,6 +28,7 @@ from tapdrv import TapDriver
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 import socket
+from struct import pack, unpack
 
 class TestDriver(object):
     def __init__(self, dev):
@@ -50,8 +51,9 @@ class TestDriver(object):
         #self.reg_finder()
         #self.msi_wr()
 	#self.asfdiff()
-        #self.pxediff()
-        self.pxeidiff()
+        self.pxediff()
+        #self.pxeidiff()
+        #self.read_oprom()
 
     def pxeidiff(self):
 	dev = self.dev
@@ -66,12 +68,14 @@ class TestDriver(object):
 
         dev.reset(quick=True)
         cpu.mode.halt = 1
-        insns = []
-        for i in range(50000):
-            insns += [cpu.pc]
+        
+        nr_is = {}
+        for i in range(1000000):
+            try: nr_is[cpu.pc] += 1
+            except: nr_is[cpu.pc] = 1
             cpu.mode.single_step = 1
 
-        self.norom_insns = insns
+        self.norom_insns = nr_is
 
         dev.reset()
 	usleep(1000)
@@ -83,12 +87,55 @@ class TestDriver(object):
         dev.reset(quick=True)
         cpu.mode.halt = 1
 
-        insns = []
-        for i in range(50000):
-            insns += [cpu.pc]
+        print
+        print "[!] read rom now"
+        print
+
+        r_is = {}
+        for i in range(1000000):
+            try: r_is[cpu.pc] += 1
+            except: r_is[cpu.pc] = 1
             cpu.mode.single_step = 1
 
-        self.rom_insns = insns
+        self.rom_insns = r_is
+
+        uniq = []
+        more = []
+
+        for i in r_is.keys():
+            try:
+                diff = r_is[i] - nr_is[i]
+                if diff > 0:
+                    more += [(i, diff)]
+            except:
+                uniq += [(i, r_is[i])]
+
+        print "[+] rom-unique insns:"
+        for i in uniq:
+            print "\t%08x: %d" % (i[0], i[1])
+
+    def read_oprom(self, count = 4):
+        dev = self.dev
+        bdf = dev.interface.bdf
+        words = []
+        print "[+] reading oprom..."
+        with file("/sys/bus/pci/devices/%s/rom" % bdf, "rb+") as rom:
+            try:
+                x = rom.read(4)
+            except:
+                print "[+] enabling oprom"
+                rom.write("1")
+                x = rom.read(4)
+
+            words += [unpack(">I", x)[0]]
+
+            for ofs in range(4, count, 4):
+                x = rom.read(4)
+
+                words += [unpack(">I", x)[0]]
+
+        print "[+] last word read: %08x" % unpack(">I", x)[0]
+        return words
 
     def pxediff(self):
 	dev = self.dev
@@ -104,24 +151,29 @@ class TestDriver(object):
 	dev.reset()
 	sleep(5)
 	
-	cpu.halt()
 	initial = reutils.state_save(dev)
 
 	dev.reset()
 	usleep(1000)
-	dev.reset(cold = False)
-	usleep(1000)
 
 	dev.nvram.init(wr=1)
 	dev.nvram.setpxe()
-	
-	dev.reset()
-	sleep(5)
-	
-	cpu.halt()
-	wasf = reutils.state_diff(dev, initial)
+        dev.reset()
+
+        print "[+] press any key to continue..."
+        raw_input()
+        dev.interface.reattach()
+        dev.init()
+
+        self.read_oprom()
+	wpxe = reutils.state_diff(dev, initial)
+
+        dev.reset(quick=True)
+        cpu.mode.halt = 1
+        wpxei = reutils.state_diff(dev, wpxe)
 
 	if not was_enabled:
+                dev.reset()
 		dev.nvram.init(wr=1)
 		dev.nvram.setpxe(1)
 		dev.reset()

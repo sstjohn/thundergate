@@ -242,7 +242,7 @@ class Device(object):
 
     
     
-    def reset(self, cold = None, quick = False):
+    def reset(self, cold = None, quick = False, pcie = False):
 	if cold == None:
 	    cold = not hasattr(self, "drv")
 
@@ -268,14 +268,15 @@ class Device(object):
 	print "was %08x" % self.grc.fastboot_pc.word
 	self.grc.fastboot_pc.word = 0
 
-	if not cold:
-		if self.grc.misc_config.disable_grc_reset_on_pcie_block == 0:
-		    print "[+] disabling grc reset on pcie block"
-		    self.grc.misc_config.disable_grc_reset_on_pcie_block = 1
-
-		if self.grc.misc_config.gphy_keep_power_during_reset == 0:
-		    print "[+] enabling gphy power during reset"
-		    self.grc.misc_config.gphy_keep_power_during_reset = 1
+        if not pcie:
+            if self.grc.misc_config.disable_grc_reset_on_pcie_block == 0:
+                print "[+] disabling grc reset on pcie block"
+                self.grc.misc_config.disable_grc_reset_on_pcie_block = 1
+	
+        if not cold:
+            if self.grc.misc_config.gphy_keep_power_during_reset == 0:
+                print "[+] enabling gphy power during reset"
+                self.grc.misc_config.gphy_keep_power_during_reset = 1
 
         print "[+] resetting core clocks"
         self.grc.misc_config.grc_reset = 1

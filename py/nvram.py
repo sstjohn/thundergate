@@ -405,11 +405,11 @@ class Nvram(rflip.nvram):
         self.install_bc(data)
         bclen = len(data) + 0x204
 
-        #with open(efidrv, "rb") as f:
-        #    data = f.read()
-        #oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
-        #print "[+] installing thundergate oprom"
-        #start += self.write_dir_image(0, oprom, nv_ofs=bclen)
+        with open(efidrv, "rb") as f:
+            data = f.read()
+        oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
+        print "[+] installing thundergate oprom"
+        start += self.write_dir_image(0, oprom, nv_ofs=bclen)
     
     def dump_eeprom(self, fname):
         with open(fname, "wb") as f:
