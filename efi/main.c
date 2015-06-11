@@ -40,12 +40,14 @@ L"         __ __| |                     |            ___|       |",
 L"            |   __ \\  |   | __ \\   _` |  _ \\  __| |      _` | __|  _ \\", 
 L"            |   | | | |   | |   | (   |  __/ |    |   | (   | |    __/", 
 L"           _|  _| |_|\\__,_|_|  _|\\__,_|\\___|_|   \\____|\\__,_|\\__|\\___|" ,
+L"",
+L"                             http://thundergate.io"
 };
 
-#define SPLASH_LOGO_LINES 4
+#define SPLASH_LOGO_LINES 6
 #define SPLASH_TOP 10
-#define SPLASH_LOGO_COLOR EFI_RED | EFI_BRIGHT
-
+#define SPLASH_LOGO_COLOR EFI_RED
+#define SPLASH_URL_COLOR EFI_RED | EFI_BRIGHT
 
 u32 tg_dp[12] = {0};
 u32 tg_dp_len = 0;
@@ -119,6 +121,8 @@ void splash()
 	int st = (col / 2) - 40;
 	ST->ConOut->SetAttribute(ST->ConOut, SPLASH_LOGO_COLOR);
 	for (int ln = 0; ln < SPLASH_LOGO_LINES; ln++) {
+		if (SPLASH_LOGO_LINES == ln + 1)
+			ST->ConOut->SetAttribute(ST->ConOut, SPLASH_URL_COLOR);
 		ST->ConOut->SetCursorPosition(ST->ConOut, st, SPLASH_TOP + ln);
 		ST->ConOut->OutputString(ST->ConOut, splash_logo[ln]);
 	}

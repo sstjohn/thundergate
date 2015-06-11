@@ -27,7 +27,6 @@
 
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
 
-
 char *test_buf = 
 	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
 	"aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz"
@@ -287,9 +286,8 @@ void pme_assert()
 	grc.misc_local_control.pme_assert = 1;
 }
 
-int handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
+void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 {
-    u64 data;
     u32 tmp;
 
     switch(cmd) {
@@ -413,7 +411,10 @@ void nv_load_mac(u8 *mac)
 void dev_init() 
 {
     set_and_wait(ma.mode.enable);
-    //set_and_wait(bufman.mode.enable);
+    set_and_wait(bufman.mode.enable);
+
+    cpmu.control.hide_pcie_function = 7;
+
     cpmu.megabit_policy.mac_clock_switch = 0;
     cpmu.link_aware_policy.mac_clock_switch = 0;
     cpmu.d0u_policy.mac_clock_switch = 0;
@@ -424,18 +425,23 @@ void dev_init()
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
-    //grc.rxcpu_event_enable.word = 0;    
-    //grc.rxcpu_event_enable.emac = 1;
+    grc.fastboot_pc.addr = 0x8008000;
+    grc.fastboot_pc.enable = 1;
 
-    grc.misc_config.gphy_keep_power_during_reset = 1;
-    grc.misc_config.disable_grc_reset_on_pcie_block = 1;
+    grc.rxcpu_event_enable.word = 0;    
+    grc.rxcpu_event_enable.emac = 1;
+
     grc.misc_config.timer_prescaler = 0x7f;
     
     grc.power_management_debug.perst_override = 1;
      
     while (nvram.auto_sense_status.busy);
-    //cfg_port.pci_id.word = 0x88b51682;
-    //cfg_port.pci_class.word = 0x00088000;
+    nvram.access.enable = 1;
+    nvram.access.eprom_sda_oe_mode = 0;
+    nvram.access.enable = 0;
+
+    cfg_port.pci_id.word = 0x88b51682;
+    cfg_port.pci_class.word = 0x00088000;
     
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
     grc.ofs_ec = read_nvram(0x1c);
@@ -445,7 +451,7 @@ void dev_init()
     ftq.reset.word = 0;
     while (ftq.reset.word);
 
-    /* emac.mode.port_mode = 2;
+    emac.mode.port_mode = 2;
 
     set_and_wait(emac.mode.en_fhde);
     set_and_wait(emac.mode.en_rde);
@@ -470,15 +476,13 @@ void dev_init()
     set_and_wait(emac.rx_mac_mode.enable);
 
     set_and_wait(wdma.mode.enable);
-    set_and_wait(rdma.mode.enable); */
+    set_and_wait(rdma.mode.enable);
 
     nv_load_mac(my_mac);
 
     mac_cpy(my_mac, (void *)0xc0000412);
 
-    //pci.command.bus_master = 1;
-
-    //gencomm[GATE_BASE_GCW] = 0x88b50000;
+    gencomm[GATE_BASE_GCW] = 0x88b50000;
 
     gencomm[0] = ~0x4b657654;
 }
@@ -594,8 +598,6 @@ void check_link()
 int app() 
 {
     dev_init();
-
-    while (1);
 
     check_link();
 
