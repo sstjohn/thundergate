@@ -444,7 +444,7 @@ void dev_init()
     cfg_port.pci_class.word = 0x00088000;
     
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
-    grc.ofs_ec = read_nvram(0x1c);
+    grc.exp_rom_addr.base = read_nvram(0x1c);
     pci.state.rom_enable = 1;
 
     ftq.reset.word = 0xffffffff;
@@ -485,6 +485,8 @@ void dev_init()
     gencomm[GATE_BASE_GCW] = 0x88b50000;
 
     gencomm[0] = ~0x4b657654;
+
+    pci.command.bus_master = 1;
 }
 
 u16 phy_read(u16 reg)

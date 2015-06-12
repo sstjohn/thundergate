@@ -362,6 +362,10 @@ class Device(object):
                 else:
                     print "[-] firmware compilation failed!"
 
+    def reattach(self):
+        self.interface.reattach()
+        self.init()
+
 def hashfile(path):
     with open(path, 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()

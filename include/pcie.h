@@ -19,9 +19,62 @@
 #ifndef _PCIE_H_
 #define _PCIE_H_
 
+struct pcie_tl_tlp_ctrl {
+	u32 excessive_current_fix_en :1;
+	u32 reserved30 :1;
+	u32 int_mode_fix_en :1;
+	u32 reserved28 :1;
+	u32 unexpected_completion_err_fix_en :1;
+	u32 type1_vendor_defined_msg_fix_en :1;
+	u32 data_fifo_protect :1;
+	u32 address_check_en :1;
+	u32 tc0_check_en :1;
+	u32 crc_swap :1;
+	u32 ca_err_dis :1;
+	u32 ur_err_dis :1;
+	u32 rsv_err_dis :1;
+	u32 mps_chk_en :1;
+	u32 ep_err_dis :1;
+	u32 bytecount_chk_en :1;
+	u32 reserved14 :2;
+	u32 dma_read_traffic_class :3;
+	u32 dma_write_traffic_class :3;
+	u32 reserved6 :2;
+	u32 completion_timeout :6;
+};
+
+struct pcie_tl_transaction_config {
+	u32 retry_buffer_timining_mod_en :1;
+	u32 reserved30 :1;
+	u32 one_shot_msi_en :1;
+	u32 reserved28 :1;
+	u32 select_core_clock_override :1;
+	u32 cq9139_fix_en :1;
+	u32 cmpt_pwr_check_en :1;
+	u32 cq12696_fix_en :1;
+	u32 device_serial_no_override :1;
+	u32 cq12455_fix_en :1;
+	u32 tc_vc_filtering_check_en :1;
+	u32 dont_gen_hot_plug_msg :1;
+	u32 ignore_hot_plug_msg :1;
+	u32 msi_multimsg_cap :3;
+	u32 data_select_limit :4;
+	u32 pcie_1_1_pl_en :1;
+	u32 pcie_1_1_dl_en :1;
+	u32 pcie_1_1_tl_en :1;
+	u32 reserved7 :2;
+	u32 pcie_power_budget_cap_en :1;
+	u32 lom_configuration :1;
+	u32 concate_select :1;
+	u32 ur_status_bit_fix_en :1;
+	u32 vendor_defined_msg_fix_en :1;
+	u32 power_state_write_mem_enable :1;
+	u32 reserved0 :1;
+};
+
 struct pcie_tl_regs {
-    u32 tlp_control;
-    u32 transaction_config;
+    struct pcie_tl_tlp_ctrl tlp_ctrl;
+    struct pcie_tl_transaction_config transaction_config;
     u32 ofs_08;
     u32 ofs_0c;
 

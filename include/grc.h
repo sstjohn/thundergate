@@ -363,6 +363,11 @@ struct grc_mdi_ctrl {
 	u32 mdi_data :1;
 };
 
+struct grc_exp_rom_addr {
+	u32 test_bits :8;
+	u32 base :24;
+};
+
 struct grc_regs {
     struct grc_mode mode;
     struct grc_misc_config misc_config;
@@ -437,6 +442,7 @@ struct grc_regs {
     u32 ofs_e0;
     u32 ofs_e4;
     u32 ofs_e8;
+    struct grc_exp_rom_addr exp_rom_addr;
     u32 ofs_ec;
 
     u32 ofs_f0;
