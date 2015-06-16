@@ -52,6 +52,7 @@
 #include "tcp_seg_ctrl.h"
 #include "nvram.h"
 #include "cfg_port.h"
+#include "pcie.h"
 
 volatile u32 gencomm[300];
 volatile struct mbuf txmbuf0[0];
@@ -90,5 +91,6 @@ volatile struct otp_regs otp;
 volatile struct nvram_regs nvram;
 volatile struct tcp_seg_ctrl_regs tcp_seg_ctrl;
 volatile struct bdrdma_regs bdrdma;
-
+volatile struct pcie_tl_regs pcie_tl;
+volatile struct pcie_dl_regs pcie_dl;
 #endif

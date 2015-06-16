@@ -11,10 +11,10 @@ LIBGCC=$(shell $(CC) -print-libgcc-file-name)
 
 IMAGE=fw.img
 
-CSOURCE=app.c
+CSOURCE=init.c main.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c
 CHEADERS=$(shell ls $(PROJ_ROOT)/include)
 
-ASOURCE=main.S
+ASOURCE=entry.S
 
 ASFLAGS=$(CFLAGS)
 CPPFLAGS=$(INCLUDE)
@@ -33,7 +33,7 @@ $(IMAGE): fw.elf
 	$(OBJCOPY) -j .text -j .data -j .rodata -j .bss -O binary fw.elf $(IMAGE)
 
 clean:
-	rm -f $(OBJECTS) fw.elf nvimage .depend fixed.sym
+	rm -f $(OBJECTS) fw.elf fw.img .depend fixed.sym
 
 depend: .depend
 

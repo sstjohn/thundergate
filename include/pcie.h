@@ -305,7 +305,7 @@ struct pcie_dl_regs {
 
     struct pcie_dl_retry_buffer_ptr retry_buffer_read_ptr;
     struct pcie_dl_retry_buffer_ptr retry_buffer_purged_ptr;
-    u32 retry_buffer_read_write_debug_port;
+    u32 retry_buffer_read_write_port;
     u32 error_count_threshold;
 
     u32 tlp_error_counter;

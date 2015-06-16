@@ -1,8 +1,9 @@
 SECTIONS
 {
     .text 0x08008000 : { 
-        main.o(.text)
+        entry.o(.text)
         *(.text)
+	main.o(.text)
     }
 
     .data ADDR(.text)+SIZEOF(.text) : { 

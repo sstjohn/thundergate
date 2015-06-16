@@ -19,7 +19,7 @@
 #ifndef _BD_H_
 #define _BD_H_
 
-#include "../include/utypes.h"
+#include "utypes.h"
 
 struct sbd_flags {
     u16 l4_cksum_offload :1;
