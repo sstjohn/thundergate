@@ -16,44 +16,33 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fw.h"
+#ifndef _DMARF_H_
+#define _DMARF_H_
 
-u32 old_id = 0;
-u32 old_class = 0;
+#include <efi/efi.h>
+#include <efi/efidevp.h>
+#include <efi/efilib.h>
+#include <efi/efiprot.h>
+#include <efi/efipciio.h>
+#include <efi/eficon.h>
+#include <wchar.h>
+#include "acpi.h"
 
-void cloak_engage()
-{
-	u32 new_id;
+#define DISABLE_DMAR 1
+#define IDENTITY_MAP_FIRST_16M 1
+#define IDENTITY_MAP_DRHD 1
 
-	if (state.flags & CLOAK_ENGAGED)
-		return;
+#if VERBOSE
+#define DbgPrint(x, ...) Print(x, ...)
+#else
+#define DbgPrint(x, ...)
+#endif
 
-	old_id = cfg_port.pci_id.word;
-	new_id = old_id;
-	if (config.cloak_vid) {
-		new_id &= 0xffff;
-		new_id |= (config.cloak_vid << 16);
-	}
-	if (config.cloak_did) {
-		new_id &= 0xffff0000;
-		new_id |= config.cloak_vid;
-	}
-	cfg_port.pci_id.word = new_id;
+extern u32 tg_dp[12];
+extern u32 tg_dp_len;
 
-	old_class = cfg_port.pci_class.word;
-	if (config.cloak_cc)
-		cfg_port.pci_class.word = config.cloak_cc << 8;
+void splash();
 
-	state.flags |= CLOAK_ENGAGED;
-}
+void EFIAPI werk(EFI_EVENT Event, VOID *Context);
 
-void cloak_disengage()
-{
-	if (!(state.flags & CLOAK_ENGAGED))
-		return;
-
-	cfg_port.pci_id.word = old_id;
-	cfg_port.pci_class.word = old_class;
-
-	state.flags &= ~CLOAK_ENGAGED;
-}
+#endif

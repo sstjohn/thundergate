@@ -317,7 +317,6 @@ class Nvram(rflip.nvram):
         f.close()
 
     def _set_dir_entry(self, index, nv_ofs, ilen, itype=0, sram_ofs=0x10000, xa=False, xb=False):
-
         if nv_ofs + ilen > self.eeprom_len:
             raise Exception("image too big for eeprom")
 
@@ -397,6 +396,10 @@ class Nvram(rflip.nvram):
 
     def install_thundergate(self, efidrv="efi/dmarf.efi", cpufw="fw/fw.img"):
         start = self.eeprom_hdr.directory[0].nvram_start
+        try: self.setpxe()
+        except: pass
+        try: self.setasf()
+        except: pass
         
         data = ''
         with open(cpufw, "rb") as f:

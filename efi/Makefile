@@ -2,7 +2,7 @@ ARCH            = $(shell uname -m | sed s,i[3456789]86,ia32,)
 
 include ../Make.common
 
-EFI_OBJS        = main.o
+EFI_OBJS        = main.o splash.o werk.o
 TARGET          = dmarf.efi dmarf.rom
 EFIROM		= $(PROJ_ROOT)/py/efirom.py
 TGINC		= -I$(PROJ_ROOT)/include
@@ -29,7 +29,7 @@ clean:
 	-rm *.efi
 	-rm *.rom
 
-dmarf.so: $(EFI_OBJS)
+dmarf.so: $(EFI_OBJS) dmarf.h
 	ld $(LDFLAGS) $(EFI_OBJS) -o $@ -lefi -lgnuefi $(LIB_GCC) -T $(EFI_LDS)
 
 %.efi: %.so
