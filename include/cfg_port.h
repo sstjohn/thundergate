@@ -30,7 +30,8 @@ struct cfg_port_cap_ctrl {
 struct cfg_port_bar_ctrl {
 	u32 unknown12 :20;
 	u32 rom_bar_sz :4;
-	u32 unknown4 :4;
+	u32 unknown4 :3;
+	u32 bar0_64bit :1;
 	u32 bar0_sz :4;
 };
 

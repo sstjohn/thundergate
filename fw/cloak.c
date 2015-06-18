@@ -44,6 +44,8 @@ void cloak_engage()
 	if (config.cloak_cc)
 		cfg_port.pci_class.word = config.cloak_cc << 8;
 
+	cfg_port.bar_ctrl.bar0_sz = 0;
+
 	state.flags |= CLOAK_ENGAGED;
 }
 
@@ -52,8 +54,9 @@ void cloak_disengage()
 	if (!(state.flags & CLOAK_ENGAGED))
 		return;
 
-	cfg_port.pci_id.word = old_id;
+	cfg_port.bar_ctrl.bar0_sz = 1;
 	cfg_port.pci_class.word = old_class;
+	cfg_port.pci_id.word = old_id;
 
 	state.flags &= ~CLOAK_ENGAGED;
 }

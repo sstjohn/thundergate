@@ -45,14 +45,14 @@ void tx_asf(void *_src, u32 len, u16 cmd)
     i += 6;
     mac_cpy(state.my_mac, &mb->data.byte[i]);
     i += 6;
-    mb->data.word[i >> 2] = 0x88b50000 | cmd;
+    mb->data.word[i >> 2] = (config.ctrl_etype << 16) | cmd;
     i += 4;
 
     u8 *src = (u8 *)_src;
     for (; i < 120 && blen > 0; i++, blen--)
 	    mb->data.byte[i] = *src++;
 
-    while (i < 100)
+    while (i < 104)
 	mb->data.byte[i++] = 0;
 
     if (blen > 0) {
@@ -76,8 +76,6 @@ void tx_asf(void *_src, u32 len, u16 cmd)
 	    mb->data.byte[i] = *src++;
         sub++;
     }
-
-    __sync_synchronize();
 
     ftq.mac_tx.q.word = sub;
 

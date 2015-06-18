@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.8.45
+                                 Version 0.8.47
                         Copyright (c) 2015 Saul St John
 
                             <a href="http://thundergate.io">http://thundergate.io</a>
@@ -48,7 +48,7 @@ $ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
             gnu-efi python python-dev python-ctypeslib libgmp-dev libmpfr-dev \
 	    libmpc-dev python-pip ipython
 $ sudo pip install capstone bidict pyelftools
-$ sudo easy_install git+http://github.com/nebula/python-eficompressor.git
+$ sudo easy_install git+http://github.com/sstjohn/python-eficompressor.git
     ~~~
 
 2. Clone repository:

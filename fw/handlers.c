@@ -178,6 +178,16 @@ void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    dump_pcie_retry_buffer(reply);
 	    break;
 
+	case CLOAK_EN_CMD:
+	    cloak_engage();
+	    (*reply)(0, 0, CLOAK_EN_ACK);
+	    break;
+
+	case CLOAK_DIS_CMD:
+	    cloak_disengage();
+	    (*reply)(0, 0, CLOAK_DIS_ACK);
+	    break;
+
         default:
 	    (*reply)(&arg1, 2, ERROR_REPLY);
             break;

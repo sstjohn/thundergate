@@ -39,7 +39,7 @@ void init()
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
 
-    cpmu.control.hide_pcie_function = 7;
+    //cpmu.control.hide_pcie_function = 7;
 
     cpmu.megabit_policy.mac_clock_switch = 0;
     cpmu.link_aware_policy.mac_clock_switch = 0;
