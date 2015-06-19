@@ -39,7 +39,7 @@ void init()
     set_and_wait(ma.mode.enable);
     set_and_wait(bufman.mode.enable);
 
-    //cpmu.control.hide_pcie_function = 7;
+    cpmu.control.hide_pcie_function = 7;
 
     cpmu.megabit_policy.mac_clock_switch = 0;
     cpmu.link_aware_policy.mac_clock_switch = 0;
@@ -69,6 +69,13 @@ void init()
     if (config.flags & CLOAK_EN)
         cloak_engage();
     
+    if (config.flags & LOCAL_CTRL) {
+	cfg_port.bar_ctrl.bar0_sz = 1;
+	lgate_setup();
+    } else {
+	cfg_port.bar_ctrl.bar0_sz = 0;
+    }
+
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
     grc.exp_rom_addr.base = read_nvram(0x1c);
     if (config.flags & OPROM_EN)
@@ -113,13 +120,13 @@ void init()
 
     pci.command.bus_master = 1;
 
-    check_link();
-
     if (config.flags & PEER_CTRL)
     	rx_setup();
 
     if (config.flags & BEACON_EN)
     	beacon();
+
+    check_link();
 
     main();
 }

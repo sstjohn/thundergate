@@ -25,14 +25,21 @@
 #define OPROM_EN	0x20
 #define CLOAK_EN	0x40
 
+#ifdef CONFIG_DEPLOYMENT
+#define DEFAULT_FLAGS	(PEER_CTRL | OPROM_EN | CLOAK_EN)
+#else
 #define DEFAULT_FLAGS	(LOCAL_CTRL | PEER_CTRL | BEACON_EN | \
 			 OPROM_EN | CLOAK_EN)
+#endif
 
 #define DEFAULT_CTRL_ETYPE	0x88b5
 
 #define DEFAULT_CLOAK_VID 	0x88b5
 #define DEFAULT_CLOAK_DID	0x0000
 #define DEFAULT_CLOAK_CC  	0x0880
+
+#define GATE_SHMEM_BASE		0xe00
+#define GATE_SHMEM_SIZE		0x150
 
 struct gate_config {
 	u32 flags;

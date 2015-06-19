@@ -28,8 +28,6 @@
 #include "config.h"
 #include "state.h"
 
-#define GATE_BASE_GCW 0xc
-
 #define set_and_wait(x) do { x = 1; while (!x); } while (0)
 
 extern struct gate_config config;
@@ -42,13 +40,15 @@ void dump_pcie_retry_buffer(reply_t reply);
 void dma_read(u32 addr_hi, u32 addr_low, u32 length, reply_t reply);
 u32 local_read_dword(u32 addr);
 void local_write_dword(u32 addr, u32 val);
-void post_buf(void *_src, u32 len, u16 cmd);
 void send_msi(u32 addr_hi, u32 addr_low, u32 data);
 u32 read_nvram(u32 ofs);
 void write_nvram(u32 ofs, u32 val);
 void cap_ctrl(u32 cap, u32 enabled);
 void hide_func(u32 func, u32 hidden);
 void pme_assert();
+void lgate_post(void *_src, u32 _len, u16 cmd);
+void lgate_reply();
+void lgate_setup();
 void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3);
 u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len);
 void tx_std_teardown();

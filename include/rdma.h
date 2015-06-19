@@ -309,17 +309,7 @@ struct rdma_regs {
     u32 ofs_f4;
     u32 ofs_f8;
     u32 ofs_fc;
-
-    /* are these real? */
-
-    /*
-    struct rdma_misc_ctrl_1 misc_ctrl_1;
-    struct rdma_misc_ctrl_2 misc_ctrl_2;
-    u32 ofs_108;
-    u32 ofs_10c;
-
-    struct rdma_misc_ctrl_3 misc_ctrl_3;
-    */
 };
+
 
 #endif

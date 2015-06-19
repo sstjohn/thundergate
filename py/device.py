@@ -161,7 +161,6 @@ class Device(object):
     def block_at(self, name, offset, t):
         t.block_dump = block_utils.dump
         t.block_disp = block_utils.disp
-        t.block_name = name
         
         if t.__name__ == "ftq":
                 t.reset = block_utils.ftq_reset
@@ -179,6 +178,7 @@ class Device(object):
                         t.reset = block_utils.reset
 
         x = cast(self.bar0 + offset, POINTER(t)).contents
+	x.block_name = name
         x.offset = offset
         x._block_regs = cast(self.bar0 + offset, POINTER(c_uint32 * (sizeof(t) / 4))).contents 
         x._dev = self

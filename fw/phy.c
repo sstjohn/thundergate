@@ -89,7 +89,7 @@ void check_link()
 {
 	u16 res;
 
-	if (grc.mode.host_stack_up)
+	if (state.flags & HANDSHAKE_MAGIC_SEEN)
 		return;
 
 	if (!emac.tx_mac_status.link_up) {

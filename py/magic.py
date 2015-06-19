@@ -62,6 +62,12 @@ class DeviceMagic(Magics):
     def rxdbg(self, arg):
         self.dev.rxcpu.tg3db()
 
+    @line_magic
+    def ti(self, arg):
+	self.dev.nvram.init(wr=1)
+	self.dev.nvram.install_thundergate()
+	self.dev.reset()
+
 def _register_device_magic(dev):
     ip = get_ipython()
     ip.register_magics(DeviceMagic(ip, dev))

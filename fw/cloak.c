@@ -44,8 +44,6 @@ void cloak_engage()
 	if (config.cloak_cc)
 		cfg_port.pci_class.word = config.cloak_cc << 8;
 
-	/* cfg_port.bar_ctrl.bar0_sz = 0; */
-
 	state.flags |= CLOAK_ENGAGED;
 
 	tx_std_setup();
@@ -58,7 +56,6 @@ void cloak_disengage()
 
 	tx_std_teardown();
 
-	cfg_port.bar_ctrl.bar0_sz = 1;
 	cfg_port.pci_class.word = old_class;
 	cfg_port.pci_id.word = old_id;
 

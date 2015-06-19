@@ -33,11 +33,14 @@ u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
     if (i == sbds.con_idx[0])
 	return 1;
 
-    txbd[i].addr_hi = addr_hi;
-    txbd[i].addr_low = addr_low;
-    txbd[i].length = len;
-    txbd[i].flags.packet_end = 1;
-
+    txbd[tx_pi].addr_hi = addr_hi;
+    txbd[tx_pi].addr_low = addr_low;
+    txbd[tx_pi].length = len >> 2;
+    txbd[tx_pi].flags.word = 0;
+    txbd[tx_pi].flags.packet_end = 1;
+    txbd[tx_pi].vlan_tag = 0;
+    txbd[tx_pi].hdrlen_0_1 = 0;
+    txbd[tx_pi].mss = 1518;
     tx_pi = i;
     lpmb.box[0x30].hi = tx_pi;
 
@@ -49,8 +52,9 @@ void tx_std_teardown()
 	if (!(state.flags & TX_STD_SETUP))
 	    return;
 
-	sdc.mode.enable = 0;
+	sbds.mode.enable = 0;
 	sdi.mode.enable = 0;
+	sdc.mode.enable = 0;
 
 	txrcb[0].flags.disabled = 1;
 
@@ -64,8 +68,8 @@ void tx_std_setup()
 	if (!(state.flags & CLOAK_ENGAGED) || (state.flags & TX_STD_SETUP))
 		return;
 
-	grc.mode.host_send_bds = 0;
 	grc.mode.host_stack_up = 1;
+	grc.mode.host_send_bds = 0;
 
 	tx_pi = 0;
 	lpmb.box[0x30].hi = tx_pi;
@@ -77,12 +81,14 @@ void tx_std_setup()
 
 	txrcb[1].flags.disabled = 1;
 
+	sbds.mode.reset = 1;
 	sdi.mode.reset = 1;
 	sdc.mode.reset = 1;
-	while (sdi.mode.reset || sdc.mode.reset);
+	while (sbds.mode.reset || sdi.mode.reset || sdc.mode.reset);
 
-	set_and_wait(sdi.mode.enable);
 	set_and_wait(sdc.mode.enable);
+	set_and_wait(sdi.mode.enable);
+	set_and_wait(sbds.mode.enable);
 
 	state.flags |= TX_STD_SETUP;
 }

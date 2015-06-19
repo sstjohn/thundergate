@@ -22,31 +22,70 @@
 #include "utypes.h"
 
 struct sbd_flags {
-    u16 l4_cksum_offload :1;
-    u16 ip_cksum_offload :1;
-    u16 packet_end :1;
-    u16 jumbo_frame :1;
-    u16 hdrlen_2 :1;
-    u16 snap :1;
-    u16 vlan_tag :1;
-    u16 coalesce_now :1;
-    u16 cpu_pre_dma :1;
-    u16 cpu_post_dma :1;
-    u16 hdrlen_3 :1;
-    u16 hdrlen_4 :1;
-    u16 hdrlen_5 :1;
-    u16 hdrlen_6 :1;
-    u16 hdrlen_7 :1;
-    u16 no_crc :1;
+    union {
+        struct {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	    u16 no_crc :1;
+	    u16 hdrlen_7 :1;
+	    u16 hdrlen_6 :1;
+	    u16 hdrlen_5 :1;
+	    u16 hdrlen_4 :1;
+	    u16 hdrlen_3 :1;
+	    u16 cpu_post_dma :1;
+	    u16 cpu_pre_dma :1;
+	    u16 coalesce_now :1;
+	    u16 vlan_tag :1;
+	    u16 snap :1;
+	    u16 hdrlen_2 :1;
+	    u16 jumbo_frame :1;
+	    u16 packet_end :1;
+	    u16 ip_cksum_offload :1;
+	    u16 l4_cksum_offload :1;
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	    u16 l4_cksum_offload :1;
+	    u16 ip_cksum_offload :1;
+	    u16 packet_end :1;
+	    u16 jumbo_frame :1;
+	    u16 hdrlen_2 :1;
+	    u16 snap :1;
+	    u16 vlan_tag :1;
+	    u16 coalesce_now :1;
+	    u16 cpu_pre_dma :1;
+	    u16 cpu_post_dma :1;
+	    u16 hdrlen_3 :1;
+	    u16 hdrlen_4 :1;
+	    u16 hdrlen_5 :1;
+	    u16 hdrlen_6 :1;
+	    u16 hdrlen_7 :1;
+	    u16 no_crc :1;
+#else
+#error unknown endianness
+#endif
+	};
+	u16 word;
+    };
 };
 
 struct sbd {
     u32 addr_hi;
     u32 addr_low;
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    u16 length;
+    struct sbd_flags flags;
+
+    u16 hdrlen_0_1 :2;
+    u16 mss :14;
+    u16 vlan_tag;
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     struct sbd_flags flags;
     u16 length;
+
     u16 vlan_tag;
-    u16 reserved;
+    u16 mss :14;
+    u16 hdrlen_0_1 :2;
+#else
+#error unknown endianness
+#endif
 };
 
 struct rbd_flags {

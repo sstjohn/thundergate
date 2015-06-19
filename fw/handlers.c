@@ -108,20 +108,6 @@ void pme_assert()
 	grc.misc_local_control.pme_assert = 1;
 }
 
-void post_buf(void *_src, u32 len, u16 cmd)
-{
-	int i;
-
-	if (len > 256)
-		len = 256;
-
-	u32 *src = (u32 *)_src;
-	for (i = 0; i < len; i++)
-		gencomm[i + GATE_BASE_GCW + 1] = *src++;
-
-	gencomm[GATE_BASE_GCW] = 0x88b50000 | cmd;
-}
-
 void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 {
     u32 tmp;
@@ -191,8 +177,8 @@ void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	case TX_STD_ENQ_CMD:
 	    if (tx_std_enq(arg1, arg2, arg3))
 		(*reply)(0, 0, TX_STD_ENQ_ERR);
-	    
-            asm("break");
+	    else
+		(*reply)(0, 0, TX_STD_ENQ_ACK); 
 	    break;
 
         default:

@@ -55,8 +55,9 @@ void rx()
 
 void rx_setup() 
 {
+    rlp.mode.reset = 1;
     emac.rx_rule[7].control.enable = 0;
-    while (emac.rx_rule[7].control.enable);
+    while (rlp.mode.reset || emac.rx_rule[7].control.enable);
 
     emac.rx_rule[7].control.word = 0;
 
@@ -67,9 +68,11 @@ void rx_setup()
 
     emac.rx_rule[7].mask_value = (0xffff0000 | config.ctrl_etype);
 
-    emac.rx_rule[7].control.enable = 1;
-    while (!emac.rx_rule[7].control.enable);
+    rlp.config.number_of_lists_per_distribution_group = 1;
+    rlp.config.number_of_active_lists = 0x10;
+    rlp.config.bad_frames_class = 1;
 
-    rlp.mode.enable = 1;
-    grc.rxcpu_event_enable.rdiq = 1;
+    set_and_wait(rlp.mode.enable);
+    set_and_wait(grc.rxcpu_event_enable.rdiq);
+    set_and_wait(emac.rx_rule[7].control.enable);
 }

@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.8.48
+                                 Version 0.8.49
                         Copyright (c) 2015 Saul St John
 
                             <a href="http://thundergate.io">http://thundergate.io</a>
@@ -186,4 +186,4 @@ of PCI capabilities configuration. Please refer to ```fw/app.c```,
 # Further Reading #
 
 A report describing an older version of this project can be found at
-<http://pages.cs.wisc.edu/~sstjohn/tg_old.pdf>.
+<http://thundergate.io/tg_old.pdf>.

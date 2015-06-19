@@ -30,13 +30,5 @@ void main()
 	if (grc.rxcpu_event.rdiq) {
 		rx();
 	}
-	u32 gb = gencomm[GATE_BASE_GCW];
-	if (((gb >> 15) == (0x88b5 << 1)) && (gb & 0x7fff)) {
-		u32 arg1 = gencomm[GATE_BASE_GCW + 1];
-		u32 arg2 = gencomm[GATE_BASE_GCW + 2];
-		u32 arg3 = gencomm[GATE_BASE_GCW + 3];
-
-		handle(post_buf, gb & 0xffff, arg1, arg2, arg3);
-        }
     } 
 }

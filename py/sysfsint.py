@@ -31,6 +31,8 @@ class SysfsInterface(object):
         self.mm = mm.MemMgr()
 
     def _open_device(self):
+	with file(self.dd + "/enable", "w") as f:
+	    f.write('1')
         self.cfgfd = os.open(self.dd + "/config", os.O_RDWR)
         try: self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)
         except: self.barfd = os.open(self.dd + "/resource0", os.O_RDWR)

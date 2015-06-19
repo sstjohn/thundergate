@@ -43,15 +43,16 @@ class TestDriver(object):
     def run(self):
         self.dev.init()
 
-        #with TapDriver(self.dev) as tap:
-        #    self.test_send(tap)
+        self.tap = TapDriver(self.dev)
+	self.tap.__enter__()
+        self.test_send(self.tap)
         #self.test_dmar()
         #self.test_rdmar()
         #self.test_dmaw()
         #self.reg_finder()
         #self.msi_wr()
 	#self.asfdiff()
-        self.pxediff()
+        #self.pxediff()
         #self.pxeidiff()
         #self.read_oprom()
 
@@ -332,8 +333,13 @@ class TestDriver(object):
         dev.rxcpu.halt()
         dev.sbds.block_disable()
         dev.sdi.block_disable()
+	dev.sdc.block_disable()
+	dev.sbds.reset()
+	dev.sdi.reset()
+	dev.sdc.reset()
 
-        dev.sdi.mode.pre_dma_debug = 1
+	self.clear_txmbufs()
+	self.clear_txbds()
 
         print "[+] saving initial state"
         state = reutils.state_save(dev)
@@ -343,20 +349,11 @@ class TestDriver(object):
         usleep(10)
         state = reutils.state_diff(dev, state)
 
-        dev.rdma.block_disable()
-        usleep(10)
-        state = reutils.state_diff(dev, state)
-
+	dev.sdc.block_enable()
+        dev.sdi.block_enable()
         dev.sbds.block_enable()
         usleep(10)
-        state = reutils.state_diff(dev, state)
 
-        dev.sdi.block_enable()
-        usleep(10)
-        state = reutils.state_diff(dev, state)
-
-        dev.rdma.block_enable()
-        usleep(10)
         state = reutils.state_diff(dev, state)
 
     def test_rdmar(self, init=1, reset=0):
