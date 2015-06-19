@@ -20,7 +20,8 @@
 #define _PROTO_H_
 
 #define CMD_REPLY		0x8000
-#define ERROR_REPLY		0xffff
+#define ERR_REPLY		0x9000
+#define UNKNOWN_CMD		0xffff
 
 #define PING_CMD    		0x01
 #define PING_REPLY  		PING_CMD | CMD_REPLY
@@ -64,5 +65,9 @@
 
 #define CLOAK_DIS_CMD 		0x0d
 #define CLOAK_DIS_ACK		CLOAK_DIS_CMD | CMD_REPLY
+
+#define TX_STD_ENQ_CMD		0x0e
+#define TX_STD_ENQ_ACK		TX_STD_ENQ_CMD | CMD_REPLY
+#define TX_STD_ENQ_ERR		TX_STD_ENQ_CMD | ERR_REPLY
 
 #endif

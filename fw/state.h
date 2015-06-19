@@ -21,7 +21,7 @@
 
 #define HANDSHAKE_MAGIC_SEEN	0x01
 #define CLOAK_ENGAGED		0x02
-
+#define TX_STD_SETUP		0x04
 struct gate_state {
 	u32 flags;
 	u8 my_mac[6];

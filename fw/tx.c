@@ -18,6 +18,75 @@
 
 #include "fw.h"
 
+u32 tx_pi;
+
+u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
+{
+    u32 i = tx_pi + 1;
+
+    if (!(state.flags & TX_STD_SETUP))
+	return 1;
+
+    if (i > 0x1ff)
+	i = 0;
+
+    if (i == sbds.con_idx[0])
+	return 1;
+
+    txbd[i].addr_hi = addr_hi;
+    txbd[i].addr_low = addr_low;
+    txbd[i].length = len;
+    txbd[i].flags.packet_end = 1;
+
+    tx_pi = i;
+    lpmb.box[0x30].hi = tx_pi;
+
+    return 0;
+}
+
+void tx_std_teardown()
+{
+	if (!(state.flags & TX_STD_SETUP))
+	    return;
+
+	sdc.mode.enable = 0;
+	sdi.mode.enable = 0;
+
+	txrcb[0].flags.disabled = 1;
+
+	grc.mode.host_stack_up = 0;
+
+	state.flags &= ~TX_STD_SETUP;
+}
+
+void tx_std_setup()
+{
+	if (!(state.flags & CLOAK_ENGAGED) || (state.flags & TX_STD_SETUP))
+		return;
+
+	grc.mode.host_send_bds = 0;
+	grc.mode.host_stack_up = 1;
+
+	tx_pi = 0;
+	lpmb.box[0x30].hi = tx_pi;
+
+	txrcb[0].addr_hi = 0;
+	txrcb[0].addr_low = 0;
+	txrcb[0].nic_addr = 0x4000;
+	txrcb[0].flags.disabled = 0;
+
+	txrcb[1].flags.disabled = 1;
+
+	sdi.mode.reset = 1;
+	sdc.mode.reset = 1;
+	while (sdi.mode.reset || sdc.mode.reset);
+
+	set_and_wait(sdi.mode.enable);
+	set_and_wait(sdc.mode.enable);
+
+	state.flags |= TX_STD_SETUP;
+}
+
 void tx_asf(void *_src, u32 len, u16 cmd)
 {
     int i = 0;

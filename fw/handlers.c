@@ -188,8 +188,15 @@ void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    (*reply)(0, 0, CLOAK_DIS_ACK);
 	    break;
 
+	case TX_STD_ENQ_CMD:
+	    if (tx_std_enq(arg1, arg2, arg3))
+		(*reply)(0, 0, TX_STD_ENQ_ERR);
+	    
+            asm("break");
+	    break;
+
         default:
-	    (*reply)(&arg1, 2, ERROR_REPLY);
+	    (*reply)(&arg1, 2, UNKNOWN_CMD);
             break;
     }
 }

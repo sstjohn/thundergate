@@ -154,7 +154,7 @@ class TapDriver(object):
             r[i].addr_low = pbuf & 0xffffffff
             r[i].index = i
             r[i].length = 0x600
-            r[i].flags.initialized = 1
+            r[i].flags.disabled = 0
 
         print "[+] produced %d rx buffers" % self.rx_ring_len
         self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = count

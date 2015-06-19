@@ -53,8 +53,11 @@
 #include "nvram.h"
 #include "cfg_port.h"
 #include "pcie.h"
+#include "bd.h"
 
 volatile u32 gencomm[300];
+volatile struct rcb txrcb[2];
+volatile struct sbd txbd[0x200];
 volatile struct mbuf txmbuf0[0];
 volatile struct mbuf txmbuf1[0];
 volatile struct mbuf rxmbuf[0];

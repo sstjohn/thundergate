@@ -86,7 +86,6 @@ def gen_bf_proxy(t):
     def w_init(self, dev, offset):
         self._dev = dev
         self._offset = offset
-        self.initialized = 1
 
     w.__init__ = w_init
 
