@@ -43,9 +43,10 @@ class TestDriver(object):
     def run(self):
         self.dev.init()
 
-        self.tap = TapDriver(self.dev)
-	self.tap.__enter__()
-        self.test_send(self.tap)
+        #self.tap = TapDriver(self.dev)
+	#self.tap.__enter__()
+        #self.test_send(self.tap)
+        self.gate_send()
         #self.test_dmar()
         #self.test_rdmar()
         #self.test_dmaw()
@@ -55,6 +56,54 @@ class TestDriver(object):
         #self.pxediff()
         #self.pxeidiff()
         #self.read_oprom()
+
+    def gate_send(self):
+        dev = self.dev
+
+        print "[+] constructing buffer:",
+        buf_vaddr = dev.interface.mm.alloc(1024)
+        buf = cast(buf_vaddr, POINTER(c_char))
+        for b in range(0, 1024, 4):
+            buf[b] = '\xde'
+            buf[b+1] = '\xad'
+            buf[b+2] = '\xbe'
+            buf[b+3] = '\xef'
+        buf_paddr = dev.interface.mm.get_paddr(buf_vaddr)
+        print "vaddr %x, paddr %x" % (buf_vaddr, buf_paddr)
+
+        print "[+] resetting device"
+        dev.mem.write_dword(0xe00, 0)
+	self.clear_txmbufs()
+	self.clear_txbds()
+        dev.reset()
+
+        if dev.mem.gencomm.dword[0xac] >> 16 != 0x88b5:
+            raise Exception("thundergate firmware does not appear to be runing.")
+
+        print "[+] posting command to local thundergate command window"
+        dev.mem.write_dword(0xe04, buf_paddr >> 32)
+        dev.mem.write_dword(0xe08, buf_paddr & 0xffffffff)
+        dev.mem.write_dword(0xe0c, 0x400)
+        dev.mem.write_dword(0xe00, 0x88b5000e)
+
+        print "[+] saving state"
+        initial = reutils.state_save(dev)
+
+        print "[+] setting sw event 0"
+        dev.grc.rxcpu_event.sw_event_0 = 1
+
+        cntr = 0
+        while (dev.grc.rxcpu_event.sw_event_0):
+            cntr += 1
+            if cntr > 100:
+                raise Exception("timed out waiting for command completion")
+            usleep(100)
+
+        print "[+] command completed after usleeping for %d" % (cntr * 100)
+        if dev.mem.gencomm.dword[0xac] != 0x88b5800e:
+            print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
+
+        final = reutils.state_diff(dev, initial)
 
     def pxeidiff(self):
 	dev = self.dev

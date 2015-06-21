@@ -32,28 +32,26 @@ void lgate_post(void *_src, u32 _len, u16 cmd)
 	for (i = 0; i < len; i++)
 		lgate_base[4 + i] = *src++;
 
-	*((u16 *)lgate_base + 2) = (cmd | 0x8000);
+	*((u16 *)(lgate_base + 2)) = (cmd | 0x8000);
 }
 
 void lgate_reply()
 {
-	if (!(state.flags & LGATE_SETUP))
-		return;
-
-	u32 tmp = *((u32 *)lgate_base);
-	if (tmp >> 16 != config.ctrl_etype) {
-		*((u32 *)lgate_base) = (u32)config.ctrl_etype << 16;
-		return;
+	if (state.flags & LGATE_SETUP) {
+		u32 tmp = *((u32 *)lgate_base);
+		if ((tmp >> 16) == config.ctrl_etype) {
+			if (!(tmp & 0x8000)) {
+				u16 cmd = tmp & 0x7fff;
+				u32 arg1 = *((u32 *)(lgate_base + 4));
+				u32 arg2 = *((u32 *)(lgate_base + 8));
+				u32 arg3 = *((u32 *)(lgate_base + 0xc));
+				handle(lgate_post, cmd, arg1, arg2, arg3);
+			}
+		} else {
+			*((u32 *)lgate_base) = (u32)config.ctrl_etype << 16;
+		}
 	}
-
-	if (tmp & 0x8000)
-		return;
-
-	u16 cmd = tmp & 0x7fff;
-	u32 arg1 = *((u32 *)lgate_base + 4);
-	u32 arg2 = *((u32 *)lgate_base + 8);
-	u32 arg3 = *((u32 *)lgate_base + 0xc);
-	handle(lgate_post, cmd, arg1, arg2, arg3);
+	grc.rxcpu_event.sw_event_0 = 0;
 }
 
 void lgate_setup()

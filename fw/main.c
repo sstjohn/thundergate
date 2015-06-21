@@ -30,5 +30,8 @@ void main()
 	if (grc.rxcpu_event.rdiq) {
 		rx();
 	}
+	if (grc.rxcpu_event.sw_event_0) {
+		lgate_reply();
+	}
     } 
 }

@@ -26,7 +26,7 @@ all: fw.elf $(IMAGE)
 fw.elf: image.x fixed.sym $(OBJECTS)
 	$(LD) $(LDFLAGS) $(OBJECTS) $(LIBGCC) -o fw.elf
 
-fixed.sym: $(PROJ_ROOT)/py/symgen.py map.h
+fixed.sym: $(PROJ_ROOT)/py/symgen.py $(PROJ_ROOT)/py/device.py map.h
 	sh -c "cd $(PROJ_ROOT); py/symgen.py > fw/fixed.sym"
 
 $(IMAGE): fw.elf
