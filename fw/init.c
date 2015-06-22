@@ -45,7 +45,8 @@ void init()
     cpmu.link_aware_policy.mac_clock_switch = 0;
     cpmu.d0u_policy.mac_clock_switch = 0;
     cpmu.link_idle_policy.mac_clock_switch = 0;
- 
+    cpmu.no_link_or_10mb_policy.mac_clock_switch = 0;
+
     rxcpu.mode.icache_pref_en = 1;
 
     grc.rxcpu_event.word = 0xffffffff;
@@ -98,6 +99,7 @@ void init()
 
     emac.rx_mac_mode.promiscuous_mode = 1;
 
+    emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1;
     emac.tx_mac_lengths.slot = 0x20;
     emac.tx_mac_lengths.ipg_crs = 0x2;
     emac.tx_mac_lengths.ipg = 0x6;
@@ -109,8 +111,30 @@ void init()
     set_and_wait(emac.tx_mac_mode.enable);
     set_and_wait(emac.rx_mac_mode.enable);
 
+    wdma.mode.write_dma_pci_target_abort_attention_enable = 1;
+    wdma.mode.write_dma_pci_master_abort_attention_enable = 1;
+    wdma.mode.write_dma_pci_parity_error_attention_enable = 1;
+    wdma.mode.write_dma_pci_host_address_overflow_error_attention_enable = 1;
+    wdma.mode.write_dma_pci_fifo_overrun_attention_enable = 1;
+    wdma.mode.write_dma_pci_fifo_underrun_attention_enable = 1;
+    wdma.mode.write_dma_pci_fifo_overwrite_attention_enable = 1; 	
     set_and_wait(wdma.mode.enable);
+    
+    rdma.mode.read_dma_pci_target_abort_attention_enable = 1;
+    rdma.mode.read_dma_pci_master_abort_attention_enable = 1;
+    rdma.mode.read_dma_pci_parity_error_attention_enable = 1;
+    rdma.mode.read_dma_pci_host_address_overflow_error_attention_enable = 1;
+    rdma.mode.read_dma_pci_fifo_overrun_attention_enable = 1;
+    rdma.mode.read_dma_pci_fifo_underrun_attention_enable = 1;
+    rdma.mode.read_dma_pci_fifo_overread_attention_enable = 1;
+    rdma.mode.read_dma_local_memory_write_longer_than_dma_length_attention_enable = 1;
+    rdma.mode.jumbo_2k_mmrr_mode = 1;
+    rdma.mode.hardware_ipv6_post_dma_processing_enable = 0;
+    rdma.mode.in_band_vtag_enable = 0;
+    rdma.mode.post_dma_debug_enable = 1;
     set_and_wait(rdma.mode.enable);
+
+    set_and_wait(hc.mode.enable);
 
     nv_load_mac(state.my_mac);
 

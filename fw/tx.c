@@ -25,33 +25,36 @@ u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
     if (!(state.flags & TX_STD_SETUP))
 	return 1;
 
-    tcp_seg_ctrl.pre_dma_cmd_xchng.pass_bit = 0;
-
     txbd[tx_pi].addr_hi = addr_hi;
     txbd[tx_pi].addr_low = addr_low;
     txbd[tx_pi].length = len + 16;
     txbd[tx_pi].flags.word = 0;
     txbd[tx_pi].flags.packet_end = 1;
     txbd[tx_pi].flags.cpu_pre_dma = 1;
+    txbd[tx_pi].flags.cpu_post_dma = 1;
     txbd[tx_pi].vlan_tag = 0;
     txbd[tx_pi].hdrlen_0_1 = 0;
     txbd[tx_pi].mss = 1518;
 
     tx_pi = (tx_pi + 1) % 0x200;
 
-    grc.rxcpu_event.word = 0;
-    tcp_seg_ctrl.pre_dma_cmd_xchng.pass_bit = 1;
-    sdc.pre_dma_command_exchange.pass = 1;
-
+    tcp_seg_ctrl.pre_dma_cmd_xchng.skip = 0;
+    sdc.pre_dma_command_exchange.skip = 0;
     lpmb.box[0x30].hi = tx_pi;
     while (tcp_seg_ctrl.pre_dma_cmd_xchng.pass_bit);
+
+    tcp_seg_ctrl.upper_host_addr = addr_hi;
+    tcp_seg_ctrl.lower_host_addr = addr_low;	    
 
     tcp_seg_ctrl.length_offset.length = len;
     tcp_seg_ctrl.length_offset.mbuf_offset = 0x40;
     tcp_seg_ctrl.dma_flags.mbuf_offset_valid = 1;
-    tcp_seg_ctrl.dma_flags.invoke_processor = 1;
-    tcp_seg_ctrl.pre_dma_cmd_xchng.ready = 1;
+    tcp_seg_ctrl.dma_flags.no_word_swap = 1;
 
+    tcp_seg_ctrl.pre_dma_cmd_xchng.ready = 1;
+    while (tcp_seg_ctrl.pre_dma_cmd_xchng.ready); 
+    tcp_seg_ctrl.pre_dma_cmd_xchng.skip = 1;
+    
     while (sdc.pre_dma_command_exchange.pass);
 
     u32 mb = sdc.pre_dma_command_exchange.head_txmbuf_ptr;
@@ -59,6 +62,7 @@ u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
     mac_cpy(state.my_mac, (u8 *)&(txmbuf0[mb].data.byte[0x2e]));
     *((u16 *)&txmbuf0[mb].data.byte[0x34]) = config.ctrl_etype;
     *((u16 *)&txmbuf0[mb].data.byte[0x36]) = TX_STD_ENQ_ACK;
+    
     sdc.pre_dma_command_exchange.skip = 1;
 
     return 0;
@@ -103,6 +107,8 @@ void tx_std_setup()
 	sdc.mode.reset = 1;
 	while (sbds.mode.reset || sdi.mode.reset || sdc.mode.reset);
 
+        sdc.pre_dma_command_exchange.head_txmbuf_ptr = 0;
+	sdc.pre_dma_command_exchange.tail_txmbuf_ptr = 0;
 	set_and_wait(sdc.mode.enable);
 	set_and_wait(sdi.mode.enable);
 	set_and_wait(sbds.mode.enable);

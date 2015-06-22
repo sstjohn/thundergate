@@ -108,6 +108,12 @@ class TestDriver(object):
 
         intermediate = reutils.state_diff(dev, initial)
 
+        for b in range(0, 1024, 4):
+            buf[b] = '\xba'
+            buf[b+1] = '\xad'
+            buf[b+2] = '\xd0'
+            buf[b+3] = '\x0d'
+
         print "[+] setting sw event 0 again"
         dev.grc.rxcpu_event.sw_event_0 = 1
 
@@ -127,6 +133,20 @@ class TestDriver(object):
 
         inter2 = reutils.state_diff(dev, intermediate)
     
+        print "[+] constructing new buffer:",
+        buf_vaddr = dev.interface.mm.alloc(1024)
+        buf = cast(buf_vaddr, POINTER(c_char))
+        for b in range(0, 1024, 4):
+            buf[b] = '\xab'
+            buf[b+1] = '\xcd'
+            buf[b+2] = '\xdc'
+            buf[b+3] = '\xba'
+        buf_paddr = dev.interface.mm.get_paddr(buf_vaddr)
+        print "vaddr %x, paddr %x" % (buf_vaddr, buf_paddr)
+
+        dev.mem.write_dword(0xe04, buf_paddr >> 32)
+        dev.mem.write_dword(0xe08, buf_paddr & 0xffffffff)
+
         print "[+] setting sw event 0 again"
         dev.grc.rxcpu_event.sw_event_0 = 1
 
