@@ -96,15 +96,55 @@ class TestDriver(object):
         while (dev.grc.rxcpu_event.sw_event_0):
             cntr += 1
             if cntr > 100:
-                raise Exception("timed out waiting for command completion")
+                print "[!] timed out waiting for command completion"
+                break
             usleep(100)
 
-        print "[+] command completed after usleeping for %d" % (cntr * 100)
-        if dev.mem.gencomm.dword[0xac] != 0x88b5800e:
+        if cntr <= 100:
+            print "[+] command completed after usleeping for %d" % (cntr * 100)
+
+        if dev.mem.gencomm.dword[0xac] != 0x88b5000e:
             print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
 
-        final = reutils.state_diff(dev, initial)
+        intermediate = reutils.state_diff(dev, initial)
 
+        print "[+] setting sw event 0 again"
+        dev.grc.rxcpu_event.sw_event_0 = 1
+
+        cntr = 0
+        while (dev.grc.rxcpu_event.sw_event_0):
+            cntr += 1
+            if cntr > 100:
+                print "[!] timed out waiting for command completion"
+                break
+            usleep(100)
+
+        if cntr <= 100:
+            print "[+] command completed after usleeping for %d" % (cntr * 100)
+
+        if dev.mem.gencomm.dword[0xac] != 0x88b5000e:
+            print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
+
+        inter2 = reutils.state_diff(dev, intermediate)
+    
+        print "[+] setting sw event 0 again"
+        dev.grc.rxcpu_event.sw_event_0 = 1
+
+        cntr = 0
+        while (dev.grc.rxcpu_event.sw_event_0):
+            cntr += 1
+            if cntr > 100:
+                print "[!] timed out waiting for command completion"
+                break
+            usleep(100)
+
+        if cntr <= 100:
+            print "[+] command completed after usleeping for %d" % (cntr * 100)
+
+        if dev.mem.gencomm.dword[0xac] != 0x88b5000e:
+            print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
+
+        final = reutils.state_diff(dev, inter2)
     def pxeidiff(self):
 	dev = self.dev
 	cpu = dev.rxcpu

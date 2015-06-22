@@ -111,18 +111,18 @@ struct grc_misc_local_control {
 struct grc_cpu_event {
     union {
         struct {
-            u32 flash :1;
-            u32 vpd :1;
+            u32 sw_event_13 :1;
+            u32 sw_event_12 :1;
             u32 timer :1;
             u32 sw_event_11 :1;
-            u32 flow_attn :1;
-            u32 rx_cpu_attn :1;
+            u32 flow :1;
+            u32 rx_cpu :1;
             u32 emac :1;
-            u32 reserved24 :1;
+            u32 tx_cpu :1;
             u32 sw_event_10 :1;
             u32 hi_prio_mbox :1;
             u32 low_prio_mbox :1;
-            u32 dma_attn :1;
+            u32 dma :1;
             u32 sw_event_9 :1;
             u32 hi_dma_rd :1;
             u32 hi_dma_wr :1;

@@ -177,8 +177,6 @@ void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	case TX_STD_ENQ_CMD:
 	    if (tx_std_enq(arg1, arg2, arg3))
 		(*reply)(0, 0, TX_STD_ENQ_ERR);
-	    else
-		(*reply)(0, 0, TX_STD_ENQ_ACK); 
 	    break;
 
         default:

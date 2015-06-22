@@ -117,7 +117,7 @@ class ThunderGateInterface:
             cmd_t |= 0x8000
 
         while True:
-            resp = self._socket.recv(128)
+            resp = self._socket.recv(1518)
             if resp[12:14] == b'\x88\xb5':
                 if tg_mac != None and resp[6:12] != tg_mac:
                     continue
@@ -130,13 +130,13 @@ class ThunderGateInterface:
     def read(self, addr, numb, buf=None):
         data = b''
         end = addr + numb
-        for ofs in range(0, numb, 0x40):
+        for ofs in range(0, numb, 0x400):
             a = addr + ofs
             addr_hi = a >> 32
             addr_lo = a & 0xffffffff
-            cnt = 0x40 if a + 0x40 < end else end - a 
+            cnt = 0x400 if a + 0x400 < end else end - a 
             args = [addr_hi, addr_lo, cnt]
-            self._send_cmd(4, args)
+            self._send_cmd(0xe, args)
             r = self._recv_resp()
             for i in range(16, len(r), 4):
                 if a + (i - 16) >= end:
