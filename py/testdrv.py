@@ -24,7 +24,6 @@ import reutils
 from ctypes import cast, POINTER, sizeof, c_char
 import csv
 import os
-from tapdrv import TapDriver
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 import socket

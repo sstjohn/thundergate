@@ -22,9 +22,9 @@ import clib as c
 import tglib as tg
 import struct
 import os
-import fcntl
 import select
 import reutils
+import fcntl
 
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)

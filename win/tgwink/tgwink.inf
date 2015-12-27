@@ -1,0 +1,90 @@
+;
+; tgwink.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%ManufacturerName%
+CatalogFile=tgwink.cat
+DriverVer=12/07/2015,1.0.0.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+; ================= Class section =====================
+
+;[ClassInstall32]
+;Addreg=SampleClassReg
+
+;[SampleClassReg]
+;HKR,,,0,%ClassName%
+;HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+tgwink.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%tgwink.DeviceDesc%=tgwink_Device, PCI\VEN_14e4&DEV_1682
+
+[tgwink_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+tgwink.sys
+
+;-------------- Service installation
+[tgwink_Device.NT.Services]
+AddService = tgwink,%SPSVCINST_ASSOCSERVICE%, tgwink_Service_Inst
+
+; -------------- tgwink driver install sections
+[tgwink_Service_Inst]
+DisplayName    = %tgwink.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\tgwink.sys
+
+;
+;--- tgwink_Device Coinstaller installation ------
+;
+
+[DestinationDirs]
+tgwink_Device_CoInstaller_CopyFiles = 11
+
+;[tgwink_Device.NT.CoInstallers]
+;AddReg=tgwink_Device_CoInstaller_AddReg
+;CopyFiles=tgwink_Device_CoInstaller_CopyFiles
+
+;[tgwink_Device_CoInstaller_AddReg]
+;HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+;[tgwink_Device_CoInstaller_CopyFiles]
+;WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[SourceDisksFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+[tgwink_Device.NT.Wdf]
+KmdfService =  tgwink, tgwink_wdfsect
+[tgwink_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Saul St John" 
+ClassName="System"
+DiskName = "tgwink Installation Disk"
+tgwink.DeviceDesc = "tgwink Device"
+tgwink.SVCDESC = "tgwink Service"

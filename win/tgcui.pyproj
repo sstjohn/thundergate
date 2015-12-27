@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{b149a4a0-a407-4756-a6f2-b8041de3f74a}</ProjectGuid>
+    <ProjectHome>..\py\</ProjectHome>
+    <StartupFile>main.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
+    <InterpreterVersion>2.7</InterpreterVersion>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <CommandLineArguments>-s</CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="block_utils.py" />
+    <Compile Include="client.py" />
+    <Compile Include="cpu.py" />
+    <Compile Include="device.py" />
+    <Compile Include="efirom.py" />
+    <Compile Include="ftq.py" />
+    <Compile Include="fw.py" />
+    <Compile Include="gphy.py" />
+    <Compile Include="iomem.py" />
+    <Compile Include="magic.py" />
+    <Compile Include="main.py" />
+    <Compile Include="memory.py" />
+    <Compile Include="mm.py" />
+    <Compile Include="msix.py" />
+    <Compile Include="nvram.py" />
+    <Compile Include="pci.py" />
+    <Compile Include="pciephy.py" />
+    <Compile Include="reutils.py" />
+    <Compile Include="rflip.py" />
+    <Compile Include="shelldrv.py" />
+    <Compile Include="smi.py" />
+    <Compile Include="symgen.py" />
+    <Compile Include="sysfsint.py" />
+    <Compile Include="tapdrv.py" />
+    <Compile Include="testdrv.py" />
+    <Compile Include="tginstall.py" />
+    <Compile Include="tglib.py" />
+    <Compile Include="top.py" />
+    <Compile Include="traceinterp.py" />
+    <Compile Include="uioint.py" />
+    <Compile Include="vfioint.py" />
+    <Compile Include="winint.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />
+  </ItemGroup>
+  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+</Project>

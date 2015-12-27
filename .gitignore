@@ -5,10 +5,10 @@ core
 .depend
 py/clib.*
 py/*.pyc
-py/tglib.*
 py/tunlib.py
 py/efilib.py
 py/efilib.xml
+py/tglib.xml
 py/tunlibgen
 trace/*
 fw/fw.elf
@@ -19,3 +19,12 @@ efi/*.so
 efi/*.o
 efi/*.rom
 eeprom.bak
+win/**/[Dd]ebug/
+win/**/[Rr]elease/
+win/**/x64/
+win/**/ipch/
+win/.vs/
+win/**/*.user
+win/**/*.vspscc
+win/**/*.sdf
+win/**/*.VC.opendb
