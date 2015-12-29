@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{b149a4a0-a407-4756-a6f2-b8041de3f74a}</ProjectGuid>
     <ProjectHome>..\py\</ProjectHome>
-    <StartupFile>winlib.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>

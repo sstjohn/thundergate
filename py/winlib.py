@@ -2,6 +2,7 @@
 
 from ctypes import *
 from ctypes.wintypes import *
+import _winreg
 
 INVALID_HANDLE_VALUE = HANDLE(-1)
 METHOD_OUT_DIRECT = 2
@@ -18,7 +19,16 @@ class GUID(Structure):
     _fields_ = [("Data1", c_ulong),
                 ("Data2", c_ushort),
                 ("Data3", c_ushort),
-                ("Data4", ARRAY(c_byte, 8))]
+                ("Data4", ARRAY(c_ubyte, 8))]
+
+    def __str__(self):
+       ret = ("%08x-" % self.Data1)
+       ret += ("%04x-" % self.Data2)
+       ret += ("%04x-" % self.Data3)
+       ret += ("%02x%02x-" % (self.Data4[0], self.Data4[1]))
+       ret += ''.join([("%02x" % b) for b in self.Data4[2:]])
+
+       return ret
 
 GUID_DEVINTERFACE_TGWINK = GUID(0x77dce17a,0x78bd,0x4b27,(0x84,0x09,0x8f,0x5d,0x20,0x96,0x3c,0x39))
 
@@ -107,13 +117,27 @@ CloseHandle.restype = BOOL
 HDEVINFO = HANDLE
 DI_FUNCTION = UINT
 
+DEVPROPGUID = GUID
+DEVPROPID = ULONG
+
+REGSAM = DWORD
+
+class DEVPROPKEY(Structure):
+    _fields_ = [("fmtid", DEVPROPGUID),
+                ("pid", DEVPROPID)
+               ]
+
 newdev = windll.newdev
+advapi32 = windll.advapi32
+
 fun_prototypes = [(setupapi, "SetupDiCreateDeviceInfoList", [POINTER(GUID), HWND], HDEVINFO),
                   (setupapi, "SetupDiCreateDeviceInfoA", [HDEVINFO, LPCSTR, POINTER(GUID), LPCSTR, HWND, DWORD, POINTER(SP_DEVINFO_DATA)], BOOL),
                   (setupapi, "SetupDiSetDeviceRegistryPropertyA", [HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, POINTER(BYTE), DWORD], BOOL),
                   (setupapi, "SetupDiCallClassInstaller", [DI_FUNCTION, HDEVINFO, POINTER(SP_DEVINFO_DATA)], BOOL),
                   (setupapi, "SetupDiDestroyDeviceInfoList", [HDEVINFO], BOOL),
+                  (setupapi, "SetupDiOpenDevRegKey", [HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, DWORD, DWORD, REGSAM], HKEY),
                   (newdev, "DiInstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), LPVOID, DWORD, POINTER(BOOL)], BOOL),
+                  (advapi32, "RegQueryValueExA", [HKEY, LPCSTR, POINTER(DWORD), POINTER(DWORD), POINTER(BYTE), POINTER(DWORD)], LONG),
                  ]
 
 for proto in fun_prototypes:
@@ -133,6 +157,9 @@ SPDRP_FRIENDLYNAME = 0xc
 DIF_SELECTBESTCOMPATDRV = 0x17
 DIF_REGISTERDEVICE = 0x19
 INSTALLFLAG_FORCE = 1
+DIREG_DRV = 1
+DICS_FLAG_GLOBAL = 1
+KEY_QUERY_VALUE = 1
 
 def create_tap_if(name = None):
     class_guid = GUID(0x4d36e972,0xe325,0x11ce,(0xbf,0xc1,0x08,0x00,0x2b,0xe1,0x03,0x18))
@@ -162,3 +189,14 @@ def create_tap_if(name = None):
         if not SetupDiSetDeviceRegistryProperty(h, pointer(devInfoData), SPDRP_FRIENDLYNAME, cast(p, POINTER(BYTE)), len(p.value) + 1):
             raise WinError()
 
+    reg = SetupDiOpenDevRegKey(h, pointer(devInfoData), DICS_FLAG_GLOBAL, 0, 2, KEY_QUERY_VALUE)
+    if INVALID_HANDLE_VALUE == reg:
+        raise WinError()
+
+    info_name = LPCSTR("NetCfgInstanceId")
+    required_size = DWORD(128)
+    cfg_iid = (c_char * 128)()
+    result = RegQueryValueEx(reg, info_name, None, None, cast(pointer(cfg_iid), POINTER(BYTE)), pointer(required_size))
+    if 0 != result:
+        raise WinError(result)
+    return "\\\\.\\Global\\%s.tap" % cfg_iid

@@ -16,15 +16,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from tunlib import *
 import ctypes
-import clib as c
 import tglib as tg
 import struct
 import os
 import select
 import reutils
-import fcntl
+import platform
+
+sys_name = platform.system()
+
+if sys_name == "Linux":
+    import fcntl
+    
+    import clib as c
+    from tunlib import *
+else:
+    pass
 
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)

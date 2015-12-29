@@ -26,11 +26,11 @@ from device import Device
 from testdrv import TestDriver
 from shelldrv import ShellDriver
 from tginstall import TgInstaller
+from tapdrv import TapDriver
 
 sys_name = platform.system()
 
 if sys_name == "Linux":
-    from tapdrv import TapDriver
     from sysfsint import SysfsInterface
     from vfioint import VfioInterface
     from uioint import UioInterface
@@ -63,11 +63,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     if sys_name == "Linux":
         parser.add_argument("device", help="BDF of tg3 PCI device")
+        parser.add_argument("-u", "--uio", help="use uio pci generic interface", action="store_true")
+        parser.add_argument("-v", "--vfio", help="use vfio interface", action="store_true")
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
     parser.add_argument("-s", "--shell", help="ipython cli", action="store_true")
     parser.add_argument("-b", "--backup", help="create eeprom backup", action="store_true", default=False)
-    parser.add_argument("-u", "--uio", help="use uio pci generic interface", action="store_true")
-    parser.add_argument("-v", "--vfio", help="use vfio interface", action="store_true")
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
     parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
 
