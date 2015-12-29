@@ -22,101 +22,13 @@ import os
 import struct
 import uuid
 
-
-INVALID_HANDLE_VALUE = HANDLE(-1)
-METHOD_OUT_DIRECT = 2
-FILE_ANY_ACCESS = 0
-CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
-
-DIGCF_DEVICEINTERFACE = 0x10
-DIGCF_PRESENT = 0x02
-
-IOCTL_TGWINK_SAY_HELLO = CTL_CODE(0x8000, 0x8000, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
-IOCTL_TGWINK_MAP_BAR_0 = CTL_CODE(0x8000, 0x8001, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
-
-class GUID(Structure):
-    _fields_ = [("Data1", c_ulong),
-                ("Data2", c_ushort),
-                ("Data3", c_ushort),
-                ("Data4", ARRAY(c_byte, 8))]
-
-GUID_DEVINTERFACE_TGWINK = GUID(0x77dce17a,0x78bd,0x4b27,(0x84,0x09,0x8f,0x5d,0x20,0x96,0x3c,0x39))
-
-setupapi = windll.setupapi
-
-SetupDiGetClassDevs = setupapi.SetupDiGetClassDevsA
-SetupDiGetClassDevs.argtypes = [POINTER(GUID), LPCSTR, HWND, DWORD]
-SetupDiGetClassDevs.restype = HANDLE
-
-class SP_DEVINFO_DATA(Structure):
-    _fields_ = [('cbSize', DWORD),
-                ('ClassGuid', GUID),
-                ('DevInst', DWORD),
-                ('Reserved', POINTER(ULONG))]
-
-class SP_DEVICE_INTERFACE_DATA(Structure):
-    _fields_ = [('cbSize', DWORD),
-                ('InterfaceClassGuid', GUID),
-                ('Flags', DWORD),
-                ('Reserved', POINTER(ULONG))]
-
-SetupDiEnumDeviceInterfaces = setupapi.SetupDiEnumDeviceInterfaces
-SetupDiEnumDeviceInterfaces.argtypes = [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)]
-SetupDiEnumDeviceInterfaces.restype = BOOL
-
-def SP_DEVICE_INTERFACE_DETAILS_ofsize(sz):
-    class SP_DEVICE_INTERFACE_DETAILS(Structure):
-        _fields_ = [('cbSize', DWORD),
-                    ('DevicePath', ARRAY(c_char, sz))]
-
-    return SP_DEVICE_INTERFACE_DETAILS(8)
-        
-SetupDiGetDeviceInterfaceDetail = setupapi.SetupDiGetDeviceInterfaceDetailA
-SetupDiGetDeviceInterfaceDetail.argtypes = [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)]
-SetupDiGetDeviceInterfaceDetail.restype = BOOL
-
-kernel32 = windll.kernel32
-
-CreateFile = kernel32.CreateFileA
-CreateFile.argtypes = [LPCSTR, DWORD, DWORD, c_void_p, DWORD, DWORD, HANDLE]
-CreateFile.restype = HANDLE
-
-GENERIC_READ = 0x80000000
-GENERIC_WRITE = 0x40000000
-FILE_SHARE_READ = 1
-FILE_SHARE_WRITE = 2
-OPEN_EXISTING = 3
-
-DeviceIoControl = kernel32.DeviceIoControl
-DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, POINTER(DWORD), c_void_p]
-DeviceIoControl.restype = BOOL
-
-class __o(Structure):
-    pass
-class __u(Union):
-    pass
-class OVERLAPPED(Structure):
-    pass
-
-__o._fields_ = [('Offset', DWORD), ('OffsetHigh', DWORD)]
-__u._anonymous_ = ("o",)
-__u._fields_ = [("o", __o), ("Pointer", LPVOID)]
-
-OVERLAPPED._anonymous_ = ("u",)
-OVERLAPPED._fields_ = [("Internal", POINTER(ULONG)),
-                       ("InternalHigh", POINTER(ULONG)),
-                       ("u", __u),
-                       ("hEvent", HANDLE)]
-
-ReadFile = kernel32.ReadFile
-ReadFile.argtypes = [HANDLE, LPVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)]
-ReadFile.restype = BOOL
+from winlib import *
 
 class WinInterface(object):
     def __init__(self):
         hInfoSet = SetupDiGetClassDevs(byref(GUID_DEVINTERFACE_TGWINK), None, None, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT)
         if INVALID_HANDLE_VALUE == hInfoSet:
-            raise WindowsError()
+            raise WinError()
 
         devIntData = SP_DEVICE_INTERFACE_DATA(sizeof(SP_DEVICE_INTERFACE_DATA))
         devInfoData = SP_DEVINFO_DATA(sizeof(SP_DEVINFO_DATA))
@@ -143,8 +55,13 @@ class WinInterface(object):
         if idx > 1:
             print "[!] multiple tgwink interfaces found, using last."
 
-        #self.cfgfd = os.open(devIntDetail.DevicePath, os.O_RDWR | os.O_BINARY)
-        self.cfgfd = CreateFile(devIntDetail.DevicePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, 0, None)
+        self.device_path = devIntDetail.DevicePath
+
+    def __enter__(self):
+        self._attach()
+
+    def _attach(self):
+        self.cfgfd = CreateFile(self.device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, 0, None)
         if self.cfgfd == INVALID_HANDLE_VALUE:
             raise WinError()
 
@@ -152,7 +69,7 @@ class WinInterface(object):
         if not DeviceIoControl(self.cfgfd, IOCTL_TGWINK_SAY_HELLO, None, 0, pointer(handshake), sizeof(handshake), None, None):
             raise WinError()
         if handshake.value != 0x5a5aa5a5:
-            raise BaseException("unknown response from ioctl on tgwink interface")
+            raise Exception("unknown response from ioctl on tgwink interface")
 
         bar_ptr = c_int64()
         if not DeviceIoControl(self.cfgfd, IOCTL_TGWINK_MAP_BAR_0, None, 0, pointer(bar_ptr), sizeof(bar_ptr), None, None):
@@ -160,14 +77,18 @@ class WinInterface(object):
 
         self.bar0 = bar_ptr.value
 
-    def __enter__(self):
-        pass
-
     def __exit__(self, t, v, traceback):
-        pass
+        self._detach()
 
+    def _detach(self):
+        NtUnmapViewOfSection(cast(-1, HANDLE), cast(self.bar0, c_void_p))
+        del self.bar0
+        CloseHandle(self.cfgfd)
+        del self.cfgfd
+        
     def reattach(self):
-        pass
+        self._detach()
+        self._reattach()
 
     def cfg_read(self, offset):
         assert offset >= 0 and offset < 0x400
@@ -180,6 +101,12 @@ class WinInterface(object):
             raise Exception("wrong number of bytes read")
         return val.value
 
-    def cfg_write(self, offset, val):
+    def cfg_write(self, offset, inval):
         assert offset >= 0 and offset < 0x400
-        raise NotImplementedError()
+        req = OVERLAPPED(Offset=offset)
+        bytes_written = DWORD(0)
+        val = c_uint32(inval)
+        if not WriteFile(self.cfgfd, byref(val), 4, pointer(bytes_written), pointer(req)):
+            raise WindowsError()
+        if bytes_written.value != 4:
+            raise Exception("wrong number of bytes written")

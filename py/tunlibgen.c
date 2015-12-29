@@ -17,12 +17,17 @@
  */
 
 #include <stdio.h>
+
+#ifdef _MSC_VER
+#include <tap-windows.h>
+#else
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/socket.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#endif
 
 int main(int argc, char *argv[])
 {

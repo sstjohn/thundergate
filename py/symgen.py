@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 '''
     ThunderGate - an open source toolkit for PCI bus exploration

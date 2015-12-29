@@ -21,6 +21,13 @@
 
 #include "utypes.h"
 
+#ifdef _MSC_VER
+#define __attribute__(x)
+#define ANYSIZE_ARRAY 1
+#pragma pack(push, 1)
+#else
+#define ANYSIZE_ARRAY 0
+#endif
 
 struct __attribute__((packed)) dmar_tbl_hdr {
 	char sig[4];
@@ -46,7 +53,7 @@ struct __attribute__((packed)) dmar_dev_scope {
 	struct __attribute__((packed)) {
 		u8 device;
 		u8 function;
-	} path[0];
+	} path[ANYSIZE_ARRAY];
 };
 
 struct __attribute__((packed)) dmar_drhd {
@@ -74,7 +81,7 @@ struct __attribute__((packed)) dmar_atsr {
 	u8 flags;
 	u8 reserved;
 	u16 seg_no; 
-	struct dmar_dev_scope dev_scope[0];
+	struct dmar_dev_scope dev_scope[ANYSIZE_ARRAY];
 };
 
 struct __attribute__((packed)) dmar_rhsa {
@@ -130,5 +137,9 @@ struct __attribute__((packed)) rsdp2_t {
     u8 extended_cksum;
     u8 reserved[3];
 };
+
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 #endif

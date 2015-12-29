@@ -55,17 +55,23 @@
 #include "pcie.h"
 #include "bd.h"
 
+#ifdef _MSC_VER
+#define ANYSIZE_ARRAY
+#else
+#define ANYSIZE_ARRAY 0
+#endif
+
 volatile u32 gencomm[300];
 volatile struct rcb txrcb[2];
 volatile struct sbd txbd[0x200];
-volatile struct mbuf txmbuf0[0];
-volatile struct mbuf txmbuf1[0];
-volatile struct mbuf rxmbuf[0];
-volatile u32 rom[0];
-volatile u32 reg[0];
-volatile u32 scratchpad[0];
+volatile struct mbuf txmbuf0[ANYSIZE_ARRAY];
+volatile struct mbuf txmbuf1[ANYSIZE_ARRAY];
+volatile struct mbuf rxmbuf[ANYSIZE_ARRAY];
+volatile u32 rom[ANYSIZE_ARRAY];
+volatile u32 reg[ANYSIZE_ARRAY];
+volatile u32 scratchpad[ANYSIZE_ARRAY];
 volatile struct pci_regs pci;
-volatile u32 hpmb[0];
+volatile u32 hpmb[ANYSIZE_ARRAY];
 volatile struct lpmb_regs lpmb;
 volatile struct emac_regs emac;
 volatile struct sdi_regs sdi;

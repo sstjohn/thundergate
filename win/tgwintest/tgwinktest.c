@@ -24,6 +24,7 @@
 #include <setupapi.h>
 #include <initguid.h>
 #include <SDKDDKVer.h>
+#include <newdev.h>
 #include "Public.h"
 
 #pragma comment (lib, "setupapi.lib")

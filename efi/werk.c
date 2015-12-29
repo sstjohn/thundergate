@@ -16,14 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <efi/efi.h>
-#include <efi/efidevp.h>
-#include <efi/efilib.h>
-#include <efi/efiprot.h>
-#include <efi/efipciio.h>
-#include <efi/eficon.h>
-#include <wchar.h>
-#include "acpi.h"
 #include "dmarf.h"
 
 u64 drhd_base = 0;
@@ -59,7 +51,7 @@ u32 walk_dev_scope(void *a)
 	
 	DbgPrint(L"device scope path: ");
 	while (offset < ds_sz) {
-		u16 tmp = *((u16 *)(a + offset));
+		u16 tmp = *((u16 *)((uintptr_t)a + offset));
 		u8 dev = tmp >> 8;
 		u8 fun = tmp & 0xff;
 		DbgPrint(L"%02x:%02x ", dev, fun);
@@ -103,7 +95,7 @@ u32 create_rmrr(void *a, u64 base, u64 limit)
 	r->base_addr = base;
 	r->limit_addr = limit;
 
-	r->length += create_dev_scope(a + sizeof(struct dmar_rmrr));
+	r->length += create_dev_scope((uintptr_t)a + sizeof(struct dmar_rmrr));
 	return r->length;
 }
 
@@ -123,7 +115,7 @@ void walk_rmrr(void *a)
 	offset += sizeof(struct dmar_rmrr);
 
 	while (offset < r_sz)
-		offset += walk_dev_scope(a + offset);
+		offset += walk_dev_scope((uintptr_t)a + offset);
 }
 
 void walk_drhd(void *a)
@@ -153,7 +145,7 @@ void walk_drhd(void *a)
 		drhd_base = drhd->base_address;
 
 	while (offset < drhd_sz)
-		offset += walk_dev_scope(a + offset);
+		offset += walk_dev_scope((uintptr_t)a + offset);
 }
 
 void update_tbl_cksum(void *a)
@@ -203,7 +195,7 @@ void walk_dmar(void *a)
 		return;
 	
 	do {
-       	    u32 tmp = *((u32 *)(a + offset));
+       	    u32 tmp = *((u32 *)((uintptr_t)a + offset));
 	    u16 ln = tmp >> 16;
 	    u16 nt = tmp & 0xffff;
 
@@ -212,11 +204,11 @@ void walk_dmar(void *a)
 	    switch(nt) {
 	    case 0:
 		DbgPrint(L"drhd at offset %d\n", offset);
-		walk_drhd(a+offset);
+		walk_drhd((uintptr_t)a+offset);
 		break;
 	    case 1:
 		DbgPrint(L"rmrr at offset %d\n", offset);
-		walk_rmrr(a+offset);
+		walk_rmrr((uintptr_t)a+offset);
 		break;
 	    default:
 		DbgPrint(L"type %d at offset %d\n", nt, offset);

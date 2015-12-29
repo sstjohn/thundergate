@@ -19,7 +19,11 @@
 #ifndef _UTYPES_H_
 #define _UTYPES_H_
 
+#ifdef _MSC_VER
+#include <stdint.h>
+#else
 #include <stdint-gcc.h>
+#endif
 
 typedef uint8_t u8;
 typedef uint16_t u16;

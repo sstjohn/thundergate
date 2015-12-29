@@ -172,7 +172,7 @@ EFI_STATUS EFIAPI drv_supported(
 					DbgPrint(L"\n");
 					break;
 			}
-			dp = (EFI_DEV_PATH *)(((void *)dp) + dp->DevPath.Length[0]);
+			dp = (EFI_DEV_PATH *)(((uintptr_t)dp) + dp->DevPath.Length[0]);
 		}
 
 		ret = EFI_SUCCESS;

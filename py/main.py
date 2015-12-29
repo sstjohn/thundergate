@@ -25,6 +25,7 @@ import platform
 from device import Device
 from testdrv import TestDriver
 from shelldrv import ShellDriver
+from tginstall import TgInstaller
 
 sys_name = platform.system()
 
@@ -33,7 +34,6 @@ if sys_name == "Linux":
     from sysfsint import SysfsInterface
     from vfioint import VfioInterface
     from uioint import UioInterface
-    from tginstall import TgInstaller
 elif sys_name == "Windows":
     from winint import WinInterface
 else:
