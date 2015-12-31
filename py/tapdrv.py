@@ -31,9 +31,11 @@ if sys_name == "Linux":
     
     import clib as c
     from tunlib import *
+elif sys_name == "Windows":
+    from winlib import *
 else:
-    pass
-
+    raise NotImplementedError("tap driver only available on linux and windows")
+   
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 

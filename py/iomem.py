@@ -20,9 +20,9 @@ import clib as c
 import os
 import ctypes
 import struct
-from mm import MemMgr
+from mm_linux import LinuxMemMgr
 
-class IOMemMgr(MemMgr):
+class IOMemMgr(LinuxMemMgr):
     def __init__(self, container):
         super(IOMemMgr, self).__init__()
         self.container = container

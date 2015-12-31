@@ -23,6 +23,7 @@ import struct
 import uuid
 
 from winlib import *
+from mm_win import WinMemMgr
 
 class WinInterface(object):
     def __init__(self):
@@ -37,7 +38,7 @@ class WinInterface(object):
         devIntDetail = None
 
         while SetupDiEnumDeviceInterfaces(hInfoSet, None, byref(GUID_DEVINTERFACE_TGWINK),  idx, pointer(devIntData)):
-            print "[.] found device interface #%d" % idx
+            print "[.] found tgwink device interface #%d" % idx
             detailSize = DWORD(0)
 
             SetupDiGetDeviceInterfaceDetail(hInfoSet, byref(devIntData), None, 0, pointer(detailSize), None)
@@ -59,6 +60,7 @@ class WinInterface(object):
 
     def __enter__(self):
         self._attach()
+        self.mm = WinMemMgr()
 
     def _attach(self):
         self.cfgfd = CreateFile(self.device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, 0, None)

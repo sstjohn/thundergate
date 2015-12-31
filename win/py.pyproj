@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{b149a4a0-a407-4756-a6f2-b8041de3f74a}</ProjectGuid>
     <ProjectHome>..\py\</ProjectHome>
-    <StartupFile>main.py</StartupFile>
+    <StartupFile>winlib.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -38,6 +38,8 @@
     <Compile Include="main.py" />
     <Compile Include="memory.py" />
     <Compile Include="mm.py" />
+    <Compile Include="mm_win.py" />
+    <Compile Include="mm_linux.py" />
     <Compile Include="msix.py" />
     <Compile Include="nvram.py" />
     <Compile Include="pci.py" />

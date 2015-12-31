@@ -19,7 +19,7 @@
 import os
 import struct
 import clib as c
-import mm
+from mm_linux import LinuxMemMgr
 
 class SysfsInterface(object):
     def __init__(self, bdf):
@@ -28,24 +28,24 @@ class SysfsInterface(object):
 
     def __enter__(self):
         self._open_device()
-        self.mm = mm.MemMgr()
+        self.mm = LinuxMemMgr()
 
     def _open_device(self):
-	with file(self.dd + "/enable", "w") as f:
-	    f.write('1')
-        self.cfgfd = os.open(self.dd + "/config", os.O_RDWR)
-        try: self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)
-        except: self.barfd = os.open(self.dd + "/resource0", os.O_RDWR)
+        with file(self.dd + "/enable", "w") as f:
+            f.write('1')
+            self.cfgfd = os.open(self.dd + "/config", os.O_RDWR)
+            try: self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)
+            except: self.barfd = os.open(self.dd + "/resource0", os.O_RDWR)
 
-        bar0 = c.mmap(0, 64 * 1024, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.barfd, 0)
-        if -1 == bar0: raise Exception("failed to mmap bar 0")
-        self.bar0 = bar0
+            bar0 = c.mmap(0, 64 * 1024, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.barfd, 0)
+            if -1 == bar0: raise Exception("failed to mmap bar 0")
+            self.bar0 = bar0
 
-        try:
-            self.barfd2 = os.open(self.dd + "/resource2_wc", os.O_RDWR)
-            self.bar2 = c.mmap(0, 64 * 1024, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.barfd2, 0)
-        except:
-            pass
+            try:
+                self.barfd2 = os.open(self.dd + "/resource2_wc", os.O_RDWR)
+                self.bar2 = c.mmap(0, 64 * 1024, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.barfd2, 0)
+            except:
+                pass
 
     def __exit__(self, t, v, traceback):
         self._close_device()
