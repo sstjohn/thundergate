@@ -1,6 +1,6 @@
 /*
 *  ThunderGate - an open source toolkit for PCI bus exploration
-*  Copyright (C) 2015  Saul St. John
+*  Copyright (C) 2015-2016  Saul St. John
 *
 *  This program is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -22,3 +22,4 @@ DEFINE_GUID (GUID_DEVINTERFACE_tgwink,
 
 #define IOCTL_TGWINK_SAY_HELLO CTL_CODE(0x8000, 0x8000, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 #define IOCTL_TGWINK_MAP_BAR_0 CTL_CODE(0x8000, 0x8001, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+#define IOCTL_TGWINK_READ_PHYS CTL_CODE(0x8000, 0x8002, METHOD_BUFFERED, FILE_ANY_ACCESS)

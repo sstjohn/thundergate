@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016  Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,11 +25,9 @@ class __mm_system_interface(object):
         raise NotImplementedError()
     def get_page(self):
         raise NotImplementedError()
-    memset = None
 
 class _MemMgr(__mm_system_interface):
     def __init__(self):
-        self.locked_pages = []
         self.allocations = {}
         self.free_list = []
 
@@ -51,17 +49,14 @@ class _MemMgr(__mm_system_interface):
 
         self.allocations[victim[0]] = sz
 
-        try:
-            self.memset(victim[0], 0, sz)
-        except:
-            pass
+        ctypes.memset(victim[0], 0, sz)
 
         return victim[0]
 
     def free(self, v):
         sz = self.allocations[v]
         del self.allocations[v]
-        c.memset(v, 0xff, sz)
+        ctypes.memset(v, 0xff, sz)
         self.free_list += [(v, sz)]
 
 

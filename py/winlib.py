@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016  Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,10 +18,12 @@
 
 from ctypes import *
 from ctypes.wintypes import *
+import sys
 
 c_uintptr = eval("c_uint%d" % (sizeof(c_void_p) * 8))
 ULONG_PTR = c_uintptr
 PULONG_PTR = POINTER(ULONG_PTR)
+SIZE_T = ULONG_PTR
 
 class GUID(Structure):
     _fields_ = [("Data1", c_ulong),
@@ -158,6 +160,7 @@ SE_PRIVILEGE_ENABLED = 2
 SE_LOCK_MEMORY_NAME = "SeLockMemoryPrivilege"
 INVALID_HANDLE_VALUE = HANDLE(-1).value
 METHOD_OUT_DIRECT = 2
+METHOD_IN_DIRECT = 1
 METHOD_BUFFERED = 0
 FILE_ANY_ACCESS = 0
 FILE_DEVICE_UNKNOWN = 0x22
@@ -186,11 +189,15 @@ POLICY_LOOKUP_NAMES = 0x800
 POLICY_ALL_ACCESS = 0xF0FFF
 STATUS_SUCCESS = 0
 TOKEN_INFORMATION_CLASS_USER = 1
+PAGE_READWRITE = 0x4
+MEM_RESERVE = 0x2000
+MEM_PHYSICAL = 0x400000
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
 IOCTL_TGWINK_SAY_HELLO = CTL_CODE(0x8000, 0x8000, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 IOCTL_TGWINK_MAP_BAR_0 = CTL_CODE(0x8000, 0x8001, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+IOCTL_TGWINK_READ_PHYS = CTL_CODE(0x8000, 0x8002, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 TAP_WIN_IOCTL_GET_VERSION = CTL_CODE(FILE_DEVICE_UNKNOWN, 2, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
@@ -209,6 +216,8 @@ fun_prototypes = [
     (kernel32, "DeviceIoControl", [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, POINTER(DWORD), c_void_p], BOOL),
     (kernel32, "CloseHandle", [HANDLE], BOOL),
     (kernel32, "GetSystemInfo", [POINTER(SYSTEM_INFO)], None),
+    (kernel32, "VirtualAlloc", [LPVOID, SIZE_T, DWORD, DWORD], LPVOID),
+    (kernel32, "MapUserPhysicalPages", [LPVOID, ULONG_PTR, POINTER(ULONG_PTR)], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -230,6 +239,7 @@ fun_prototypes = [
     (advapi32, "LsaNtStatusToWinError", [NTSTATUS], ULONG),
     (advapi32, "GetTokenInformation", [HANDLE, TOKEN_INFORMATION_CLASS, LPVOID, DWORD, POINTER(DWORD)], BOOL),
     (advapi32, "LsaClose", [LSA_HANDLE], NTSTATUS),
+    (advapi32, "ImpersonateSelf", [DWORD], BOOL),
 ]
 
 for proto in fun_prototypes:
@@ -326,6 +336,7 @@ def add_account_privilege(privilege_name):
         raise WinError(LsaNtStatusToWinError(result))
 
     CloseHandle(token)
+    print "[!] privilege \"%s\" added to current user account" % privilege_name
 
 def add_process_privilege(privilege_name):
     token = HANDLE()
@@ -338,15 +349,8 @@ def add_process_privilege(privilege_name):
     if not AdjustTokenPrivileges(token, False, pointer(info), 0, None, None):
         raise WinError()
     if GetLastError() == ERROR_NOT_ALL_ASSIGNED:
-        print "failed to add process privilege"
+        print "[!] failed to enable privilege \"%s\" in process token" % privilege_name
+        add_account_privilege(privilege_name)
+        print "[!] you'll need to log out and log back in"
+        sys.exit(1)
     CloseHandle(token)
-
-if __name__ == "__main__":
-    add_account_privilege(SE_LOCK_MEMORY_NAME)
-    add_process_privilege(SE_LOCK_MEMORY_NAME)
-    sz = ULONG_PTR(1)
-    ar = ULONG_PTR(0)
-    if not AllocateUserPhysicalPages(-1, pointer(sz), pointer(ar)):
-        raise WinError()
-    print "ar now contains %x" % ar.value
-

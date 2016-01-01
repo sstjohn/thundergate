@@ -2,7 +2,7 @@
 
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016  Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -140,3 +140,6 @@ if __name__ == "__main__":
                     test.run()
     
     print "[+] tg3 %s terminated" % ima
+
+def initialize(argv):
+    pass

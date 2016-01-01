@@ -1,6 +1,6 @@
 /*
 *  ThunderGate - an open source toolkit for PCI bus exploration
-*  Copyright (C) 2015  Saul St. John
+*  Copyright (C) 2015-2016  Saul St. John
 *
 *  This program is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -140,6 +140,56 @@ tgwinkEvtIoDeviceControl(
 
 		WdfRequestComplete(Request, STATUS_SUCCESS);
 		break;
+
+	case IOCTL_TGWINK_READ_PHYS:
+	{
+		UNICODE_STRING pmemDevNam;
+		OBJECT_ATTRIBUTES oAttr;
+		HANDLE hMem;
+		IO_STATUS_BLOCK ioStat;
+
+		if (InputBufferLength != sizeof(PVOID)) {
+			KdPrint("tgwinkEvtIoDeviceControl requires a %d-byte buffer for this ioctl (got %d)\n", sizeof(PVOID), OutputBufferLength);
+			WdfRequestComplete(Request, STATUS_INSUFFICIENT_RESOURCES);
+			break;
+		}
+		
+		status = WdfRequestRetrieveInputBuffer(Request, sizeof(PVOID), &mem, NULL);
+		if (!NT_SUCCESS(status)) {
+			KdPrint("tgwinkEvtIoDeviceControl could not get request memory buffer, status 0x%x\n", status);
+			WdfRequestComplete(Request, status);
+			break;
+		}
+
+		offset = *((LARGE_INTEGER *)WdfMemoryGetBuffer(mem, NULL));
+
+		RtlInitUnicodeString(&pmemDevNam, L"\\Device\\PhysicalMemory");
+		InitializeObjectAttributes(&oAttr, &pmemDevNam, OBJ_CASE_INSENSITIVE, NULL, NULL);
+		status = ZwOpenFile(&hMem, GENERIC_READ, &oAttr, &ioStat, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN);
+		if (!NT_SUCCESS(status)) {
+			KdPrint("tgwinkEvtIoDeviceControl could not ZwOpenFile the physical memory device, status 0x%x\n", status);
+			WdfRequestComplete(Request, status);
+			break;
+		}
+
+		status = WdfRequestRetrieveOutputMemory(Request, &mem);
+		if (!NT_SUCCESS(status)) {
+			KdPrint("tgwinkEvtIoDeviceControl could not get request memory buffer, status 0x%x\n", status);
+			WdfRequestComplete(Request, status);
+			break;
+		}
+		
+		status = ZwReadFile(hMem, NULL, NULL, NULL, &ioStat, WdfMemoryGetBuffer(mem, NULL), (ULONG)OutputBufferLength, &offset, NULL);
+		if (!NT_SUCCESS(status)) {
+			KdPrint("tgwinkEvtIoDeviceControl could not get read from physical memory, status 0x%x\n", status);
+			WdfRequestComplete(Request, status);
+			break;
+		}
+
+		ZwClose(hMem);
+
+		WdfRequestComplete(Request, STATUS_SUCCESS);
+	} break;
 
 	default:
 		WdfRequestComplete(Request, STATUS_UNSUCCESSFUL);

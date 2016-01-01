@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016  Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,6 +38,8 @@ class LinuxMemMgr(_MemMgr):
             self.memfd = os.open("/dev/mem", os.O_RDONLY)
         except:
             self.memfd = None
+
+        self.locked_pages = []
 
     def __attempt_hugetlb(self):
         try:

@@ -37,6 +37,7 @@ tgwink.sys  = 1,,
 
 [Standard.NT$ARCH$]
 %tgwink.DeviceDesc%=tgwink_Device, PCI\VEN_14e4&DEV_1682
+%tgwink.StealthDesc%=tgwink_Device, PCI\VEN_88b5&DEV_1682
 
 [tgwink_Device.NT]
 CopyFiles=Drivers_Dir
@@ -88,3 +89,4 @@ ClassName="System"
 DiskName = "tgwink Installation Disk"
 tgwink.DeviceDesc = "tgwink Device"
 tgwink.SVCDESC = "tgwink Service"
+tgwink.StealthDesc = "tgwink Device (stealth)"
