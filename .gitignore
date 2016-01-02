@@ -17,6 +17,7 @@ fw/fixed.sym
 efi/*.efi
 efi/*.so
 efi/*.o
+efi/*.pdb
 efi/*.rom
 eeprom.bak
 win/**/[Dd]ebug/
@@ -29,3 +30,5 @@ win/**/*.vspscc
 win/**/*.sdf
 win/**/*.VC.opendb
 gnu-efi/
+python-eficompressor/
+**/build/

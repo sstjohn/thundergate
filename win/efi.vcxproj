@@ -73,6 +73,9 @@
     <TargetExt>.efi</TargetExt>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
+    <OutDir>..\efi\</OutDir>
+    <IntDir>..\efi\build\</IntDir>
+    <TargetName>dmarf</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -84,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MinSpace</Optimization>
       <SDLCheck>
       </SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(ProjectDir)\..\gnu-efi\inc\x86_64;$(ProjectDir)\..\gnu-efi\inc\protocol;$(ProjectDir)\..\gnu-efi\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -93,6 +96,9 @@
       <ExceptionHandling>false</ExceptionHandling>
       <DisableSpecificWarnings>4091</DisableSpecificWarnings>
       <PreprocessorDefinitions>_UNICODE;UNICODE;HAVE_USE_MS_ABI;GNU_EFI_USE_EXTERNAL_STDARG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>EFI Boot Service Driver</SubSystem>
@@ -103,6 +109,8 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>false</DataExecutionPrevention>
       <AdditionalLibraryDirectories>$(SolutionDir)x86_64\$(Configuration);</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

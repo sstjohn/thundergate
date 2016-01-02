@@ -7,10 +7,10 @@ CLIB_HEADERS=unistd.h sys/mman.h sys/types.h sys/stat.h fcntl.h stdlib.h malloc.
 all: tglib.py clib.py tunlib.py
 
 tglib.py: tglib.xml
-	xml2py tglib.xml -o tglib.py
+	xml2py.py tglib.xml -o tglib.py
 
 tglib.xml: $(PROJ_ROOT)/include/*.h
-	h2xml -I$(PROJ_ROOT)/include -c $(shell ls $(PROJ_ROOT)/include) -o tglib.xml 
+	h2xml.py -I$(PROJ_ROOT)/include -c $(shell ls $(PROJ_ROOT)/include) -o tglib.xml 
 
 clib.py: clib.xml
 	xml2py clib.xml -l libc.so.6 -o clib.py > /dev/null

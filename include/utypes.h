@@ -1,6 +1,6 @@
 /*
  *  ThunderGate - an open source toolkit for PCI bus exploration
- *  Copyright (C) 2015  Saul St. John
+ *  Copyright (C) 2015-2016 Saul St. John
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,10 @@
 #define _UTYPES_H_
 
 #ifdef _MSC_VER
-#include <stdint.h>
+#define uint8_t unsigned __int8
+#define uint16_t unsigned __int16
+#define uint32_t unsigned __int32
+#define uint64_t unsigned __int64
 #else
 #include <stdint-gcc.h>
 #endif

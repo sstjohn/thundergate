@@ -5,12 +5,12 @@ VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tgwink", "tgwink\tgwink.vcxproj", "{7302BBB6-57ED-4EE6-A055-24D763015986}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "README", "README", "{979D2CDB-0013-44A8-BB6D-93A319C430AF}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{979D2CDB-0013-44A8-BB6D-93A319C430AF}"
 	ProjectSection(SolutionItems) = preProject
-		..\README.firmware.md = ..\README.firmware.md
-		..\README.linux.md = ..\README.linux.md
+		..\doc\README.firmware.md = ..\doc\README.firmware.md
+		..\doc\README.linux.md = ..\doc\README.linux.md
 		..\README.md = ..\README.md
-		..\README.windows.md = ..\README.windows.md
+		..\doc\README.windows.md = ..\doc\README.windows.md
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gnu-efi", "gnu-efi.vcxproj", "{3135D563-9596-4584-9ED6-616ADEC52974}"
@@ -25,6 +25,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fw", "fw.vcxproj", "{72A8DC1A-A883-4E60-9E06-1B7A3CF6CD4B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tgwinktest", "tgwinktest\tgwinktest.vcxproj", "{660E93C9-7352-4CFD-908D-F4F327292659}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external", "external", "{91F34EF8-40E4-4C77-BF4D-564A652AC755}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "python-eficompressor", "python-eficompressor.vcxproj", "{506772C8-87E2-465B-9C73-0DFF8CEC0F58}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,8 +95,22 @@ Global
 		{660E93C9-7352-4CFD-908D-F4F327292659}.Release|x64.Build.0 = Release|x64
 		{660E93C9-7352-4CFD-908D-F4F327292659}.Release|x86.ActiveCfg = Release|Win32
 		{660E93C9-7352-4CFD-908D-F4F327292659}.Release|x86.Build.0 = Release|Win32
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Debug|x64.ActiveCfg = Debug|x64
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Debug|x64.Build.0 = Debug|x64
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Debug|x86.ActiveCfg = Debug|Win32
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Debug|x86.Build.0 = Debug|Win32
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Release|Any CPU.ActiveCfg = Release|Win32
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Release|x64.ActiveCfg = Release|x64
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Release|x64.Build.0 = Release|x64
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Release|x86.ActiveCfg = Release|Win32
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3135D563-9596-4584-9ED6-616ADEC52974} = {91F34EF8-40E4-4C77-BF4D-564A652AC755}
+		{506772C8-87E2-465B-9C73-0DFF8CEC0F58} = {91F34EF8-40E4-4C77-BF4D-564A652AC755}
 	EndGlobalSection
 EndGlobal

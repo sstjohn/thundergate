@@ -84,7 +84,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MinSpace</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\gnu-efi\inc;$(ProjectDir)\..\gnu-efi\inc\x86_64;$(ProjectDir)\..\gnu-efi\inc\protocol;$(ProjectDir)\..\gnu-efi\lib</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_UNICODE;UNICODE;HAVE_USE_MS_ABI;GNU_EFI_USE_EXTERNAL_STDARG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
@@ -92,13 +92,16 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4312</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <SubSystem>EFI Application</SubSystem>
+      <SubSystem>EFI Boot Service Driver</SubSystem>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

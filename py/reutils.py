@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016 Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 
 from ctypes import *
 import tglib as tg
-import clib as c
 from device import tg3_blocks
 from rflip import rflip
 import struct

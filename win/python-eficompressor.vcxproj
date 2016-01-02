@@ -19,80 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\fw\beacon.c" />
-    <ClCompile Include="..\fw\cloak.c" />
-    <ClCompile Include="..\fw\handlers.c" />
-    <ClCompile Include="..\fw\init.c" />
-    <ClCompile Include="..\fw\lgate.c" />
-    <ClCompile Include="..\fw\main.c" />
-    <ClCompile Include="..\fw\nvram.c" />
-    <ClCompile Include="..\fw\phy.c" />
-    <ClCompile Include="..\fw\rx.c" />
-    <ClCompile Include="..\fw\tx.c" />
-    <ClCompile Include="..\fw\util.c" />
+    <ClCompile Include="..\python-eficompressor\Decompress.c" />
+    <ClCompile Include="..\python-eficompressor\EfiCompress.c" />
+    <ClCompile Include="..\python-eficompressor\EfiCompressor.c" />
+    <ClCompile Include="..\python-eficompressor\TianoCompress.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\fw\config.h" />
-    <ClInclude Include="..\fw\fw.h" />
-    <ClInclude Include="..\fw\map.h" />
-    <ClInclude Include="..\fw\state.h" />
-    <ClInclude Include="..\include\asf.h" />
-    <ClInclude Include="..\include\bd.h" />
-    <ClInclude Include="..\include\bdrdma.h" />
-    <ClInclude Include="..\include\bufman.h" />
-    <ClInclude Include="..\include\cfg_port.h" />
-    <ClInclude Include="..\include\cpmu.h" />
-    <ClInclude Include="..\include\cpu.h" />
-    <ClInclude Include="..\include\cr_port.h" />
-    <ClInclude Include="..\include\dma.h" />
-    <ClInclude Include="..\include\dmac.h" />
-    <ClInclude Include="..\include\emac.h" />
-    <ClInclude Include="..\include\frame.h" />
-    <ClInclude Include="..\include\ftq.h" />
-    <ClInclude Include="..\include\gencomm.h" />
-    <ClInclude Include="..\include\grc.h" />
-    <ClInclude Include="..\include\hc.h" />
-    <ClInclude Include="..\include\ma.h" />
-    <ClInclude Include="..\include\mbox.h" />
-    <ClInclude Include="..\include\mbuf.h" />
-    <ClInclude Include="..\include\msi.h" />
-    <ClInclude Include="..\include\nrdma.h" />
-    <ClInclude Include="..\include\nvram.h" />
-    <ClInclude Include="..\include\otp.h" />
-    <ClInclude Include="..\include\pci.h" />
-    <ClInclude Include="..\include\pcie.h" />
-    <ClInclude Include="..\include\pcie_alt.h" />
-    <ClInclude Include="..\include\proto.h" />
-    <ClInclude Include="..\include\rbdc.h" />
-    <ClInclude Include="..\include\rbdi.h" />
-    <ClInclude Include="..\include\rbdrules.h" />
-    <ClInclude Include="..\include\rcb.h" />
-    <ClInclude Include="..\include\rdc.h" />
-    <ClInclude Include="..\include\rdi.h" />
-    <ClInclude Include="..\include\rdma.h" />
-    <ClInclude Include="..\include\regdef.h" />
-    <ClInclude Include="..\include\rlp.h" />
-    <ClInclude Include="..\include\rss.h" />
-    <ClInclude Include="..\include\rtsdi.h" />
-    <ClInclude Include="..\include\sbdc.h" />
-    <ClInclude Include="..\include\sbdi.h" />
-    <ClInclude Include="..\include\sbds.h" />
-    <ClInclude Include="..\include\sdc.h" />
-    <ClInclude Include="..\include\sdi.h" />
-    <ClInclude Include="..\include\stats.h" />
-    <ClInclude Include="..\include\status_block.h" />
-    <ClInclude Include="..\include\tcp_seg_ctrl.h" />
-    <ClInclude Include="..\include\utypes.h" />
-    <ClInclude Include="..\include\wdma.h" />
+    <ClInclude Include="..\python-eficompressor\Include\CommonLib.h" />
+    <ClInclude Include="..\python-eficompressor\Include\Common\BaseTypes.h" />
+    <ClInclude Include="..\python-eficompressor\Include\Common\BuildVersion.h" />
+    <ClInclude Include="..\python-eficompressor\Include\Common\UefiBaseTypes.h" />
+    <ClInclude Include="..\python-eficompressor\Include\Compress.h" />
+    <ClInclude Include="..\python-eficompressor\Include\Decompress.h" />
+    <ClInclude Include="..\python-eficompressor\Include\ProcessorBind.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\fw\Makefile" />
+    <None Include="..\python-eficompressor\setup.py" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{72A8DC1A-A883-4E60-9E06-1B7A3CF6CD4B}</ProjectGuid>
+    <ProjectGuid>{506772C8-87E2-465B-9C73-0DFF8CEC0F58}</ProjectGuid>
     <Keyword>MakeFileProj</Keyword>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <ProjectName>fw</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -134,31 +81,17 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <NMakeOutput>tgfw.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <NMakeOutput>tgfw.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeBuildCommandLine>c:\msys64\usr\bin\bash -l -c "cd $OLDPWD/../fw; make"</NMakeBuildCommandLine>
-    <NMakeCleanCommandLine>c:\msys64\usr\bin\bash -l -c "cd $OLDPWD/../fw; make clean"</NMakeCleanCommandLine>
-    <NMakeReBuildCommandLine>c:\msys64\usr\bin\bash -l -c "cd $OLDPWD/../fw; make clean; make"</NMakeReBuildCommandLine>
-    <NMakeOutput>$(ProjectDir)\..\fw\fw.img</NMakeOutput>
-    <NMakeIncludeSearchPath>$(ProjectDir)/../fw;$(ProjectDir)/../include;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <NMakeBuildCommandLine>pip install ..\python-eficompressor</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>pip install --upgrade ..\python-eficompressor</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>pip uninstall ..\python-eficompressor</NMakeCleanCommandLine>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
-      <ExceptionHandling>false</ExceptionHandling>
-      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-    </ClCompile>
-    <Link>
-      <TargetMachine>MachineMIPS</TargetMachine>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>false</DataExecutionPrevention>
-    </Link>
+  <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

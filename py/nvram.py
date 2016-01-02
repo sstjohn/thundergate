@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016 Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -235,7 +235,7 @@ class Nvram(rflip.nvram):
                 cntr += 1
                 if cntr > 100:
                     raise Exception("timed out waiting for nvram command done bit to clear")
-                usleep(10)
+                usleep(100)
 
         self.data_address = offset
         self.write_data = data
@@ -249,10 +249,10 @@ class Nvram(rflip.nvram):
         cntr = 0
         while not self.command.done:
             cntr += 1
-            if cntr > 1000:
+            if cntr > 10000:
                 raise Exception("timed out waiting for nvram command to complete")
 
-            usleep(10)
+            usleep(100)
         self.command.dome = 1
 
     def write_block(self, offset, data):
@@ -414,7 +414,7 @@ class Nvram(rflip.nvram):
         print "[+] installing thundergate oprom"
         start += self.write_dir_image(0, oprom, nv_ofs=bclen)
 
-        dev.reset()
+        self._dev.reset()
     
     def dump_eeprom(self, fname):
         with open(fname, "wb") as f:

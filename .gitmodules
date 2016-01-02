@@ -1,3 +1,6 @@
 [submodule "gnu-efi"]
 	path = gnu-efi
 	url = git://git.code.sf.net/p/gnu-efi/code
+[submodule "python-eficompressor"]
+	path = python-eficompressor
+	url = http://github.com/sstjohn/python-eficompressor.git

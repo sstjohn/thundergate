@@ -7,10 +7,9 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                                 Version 0.9.0
-                        Copyright (c) 2015 Saul St John
-
-                            <a href="http://thundergate.io">http://thundergate.io</a>
+                             Version 0.9.5
+                 Copyright (c) 2015-2016 Saul St John
+                          http://thundergate.io
 </pre>
 
 # Introduction #
@@ -39,9 +38,9 @@ for details.
 
 # Further Reading #
 
- * (Linux usage)[README.linux.md]
- * (Windows usage)[README.windows.md]
- * (Firmware usage)[README.firmware.md]
+ * [Linux usage](doc/README.linux.md)
+ * [Windows usage](doc/README.windows.md)
+ * [Firmware usage](doc/README.firmware.md)
 
 Additionally, an old report describing an older version of this project can be
 found at <http://thundergate.io/tg_old.pdf>.

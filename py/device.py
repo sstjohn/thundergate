@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016 Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -292,7 +292,7 @@ class Device(object):
         cntr = 0
         while self.mem.read_dword(0xb50) != 0xb49a89ab:
             cntr += 1
-            if cntr > 5000:
+            if cntr > 10000:
                 raise Exception("timed out waiting for bootcode completion")
             usleep(100)
         if cntr == 0:

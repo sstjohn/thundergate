@@ -1,0 +1,13 @@
+bidict==0.10.0.post1
+capstone==3.0.4
+decorator==4.0.6
+ipython==4.0.1
+ipython-genutils==0.1.0
+path.py==8.1.2
+pickleshare==0.5
+pyelftools==0.23
+pyreadline==2.1
+simplegeneric==0.8.1
+traitlets==4.0.0
+
+-e ../python-eficompressor
