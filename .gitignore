@@ -29,6 +29,4 @@ win/**/*.user
 win/**/*.vspscc
 win/**/*.sdf
 win/**/*.VC.opendb
-gnu-efi/
-python-eficompressor/
 **/build/
