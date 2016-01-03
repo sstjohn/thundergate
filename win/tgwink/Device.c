@@ -51,8 +51,30 @@ tgwinkPrepareHardware(
 			break;
 
 		case CmResourceTypeInterrupt:
-			KdPrint("Found an interrupt-type resource!\n");
-			break;
+		{
+			WDF_INTERRUPT_CONFIG irqConfig;
+			WDF_OBJECT_ATTRIBUTES oAttrs;
+
+			if (NULL != context->hIrq) {
+				KdPrint("Ignoring another interrupt for this device!\n");
+			} else {
+				WDF_INTERRUPT_CONFIG_INIT(&irqConfig, &tgwinkServiceInterrupt, NULL);
+				irqConfig.EvtInterruptWorkItem = &tgwinkInterruptWerk;
+				irqConfig.InterruptTranslated = desc;
+				irqConfig.InterruptRaw = WdfCmResourceListGetDescriptor(Resources, i);
+
+				WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&oAttrs, INTERRUPT_CONTEXT);
+
+				result = WdfInterruptCreate(Device, &irqConfig, &oAttrs, &context->hIrq);
+				if (!NT_SUCCESS(result)) {
+					KdPrint("Unable to create a WDFINTERRUPT object hey, status %x\n", result);
+					//return result;
+				}
+				else {
+					KdPrint("Found an interrupt-type resource!\n");
+				}
+			}
+		} break;
 
 		case CmResourceTypeMemory:
 			ASSERT(barSeen < 2);
@@ -158,6 +180,8 @@ tgwinkCreateDevice(
 	}
 
 	context = DeviceGetContext(device);
+	context->hIrq = NULL;
+
 	RtlInitUnicodeString(&pmemDevNam, L"\\Device\\PhysicalMemory");
 	InitializeObjectAttributes(&oAttr, &pmemDevNam, OBJ_CASE_INSENSITIVE, NULL, NULL);
 	status = ZwOpenSection(&context->hMemory, SECTION_MAP_READ | SECTION_MAP_WRITE, &oAttr);
@@ -194,4 +218,36 @@ tgwinkDeviceContextCleanup(
 	PAGED_CODE();
 
 	UNREFERENCED_PARAMETER(Device);
+}
+
+BOOLEAN
+tgwinkServiceInterrupt(
+	_In_ WDFINTERRUPT Interrupt,
+	_In_ ULONG MessageID
+	)
+{
+	UNREFERENCED_PARAMETER(Interrupt);
+	UNREFERENCED_PARAMETER(MessageID);
+	WDFDEVICE dev = WdfInterruptGetDevice(Interrupt);
+	PDEVICE_CONTEXT dContext = DeviceGetContext(dev);
+	PINTERRUPT_CONTEXT iContext = InterruptGetContext(Interrupt);
+
+	iContext->serial = InterlockedIncrement64(&dContext->irqId);
+	WdfInterruptQueueWorkItemForIsr(Interrupt);
+	
+	return TRUE;
+}
+
+void
+tgwinkInterruptWerk(
+	_In_ WDFINTERRUPT Interrupt,
+	_In_ WDFOBJECT Object
+	)
+{
+	PINTERRUPT_CONTEXT iCtx = InterruptGetContext(Interrupt);
+	WDFDEVICE dev = Object;
+	PDEVICE_CONTEXT dCtx = DeviceGetContext(dev);
+
+	KdPrint("Werking interrupt #%x!\n", iCtx->serial);
+	dCtx->IoDefaultQueue;
 }

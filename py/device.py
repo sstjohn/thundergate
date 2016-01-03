@@ -292,7 +292,7 @@ class Device(object):
         cntr = 0
         while self.mem.read_dword(0xb50) != 0xb49a89ab:
             cntr += 1
-            if cntr > 10000:
+            if cntr > 50000:
                 raise Exception("timed out waiting for bootcode completion")
             usleep(100)
         if cntr == 0:

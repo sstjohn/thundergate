@@ -1,6 +1,6 @@
 /*
  *  ThunderGate - an open source toolkit for PCI bus exploration
- *  Copyright (C) 2015  Saul St. John
+ *  Copyright (C) 2015-2016 Saul St. John
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@ static EFI_IMAGE_UNLOAD orig_unload = 0;
 
 static EFI_STATUS EFI_FUNCTION DmarfUnload(IN EFI_HANDLE ImageHandle)
 {
-  EFI_INPUT_KEY key;
-
   if (orig_unload) {
 	EFI_STATUS tmp;
 	DbgPrint(L"calling original unload handler\n");

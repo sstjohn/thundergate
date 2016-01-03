@@ -1,6 +1,6 @@
 /*
 *  ThunderGate - an open source toolkit for PCI bus exploration
-*  Copyright (C) 2015-2016  Saul St. John
+*  Copyright (C) 2015-2016 Saul St. John
 *
 *  This program is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -63,8 +63,6 @@ tgwinkEvtIoDeviceControl(
 	_In_ ULONG IoControlCode
 	)
 {
-	UNREFERENCED_PARAMETER(InputBufferLength);
-
 	WDFMEMORY mem;
 	NTSTATUS status;
 	WDFDEVICE dev;
@@ -143,10 +141,9 @@ tgwinkEvtIoDeviceControl(
 
 	case IOCTL_TGWINK_READ_PHYS:
 	{
-		UNICODE_STRING pmemDevNam;
-		OBJECT_ATTRIBUTES oAttr;
-		HANDLE hMem;
-		IO_STATUS_BLOCK ioStat;
+		PVOID buf;
+		ULONG_PTR page, ofs, vtgt = 0;
+		SIZE_T vsz = 0;
 
 		if (InputBufferLength != sizeof(PVOID)) {
 			KdPrint("tgwinkEvtIoDeviceControl requires a %d-byte buffer for this ioctl (got %d)\n", sizeof(PVOID), OutputBufferLength);
@@ -154,23 +151,17 @@ tgwinkEvtIoDeviceControl(
 			break;
 		}
 		
-		status = WdfRequestRetrieveInputBuffer(Request, sizeof(PVOID), &mem, NULL);
+		status = WdfRequestRetrieveInputBuffer(Request, sizeof(PVOID), &buf, NULL);
 		if (!NT_SUCCESS(status)) {
 			KdPrint("tgwinkEvtIoDeviceControl could not get request memory buffer, status 0x%x\n", status);
 			WdfRequestComplete(Request, status);
 			break;
 		}
 
-		offset = *((LARGE_INTEGER *)WdfMemoryGetBuffer(mem, NULL));
-
-		RtlInitUnicodeString(&pmemDevNam, L"\\Device\\PhysicalMemory");
-		InitializeObjectAttributes(&oAttr, &pmemDevNam, OBJ_CASE_INSENSITIVE, NULL, NULL);
-		status = ZwOpenFile(&hMem, GENERIC_READ, &oAttr, &ioStat, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN);
-		if (!NT_SUCCESS(status)) {
-			KdPrint("tgwinkEvtIoDeviceControl could not ZwOpenFile the physical memory device, status 0x%x\n", status);
-			WdfRequestComplete(Request, status);
-			break;
-		}
+		ofs = *((ULONG_PTR *)buf);
+		page = ofs & ~0xfff;
+		vsz = OutputBufferLength + (page ^ ofs);
+		buf = NULL;
 
 		status = WdfRequestRetrieveOutputMemory(Request, &mem);
 		if (!NT_SUCCESS(status)) {
@@ -178,17 +169,35 @@ tgwinkEvtIoDeviceControl(
 			WdfRequestComplete(Request, status);
 			break;
 		}
-		
-		status = ZwReadFile(hMem, NULL, NULL, NULL, &ioStat, WdfMemoryGetBuffer(mem, NULL), (ULONG)OutputBufferLength, &offset, NULL);
+
+		status = ZwMapViewOfSection(context->hMemory, (HANDLE)-1, (PVOID *)&vtgt, 0, 0, (PLARGE_INTEGER)&page, &vsz, ViewUnmap, 0, PAGE_READONLY);
 		if (!NT_SUCCESS(status)) {
-			KdPrint("tgwinkEvtIoDeviceControl could not get read from physical memory, status 0x%x\n", status);
+			KdPrint("tgwinkEvtIoDeviceControl could not map view of physical memory section, status 0x%x\n", status);
 			WdfRequestComplete(Request, status);
 			break;
 		}
 
-		ZwClose(hMem);
+		ofs -= page;
+		status = WdfMemoryCopyFromBuffer(mem, 0, (PVOID)(vtgt + ofs), OutputBufferLength);
+		if (!NT_SUCCESS(status)) {
+			KdPrint("tgwinkEvtIoDeviceControl failed to copy data from memory to buffer, status 0x%x\n", status);
+			WdfRequestComplete(Request, status);
+			break;
+		}
 
-		WdfRequestComplete(Request, STATUS_SUCCESS);
+		status = ZwUnmapViewOfSection((HANDLE)-1, (PVOID)vtgt);
+		if (!NT_SUCCESS(status)) {
+			KdPrint("tgwinkEvtIoDeviceControl failed to unmap view of physical memory section, status 0x%x\n", status);
+			WdfRequestComplete(Request, status);
+			break;
+		}
+	
+		WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, OutputBufferLength);
+	} break;
+
+	case IOCTL_TGWINK_GET_IRQFD:
+	{
+
 	} break;
 
 	default:

@@ -31,13 +31,17 @@ if sys_name == "Linux":
     
     import clib as c
     from tunlib import *
+    tap_close = os.close
 elif sys_name == "Windows":
     from winlib import *
+    tap_close = del_tap_if
 else:
     raise NotImplementedError("tap driver only available on linux and windows")
    
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
+
+from ctypes import cast, pointer, POINTER, sizeof
 
 class TapDriver(object):
     def __init__(self, dev):
@@ -46,10 +50,13 @@ class TapDriver(object):
 
     def __enter__(self):
         print "[+] driver initialization begins"
-        fd = os.open("/dev/net/tun", os.O_RDWR)
-        ifr = struct.pack('16sH', 'tap0', IFF_TAP | IFF_NO_PI)
-        fcntl.ioctl(fd, TUNSETIFF, ifr)
-        self.tfd = fd
+        if sys_name == "Linux":
+            fd = os.open("/dev/net/tun", os.O_RDWR)
+            ifr = struct.pack('16sH', 'tap0', IFF_TAP | IFF_NO_PI)
+            fcntl.ioctl(fd, TUNSETIFF, ifr)
+            self.tfd = fd
+        elif sys_name == "Windows":
+            self.tfd = create_tap_if()
 
         self._device_setup()
 
@@ -57,7 +64,7 @@ class TapDriver(object):
 
     def __exit__(self, t, v, traceback):
         self.dev.close()
-        os.close(self.tfd)
+        tap_close(self.tfd)
         print "[+] driver terminated"
                 
     def __init_xx_ring(self, bdtype):
@@ -303,8 +310,8 @@ class TapDriver(object):
         dev.hc.rc_max_coal_bds_in_int = 0x05
         dev.hc.tx_max_coal_bds_in_int = 0x05
 
-        self.status_block_vaddr = mm.alloc(c.sizeof(tg.status_block))
-        self.status_block = c.cast(self.status_block_vaddr, c.POINTER(tg.status_block))[0]
+        self.status_block_vaddr = mm.alloc(sizeof(tg.status_block))
+        self.status_block = cast(self.status_block_vaddr, POINTER(tg.status_block))[0]
 
         self.status_block_paddr = mm.get_paddr(self.status_block_vaddr)
         
@@ -656,6 +663,7 @@ class TapDriver(object):
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
         read_fds = [self.dev.interface.eventfd, self.tfd]
+
         while True:
             ready, _, _ = select.select(read_fds, [], [])
             for i in ready:

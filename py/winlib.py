@@ -228,7 +228,9 @@ fun_prototypes = [
     (setupapi, "SetupDiCallClassInstaller", [DI_FUNCTION, HDEVINFO, POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiDestroyDeviceInfoList", [HDEVINFO], BOOL),
     (setupapi, "SetupDiOpenDevRegKey", [HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, DWORD, DWORD, REGSAM], HKEY),
+    (setupapi, "SetupDiDestroyDeviceInfoList", [HDEVINFO], BOOL),
     (newdev, "DiInstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), LPVOID, DWORD, POINTER(BOOL)], BOOL),
+    (newdev, "DiUninstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, POINTER(BOOL)], BOOL),
     (advapi32, "RegQueryValueExA", [HKEY, LPCSTR, POINTER(DWORD), POINTER(DWORD), POINTER(BYTE), POINTER(DWORD)], LONG),
     (kernel32, "AllocateUserPhysicalPages", [HANDLE, PULONG_PTR, PULONG_PTR], BOOL),
     (advapi32, "OpenProcessToken", [HANDLE, DWORD, POINTER(HANDLE)], BOOL),
@@ -250,6 +252,9 @@ for proto in fun_prototypes:
     if name[-1] == 'A':
         name = name[:-1]
     globals()[name] = f
+
+
+tap_interfaces = {}
 
 def create_tap_if(name = None):
     class_name = LPCSTR("Network")
@@ -296,11 +301,26 @@ def create_tap_if(name = None):
         raise WinError()
   
     info = (ULONG * 3)()
-    len = DWORD(0)
-    if not DeviceIoControl(hdev, TAP_WIN_IOCTL_GET_VERSION, pointer(info), sizeof(info), pointer(info), sizeof(info), pointer(len), None):
+    sz = DWORD(0)
+    if not DeviceIoControl(hdev, TAP_WIN_IOCTL_GET_VERSION, pointer(info), sizeof(info), pointer(info), sizeof(info), pointer(sz), None):
         raise WinError()
     print "[+] tap-windows v%d.%d%s device %s created" % (info[0], info[1], "d" if info[2] else "", cfg_iid.value)
+
+    tap_interfaces[hdev] = (h, devInfoData)
     return hdev
+
+def del_tap_if(hdev):
+    (dil, did) = tap_interfaces[hdev]
+    del tap_interfaces[hdev]
+
+    CloseHandle(hdev)
+
+    if not DiUninstallDevice(None, dil, did, 0, None):
+        raise WinError()
+
+    if not SetupDiDestroyDeviceInfoList(dil):
+        raise WinError()
+
 
 def add_account_privilege(privilege_name):
     policy = LSA_HANDLE()

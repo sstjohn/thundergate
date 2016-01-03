@@ -78,6 +78,7 @@ class WinInterface(object):
             raise WinError()
 
         self.bar0 = bar_ptr.value
+        self.eventfd = 0
 
     def __exit__(self, t, v, traceback):
         self._detach()

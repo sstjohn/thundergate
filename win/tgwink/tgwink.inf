@@ -77,6 +77,14 @@ tgwink_Device_CoInstaller_CopyFiles = 11
 [SourceDisksFiles]
 WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
 
+[tgwink_Device.NT.HW]
+AddReg = MSI_Interrupts
+
+[MSI_Interrupts]
+HKR,Interrupt Management,,0x00000010
+HKR,Interrupt Management\MessageSignaledInterruptProperties,,0x00000010
+HKR,Interrupt Management\MessageSignaledInterruptProperties,MSISupported,0x00010001,1
+
 [tgwink_Device.NT.Wdf]
 KmdfService =  tgwink, tgwink_wdfsect
 [tgwink_wdfsect]
@@ -90,3 +98,4 @@ DiskName = "tgwink Installation Disk"
 tgwink.DeviceDesc = "tgwink Device"
 tgwink.SVCDESC = "tgwink Service"
 tgwink.StealthDesc = "tgwink Device (stealth)"
+
