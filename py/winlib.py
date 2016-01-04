@@ -389,7 +389,7 @@ class _async(object):
     def __init__(self, handle, length, offset = 0):
         self.handle = handle
         self.length = length
-        self.req = OVERLAPPED(Offset = offset)
+        self.req = OVERLAPPED(Offset = offset, hEvent = CreateEvent(None, True, False, None))
         self.buffer = (c_char * length)()
         self._complete = False
 
@@ -397,7 +397,7 @@ class _async(object):
         raise NotImplementedError()
 
     def check(self):
-        res = WaitForSingleObject(self.handle, 0)
+        res = WaitForSingleObject(self.req.hEvent, 0)
         if WAIT_FAILED == res:
             raise WinError()
         if 0 == res:
@@ -408,7 +408,9 @@ class _async(object):
 class ReadAsync(_async):
     def submit(self):
         if not ReadFile(self.handle, pointer(self.buffer), self.length, None, pointer(self.req)):
-            raise WinError()
+            err = WinError()
+            if err.winerror and err.winerror != ERROR_IO_PENDING:
+                raise err
 
 class IoctlAsync(_async):
     def __init__(self, ioctl, handle, length, offset = 0, indata = None):
@@ -425,5 +427,5 @@ class IoctlAsync(_async):
         if not DeviceIoControl(self.handle, self.ioctl, byref(self.in_buf), self.in_sz, pointer(self.buffer), self.length, None, pointer(self.req)):
             err = WinError()
             if err.winerror != ERROR_IO_PENDING:
-                raise WinError()
+                raise err
         
