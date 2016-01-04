@@ -51,6 +51,13 @@ tgwinkQueueInitialize(
 				 &deviceContext->IoDefaultQueue
 				 );
 
+	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchManual);
+	status = WdfIoQueueCreate(
+		Device,
+		&queueConfig,
+		WDF_NO_OBJECT_ATTRIBUTES,
+		&deviceContext->NotificationQueue);
+
 	return status;
 }
 
@@ -197,7 +204,7 @@ tgwinkEvtIoDeviceControl(
 
 	case IOCTL_TGWINK_PEND_INTR:
 	{
-		WdfRequestComplete(Request, STATUS_UNSUCCESSFUL);
+		WdfRequestForwardToIoQueue(Request, context->NotificationQueue);
 	} break;
 
 	default:

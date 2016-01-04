@@ -226,13 +226,10 @@ tgwinkServiceInterrupt(
 	_In_ ULONG MessageID
 	)
 {
-	UNREFERENCED_PARAMETER(Interrupt);
 	UNREFERENCED_PARAMETER(MessageID);
-	WDFDEVICE dev = WdfInterruptGetDevice(Interrupt);
-	PDEVICE_CONTEXT dContext = DeviceGetContext(dev);
 	PINTERRUPT_CONTEXT iContext = InterruptGetContext(Interrupt);
 
-	iContext->serial = InterlockedIncrement64(&dContext->irqId);
+	iContext->serial = InterlockedIncrement64(&iContext->serial);
 	WdfInterruptQueueWorkItemForIsr(Interrupt);
 	
 	return TRUE;
@@ -247,7 +244,30 @@ tgwinkInterruptWerk(
 	PINTERRUPT_CONTEXT iCtx = InterruptGetContext(Interrupt);
 	WDFDEVICE dev = Object;
 	PDEVICE_CONTEXT dCtx = DeviceGetContext(dev);
+	WDFREQUEST pending;
+	NTSTATUS res;
+	WDFMEMORY out;
 
-	KdPrint("Werking interrupt #%x!\n", iCtx->serial);
-	dCtx->IoDefaultQueue;
+	KdPrint("Werking interrupt #%x...\n", iCtx->serial);
+	res = WdfIoQueueRetrieveNextRequest(dCtx->NotificationQueue, &pending);
+	if (!NT_SUCCESS(res)) {
+		if (res == STATUS_NO_MORE_ENTRIES)
+			KdPrint("No one was waiting!");
+		else
+			KdPrint("WdfIoQueueRetrieveNextRequest returned unknown error %x\n", res);
+		return;
+	} 
+		res = WdfRequestRetrieveOutputMemory(pending, &out);
+		if (!NT_SUCCESS(res)) {
+			KdPrint("Couldn't retrieve output buffer, error %x\n", res);
+			WdfRequestComplete(pending, STATUS_UNSUCCESSFUL);
+			return;
+		}
+		res = WdfMemoryCopyFromBuffer(out, 0, &iCtx->serial, 8);
+		if (!NT_SUCCESS(res)) {
+			KdPrint("Couldn't copy to output buffer, error %x\n", res);
+			WdfRequestComplete(pending, STATUS_UNSUCCESSFUL);
+			return;
+		}
+		WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, 8);
 }

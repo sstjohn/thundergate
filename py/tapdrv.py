@@ -666,10 +666,10 @@ class TapDriver(object):
             events = (HANDLE * 2)(tg_evt.handle, tap_evt.handle)
             tg_is_ready = tg_evt.check
             tap_is_ready = tap_evt.check
+            tg_evt.submit()
+            #tap_evt.submit()
             def wait_for_something():
-                tg_evt.submit()
-                tap_evt.submit()
-                res = WaitForMultipleObjects(2, pointer(events), False, INFINITE)
+                res = WaitForMultipleObjects(2, cast(pointer(events), POINTER(c_void_p)), False, INFINITE)
                 if WAIT_FAILED == res:
                     raise WinError()
         else:

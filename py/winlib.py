@@ -227,6 +227,7 @@ fun_prototypes = [
     (kernel32, "VirtualAlloc", [LPVOID, SIZE_T, DWORD, DWORD], LPVOID),
     (kernel32, "MapUserPhysicalPages", [LPVOID, ULONG_PTR, POINTER(ULONG_PTR)], BOOL),
     (kernel32, "WaitForSingleObject", [HANDLE, DWORD], DWORD),
+    (kernel32, "WaitForMultipleObjects", [DWORD, POINTER(HANDLE), BOOL, DWORD], DWORD),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -286,7 +287,7 @@ def create_tap_if(name = None):
         raise WinError()
 
     if not DiInstallDevice(None, h, pointer(devInfoData), None, 0, None):
-        raise WinError()
+        raise WinError() # have you installed TAP-Windows6?
 
     if None != name:
         p = LPCSTR(name)
@@ -426,6 +427,6 @@ class IoctlAsync(_async):
     def submit(self):
         if not DeviceIoControl(self.handle, self.ioctl, byref(self.in_buf), self.in_sz, pointer(self.buffer), self.length, None, pointer(self.req)):
             err = WinError()
-            if err.winerror != ERROR_IO_PENDING:
+            if err.winerror and err.winerror != ERROR_IO_PENDING:
                 raise err
         
