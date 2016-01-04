@@ -229,6 +229,7 @@ fun_prototypes = [
     (kernel32, "WaitForSingleObject", [HANDLE, DWORD], DWORD),
     (kernel32, "WaitForMultipleObjects", [DWORD, POINTER(HANDLE), BOOL, DWORD], DWORD),
     (kernel32, "ResetEvent", [HANDLE], BOOL),
+    (kernel32, "CancelIoEx", [HANDLE, POINTER(OVERLAPPED)], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
