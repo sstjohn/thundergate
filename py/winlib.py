@@ -196,6 +196,7 @@ MEM_RESERVE = 0x2000
 MEM_PHYSICAL = 0x400000
 WAIT_FAILED = 0xffffffff
 INFINITE = 0xffffffff
+ERROR_IO_PENDING = 997
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
@@ -218,7 +219,7 @@ ntdll = windll.ntdll
 fun_prototypes = [
     (kernel32, "CreateFileA", [LPCSTR, DWORD, DWORD, c_void_p, DWORD, DWORD, HANDLE], HANDLE),
     (kernel32, "ReadFile", [HANDLE, LPVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)], BOOL),
-    (kernel32, "CreateEvent", [POINTER(SECURITY_ATTRIBUTES), DWORD, DWORD, LPCSTR], HANDLE),    
+    (kernel32, "CreateEventA", [POINTER(SECURITY_ATTRIBUTES), DWORD, DWORD, LPCSTR], HANDLE),    
     (kernel32, "WriteFile", [HANDLE, LPCVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)], BOOL),
     (kernel32, "DeviceIoControl", [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, POINTER(DWORD), c_void_p], BOOL),
     (kernel32, "CloseHandle", [HANDLE], BOOL),
@@ -406,12 +407,12 @@ class _async(object):
 
 class ReadAsync(_async):
     def submit(self):
-        if not ReadFile(self.handle, pointer(self.buffer), self.length, None, pointer(self.overlapped)):
+        if not ReadFile(self.handle, pointer(self.buffer), self.length, None, pointer(self.req)):
             raise WinError()
 
 class IoctlAsync(_async):
     def __init__(self, ioctl, handle, length, offset = 0, indata = None):
-        super(IoctlAsync, self).__init__()
+        super(IoctlAsync, self).__init__(handle, length, offset)
         self.ioctl = ioctl
         if indata is not None:
             self.in_sz = len(indata)
@@ -422,5 +423,7 @@ class IoctlAsync(_async):
 
     def submit(self):
         if not DeviceIoControl(self.handle, self.ioctl, byref(self.in_buf), self.in_sz, pointer(self.buffer), self.length, None, pointer(self.req)):
-            raise WinError()
+            err = WinError()
+            if err.winerror != ERROR_IO_PENDING:
+                raise WinError()
         

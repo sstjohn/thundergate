@@ -94,23 +94,36 @@ class WinInterface(object):
 
     def cfg_read(self, offset):
         assert offset >= 0 and offset < 0x400
-        req = OVERLAPPED(Offset=offset, hEvent = CreateEvent(None, True, False, None))
-        val = c_uint32(0)
-        bytes_read = DWORD(0)
-        if not ReadFile(self.cfgfd, pointer(val), 4, pointer(bytes_read), pointer(req)):
-            err = WinError()
-            
-        if bytes_read.value != 4:
-            raise Exception("wrong number of bytes read")
-        return val.value
+        try:
+            req = OVERLAPPED(Offset=offset, hEvent = CreateEvent(None, True, False, None))
+            val = c_uint32(0)
+            if not ReadFile(self.cfgfd, pointer(val), 4, None, pointer(req)):
+                err = WinError()
+                if err.winerror == ERROR_IO_PENDING:
+                    if WAIT_FAILED == WaitForSingleObject(req.hEvent, INFINITE):
+                        raise WinError()
+                elif err.winerror == 0:
+                    pass
+                else:
+                    raise err
+            return val.value
+        finally:
+            CloseHandle(req.hEvent)
 
     def cfg_write(self, offset, inval):
         assert offset >= 0 and offset < 0x400
-        req = OVERLAPPED(Offset=offset)
-        bytes_written = DWORD(0)
-        val = c_uint32(inval)
-        if not WriteFile(self.cfgfd, byref(val), 4, pointer(bytes_written), pointer(req)):
-            err = WinError()
-
-        if bytes_written.value != 4:
-            raise Exception("wrong number of bytes written")
+        try:
+            req = OVERLAPPED(Offset=offset, hEvent = CreateEvent(None, True, False, None))
+            bytes_written = DWORD(0)
+            val = c_uint32(inval)
+            if not WriteFile(self.cfgfd, byref(val), 4, None, pointer(req)):
+                err = WinError()
+                if err.winerror == ERROR_IO_PENDING:
+                    if WAIT_FAILED == WaitForSingleObject(req.hEvent, INFINITE):
+                        raise WinError()
+                elif err.winerror == 0:
+                    pass
+                else:
+                    raise err
+        finally:
+            CloseHandle(req.hEvent)
