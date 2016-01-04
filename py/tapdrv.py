@@ -454,7 +454,7 @@ class TapDriver(object):
         #dev.emac.rx_mac_mode.rss_tcpipv6_hash_enable = 1
         dev.emac.rx_mac_mode.enable = 1
 
-        usleep(10)
+        usleep(100)
 
         print "[+] configuring led"
         dev.emac.led_control.word = 0x800
@@ -584,7 +584,9 @@ class TapDriver(object):
                             print " opaque:    %08x" % rbd.opaque
 
                         buf = ctypes.cast(self.rx_ring_buffers[rbd.index], ctypes.POINTER(ctypes.c_char * rbd.length))[0]
-                        os.write(self.tfd, buf.raw)
+                        
+                        #XXX FIXME XXX
+                        #os.write(self.tfd, buf.raw)
 
                         count -= 1
 
@@ -698,8 +700,8 @@ class TapDriver(object):
             if tg_is_ready():
                 serial = get_serial()
                 print "handling interrupt with serial number %d" % serial
-                self._handle_interrupt()
-            elif tap_is_ready():
+                self._handle_interrupt(verbose=1)
+            if tap_is_ready():
                 b = self.mm.alloc(0x800)
                 l = c.read(self.tfd, b, 0x800)
                 self._send_b(b, l)

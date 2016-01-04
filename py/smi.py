@@ -32,9 +32,9 @@ class Smi(object):
         self.emac.mii_communication.start_busy = 1
         cnt = 0
         while self.emac.mii_communication.start_busy:
-            if cnt > 20:
+            if cnt > 5000:
                 raise Exception("mii communication timed out")
-            usleep(100)
+            usleep(500)
             cnt += 1
 
         if self.emac.mii_communication.read_failed:
@@ -52,9 +52,9 @@ class Smi(object):
         self.emac.mii_communication.start_busy = 1
         cnt = 0
         while self.emac.mii_communication.start_busy:
-            if cnt > 100:
+            if cnt > 5000:
                 raise Exception("mii communication timed out")
-            usleep(100)
+            usleep(500)
             cnt += 1
 
     def read_shd18(self, port, shadow):

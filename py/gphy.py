@@ -35,18 +35,18 @@ class GPhy(object):
         self.write_reg(0, 0x8000)
         cnt = 0
         while self.read_reg(0) & 0x8000:
-            if cnt > 100:
+            if cnt > 5000:
                 raise Exception("phy reset timed out")
-            usleep(100)
+            usleep(500)
             cnt += 1
 
     def loopback(self):
         self.write_reg(0, 1 << 14)
         cnt = 0
         while self.read_reg(1) & (1 << 4):
-            if cnt > 15000:
+            if cnt > 5000:
                 raise Exception("link failed to drop")
-            usleep(10)
+            usleep(500)
             cnt += 1
 
     def auto_mdix(self):
@@ -76,7 +76,7 @@ class GPhy(object):
         while res & (1 << 5) == 0:
             if cnt > 5000:
                 break
-            usleep(100)
+            usleep(500)
             res = self.read_reg(1)
             cnt += 1
         
