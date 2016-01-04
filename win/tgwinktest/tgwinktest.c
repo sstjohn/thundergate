@@ -64,7 +64,7 @@ int main()
 		if (!SetupDiGetDeviceInterfaceDetail(hDevInfo, &devIntData, pDevIntDetail, requiredSize, NULL, &devInfoData)) {
 			printf("SetupDiGetDeviceInterfaceDetail failed!\n");
 			return 1;
-		}
+		} 
 
 		_tprintf(TEXT("Device path: %s\n"), pDevIntDetail->DevicePath);
 		

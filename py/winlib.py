@@ -179,6 +179,7 @@ SPDRP_HARDWARE_ID = 1
 SPDRP_FRIENDLYNAME = 0xc
 DIF_SELECTBESTCOMPATDRV = 0x17
 DIF_REGISTERDEVICE = 0x19
+DIF_REMOVE = 5
 INSTALLFLAG_FORCE = 1
 DIREG_DRV = 2
 DICS_FLAG_GLOBAL = 1
@@ -206,6 +207,7 @@ IOCTL_TGWINK_READ_PHYS = CTL_CODE(0x8000, 0x8002, METHOD_BUFFERED, FILE_ANY_ACCE
 IOCTL_TGWINK_PEND_INTR = CTL_CODE(0x8000, 0x8003, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 
 TAP_WIN_IOCTL_GET_VERSION = CTL_CODE(FILE_DEVICE_UNKNOWN, 2, METHOD_BUFFERED, FILE_ANY_ACCESS)
+TAP_WIN_IOCTL_SET_MEDIA_STATUS = CTL_CODE(FILE_DEVICE_UNKNOWN, 6, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 GUID_DEVINTERFACE_TGWINK = GUID(0x77dce17a,0x78bd,0x4b27,(0x84,0x09,0x8f,0x5d,0x20,0x96,0x3c,0x39))
 
@@ -230,6 +232,7 @@ fun_prototypes = [
     (kernel32, "WaitForMultipleObjects", [DWORD, POINTER(HANDLE), BOOL, DWORD], DWORD),
     (kernel32, "ResetEvent", [HANDLE], BOOL),
     (kernel32, "CancelIoEx", [HANDLE, POINTER(OVERLAPPED)], BOOL),
+    (kernel32, "SetEvent", [HANDLE], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -241,6 +244,8 @@ fun_prototypes = [
     (setupapi, "SetupDiDestroyDeviceInfoList", [HDEVINFO], BOOL),
     (setupapi, "SetupDiOpenDevRegKey", [HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, DWORD, DWORD, REGSAM], HKEY),
     (setupapi, "SetupDiDestroyDeviceInfoList", [HDEVINFO], BOOL),
+    (setupapi, "SetupDiRemoveDevice", [HDEVINFO, POINTER(SP_DEVINFO_DATA)], BOOL),
+    (setupapi, "SetupDiDeleteDeviceInfo", [HDEVINFO, POINTER(SP_DEVINFO_DATA)], BOOL),
     (newdev, "DiInstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), LPVOID, DWORD, POINTER(BOOL)], BOOL),
     (newdev, "DiUninstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, POINTER(BOOL)], BOOL),
     (advapi32, "RegQueryValueExA", [HKEY, LPCSTR, POINTER(DWORD), POINTER(DWORD), POINTER(BYTE), POINTER(DWORD)], LONG),
@@ -330,6 +335,9 @@ def del_tap_if(hdev):
     if not DiUninstallDevice(None, dil, did, 0, None):
         raise WinError()
 
+    if not SetupDiDeleteDeviceInfo(dil, pointer(did)):
+        raise WinError()
+
     if not SetupDiDestroyDeviceInfoList(dil):
         raise WinError()
 
@@ -389,10 +397,10 @@ def add_process_privilege(privilege_name):
 
 
 class _async(object):
-    def __init__(self, handle, length, offset = 0):
+    def __init__(self, handle, length):
         self.handle = handle
         self.length = length
-        self.req = OVERLAPPED(Offset = offset, hEvent = CreateEvent(None, True, False, None))
+        self.req = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         self.buffer = (c_char * length)()
 
     def __del__(self):
@@ -415,6 +423,8 @@ class _async(object):
             raise WinError()
         self.req.Internal = None
         self.req.InternalHigh = None
+        self.req.Pointer = None
+        self.buffer.raw = "\x00" * self.length
         self.submit()
 
 
@@ -424,10 +434,13 @@ class ReadAsync(_async):
             err = WinError()
             if err.winerror and err.winerror != ERROR_IO_PENDING:
                 raise err
+        else:
+            if not SetEvent(self.req.hEvent):
+                raise WinError()
 
 class IoctlAsync(_async):
-    def __init__(self, ioctl, handle, length, offset = 0, indata = None):
-        super(IoctlAsync, self).__init__(handle, length, offset)
+    def __init__(self, ioctl, handle, length, indata = None):
+        super(IoctlAsync, self).__init__(handle, length)
         self.ioctl = ioctl
         if indata is not None:
             self.in_sz = len(indata)
@@ -441,4 +454,7 @@ class IoctlAsync(_async):
             err = WinError()
             if err.winerror and err.winerror != ERROR_IO_PENDING:
                 raise err
+        else:
+            if not SetEvent(self.req.hEvent):
+                raise WindowsError()
         

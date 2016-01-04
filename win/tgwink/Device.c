@@ -151,7 +151,7 @@ tgwinkCreateDevice(
 	_Inout_ PWDFDEVICE_INIT DeviceInit
 	)
 {
-	WDF_OBJECT_ATTRIBUTES   fdoAttributes;
+	WDF_OBJECT_ATTRIBUTES   wdfAttr;
 	WDFDEVICE device;
 	WDF_PNPPOWER_EVENT_CALLBACKS pnpCallbacks;
 	NTSTATUS status;
@@ -168,11 +168,11 @@ tgwinkCreateDevice(
 
 	WdfDeviceInitSetIoType(DeviceInit, WdfDeviceIoDirect);
 
-	WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&fdoAttributes, DEVICE_CONTEXT);
-	fdoAttributes.SynchronizationScope = WdfSynchronizationScopeDevice;
-	fdoAttributes.EvtCleanupCallback = tgwinkDeviceContextCleanup;
+	WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&wdfAttr, DEVICE_CONTEXT);
+	wdfAttr.SynchronizationScope = WdfSynchronizationScopeDevice;
+	wdfAttr.EvtCleanupCallback = tgwinkDeviceContextCleanup;
 
-	status = WdfDeviceCreate(&DeviceInit, &fdoAttributes, &device);
+	status = WdfDeviceCreate(&DeviceInit, &wdfAttr, &device);
 
 	if (!NT_SUCCESS(status)) {
 		KdPrint("WdfDeviceCreate failed with status 0x%08x\n", status);
@@ -249,14 +249,22 @@ tgwinkInterruptWerk(
 	WDFMEMORY out;
 
 	KdPrint("Werking interrupt #%x...\n", iCtx->serial);
+	WdfWaitLockAcquire(dCtx->nnLock, 0);
 	res = WdfIoQueueRetrieveNextRequest(dCtx->NotificationQueue, &pending);
 	if (!NT_SUCCESS(res)) {
-		if (res == STATUS_NO_MORE_ENTRIES)
-			KdPrint("No one was waiting!");
-		else
+		if (res == STATUS_NO_MORE_ENTRIES) {
+			if (!dCtx->notifyNext) {
+				KdPrint("No one was waiting, setting notifyNext.\n");
+				dCtx->notifyNext = 1;
+			} else {
+				KdPrint("No one was waiting and notifyNext is already set.\n");
+			}
+		} else
 			KdPrint("WdfIoQueueRetrieveNextRequest returned unknown error %x\n", res);
+		WdfWaitLockRelease(dCtx->nnLock);
 		return;
 	} 
+	WdfWaitLockRelease(dCtx->nnLock);
 	res = WdfRequestRetrieveOutputMemory(pending, &out);
 	if (!NT_SUCCESS(res)) {
 		KdPrint("Couldn't retrieve output buffer, error %x\n", res);

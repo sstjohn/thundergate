@@ -76,10 +76,9 @@ class GPhy(object):
         while res & (1 << 5) == 0:
             if cnt > 5000:
                 break
-            usleep(500)
+            usleep(1000)
             res = self.read_reg(1)
             cnt += 1
-        
         return self.read_reg(0x19)
 
     def may_send_pause(self):

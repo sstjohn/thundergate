@@ -204,8 +204,26 @@ tgwinkEvtIoDeviceControl(
 
 	case IOCTL_TGWINK_PEND_INTR:
 	{
-		KdPrint("tgwinkEvtIoDeviceControl forwarding PEND_INTR request to notification queue\n");
-		WdfRequestForwardToIoQueue(Request, context->NotificationQueue);
+		WdfWaitLockAcquire(context->nnLock, NULL);
+		if (context->notifyNext) {
+			PINTERRUPT_CONTEXT pCtx = InterruptGetContext(context->hIrq);
+			status = WdfRequestRetrieveOutputMemory(Request, &mem);
+			if (!NT_SUCCESS(status)) {
+				KdPrint("tgwinkEvtIoDeviceControl failed to retrieve output memory, status 0x%x\n", status);
+				WdfRequestComplete(Request, status);
+			}
+			status = WdfMemoryCopyFromBuffer(mem, 0, &pCtx->serial, 8);
+			if (!NT_SUCCESS(status)) {
+				KdPrint("tgwinkEvtIoDeviceControl failed to copy interrupt number to buffer, status 0x%x\n", status);
+				WdfRequestComplete(Request, status);
+			}
+			WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, 8);
+			context->notifyNext = 0;
+		} else {
+			KdPrint("tgwinkEvtIoDeviceControl forwarding PEND_INTR request to notification queue\n");
+			WdfRequestForwardToIoQueue(Request, context->NotificationQueue);
+		}
+		WdfWaitLockRelease(context->nnLock);
 	} break;
 
 	default:
