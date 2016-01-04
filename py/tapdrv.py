@@ -665,13 +665,19 @@ class TapDriver(object):
             tap_evt = ReadAsync(self.tfd, 1518, 0)
             events = (HANDLE * 2)(tg_evt.handle, tap_evt.handle)
             tg_is_ready = tg_evt.check
-            tap_is_ready = tap_evt.check
+            #tap_is_ready = tap_evt.check
+            tap_is_ready = lambda: False
             tg_evt.submit()
             #tap_evt.submit()
             def wait_for_something():
                 res = WaitForMultipleObjects(2, cast(pointer(events), POINTER(c_void_p)), False, INFINITE)
                 if WAIT_FAILED == res:
                     raise WinError()
+            def get_serial():
+                serial = cast(tg_evt.buffer, POINTER(c_uint64)).contents.value
+                tg_evt.reset()
+                return serial
+
         else:
             read_fds = [self.dev.interface.eventfd, self.tfd]
             ready = []
@@ -681,6 +687,8 @@ class TapDriver(object):
                 return (self.tfd in ready)
             def wait_for_something():
                 ready, _, _ = select.select(read_fds, [], [])
+            def get_serial():
+                return os.read(self.dev.interface.eventfd, 8)
 
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
@@ -688,7 +696,8 @@ class TapDriver(object):
         while True:
             wait_for_something()
             if tg_is_ready():
-                os.read(i, 8)
+                serial = get_serial()
+                print "handling interrupt with serial number %d" % serial
                 self._handle_interrupt()
             elif tap_is_ready():
                 b = self.mm.alloc(0x800)

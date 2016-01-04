@@ -204,6 +204,7 @@ tgwinkEvtIoDeviceControl(
 
 	case IOCTL_TGWINK_PEND_INTR:
 	{
+		KdPrint("tgwinkEvtIoDeviceControl forwarding PEND_INTR request to notification queue\n");
 		WdfRequestForwardToIoQueue(Request, context->NotificationQueue);
 	} break;
 

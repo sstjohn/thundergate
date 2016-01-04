@@ -228,6 +228,7 @@ fun_prototypes = [
     (kernel32, "MapUserPhysicalPages", [LPVOID, ULONG_PTR, POINTER(ULONG_PTR)], BOOL),
     (kernel32, "WaitForSingleObject", [HANDLE, DWORD], DWORD),
     (kernel32, "WaitForMultipleObjects", [DWORD, POINTER(HANDLE), BOOL, DWORD], DWORD),
+    (kernel32, "ResetEvent", [HANDLE], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -392,7 +393,10 @@ class _async(object):
         self.length = length
         self.req = OVERLAPPED(Offset = offset, hEvent = CreateEvent(None, True, False, None))
         self.buffer = (c_char * length)()
-        self._complete = False
+
+    def __del__(self):
+        CancelIoEx(self.handle, pointer(self.req))
+        CloseHandle(self.req.hEvent)
 
     def submit(self):
         raise NotImplementedError()
@@ -404,6 +408,13 @@ class _async(object):
         if 0 == res:
             return True
         return False
+
+    def reset(self):
+        if not ResetEvent(self.req.hEvent):
+            raise WinError()
+        self.req.Internal = None
+        self.req.InternalHigh = None
+        self.submit()
 
 
 class ReadAsync(_async):

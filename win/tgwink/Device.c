@@ -257,17 +257,18 @@ tgwinkInterruptWerk(
 			KdPrint("WdfIoQueueRetrieveNextRequest returned unknown error %x\n", res);
 		return;
 	} 
-		res = WdfRequestRetrieveOutputMemory(pending, &out);
-		if (!NT_SUCCESS(res)) {
-			KdPrint("Couldn't retrieve output buffer, error %x\n", res);
-			WdfRequestComplete(pending, STATUS_UNSUCCESSFUL);
-			return;
-		}
-		res = WdfMemoryCopyFromBuffer(out, 0, &iCtx->serial, 8);
-		if (!NT_SUCCESS(res)) {
-			KdPrint("Couldn't copy to output buffer, error %x\n", res);
-			WdfRequestComplete(pending, STATUS_UNSUCCESSFUL);
-			return;
-		}
-		WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, 8);
+	res = WdfRequestRetrieveOutputMemory(pending, &out);
+	if (!NT_SUCCESS(res)) {
+		KdPrint("Couldn't retrieve output buffer, error %x\n", res);
+		WdfRequestComplete(pending, STATUS_UNSUCCESSFUL);
+		return;
+	}
+	res = WdfMemoryCopyFromBuffer(out, 0, &iCtx->serial, 8);
+	if (!NT_SUCCESS(res)) {
+		KdPrint("Couldn't copy to output buffer, error %x\n", res);
+		WdfRequestComplete(pending, STATUS_UNSUCCESSFUL);
+		return;
+	}
+	WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, 8);
+	KdPrint("Completed interrupt werk by notifying pending queue request.\n");
 }

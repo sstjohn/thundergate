@@ -39,6 +39,7 @@ int main()
 	SP_DEVINFO_DATA devInfoData;
 	DWORD requiredSize;
 	int idx = 0; 
+	
 
 	hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_tgwink, NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
 
