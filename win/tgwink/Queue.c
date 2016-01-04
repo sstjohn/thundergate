@@ -195,9 +195,9 @@ tgwinkEvtIoDeviceControl(
 		WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, OutputBufferLength);
 	} break;
 
-	case IOCTL_TGWINK_GET_IRQFD:
+	case IOCTL_TGWINK_PEND_INTR:
 	{
-
+		WdfRequestComplete(Request, STATUS_UNSUCCESSFUL);
 	} break;
 
 	default:

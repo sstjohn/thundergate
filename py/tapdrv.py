@@ -660,17 +660,37 @@ class TapDriver(object):
             print "[+] host sbd pi now %x" % i
 
     def run(self):
+        if sys_name == "Windows":
+            tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8, 0)
+            tap_evt = ReadAsync(self.tfd, 1518, 0)
+            events = (HANDLE * 2)(tg_evt, tap_evt)
+            tg_is_ready = tg_evt.check
+            tap_is_ready = tap_evt.check
+            def wait_for_something():
+                tg_evt.submit()
+                tap_evt.submit()
+                res = WaitForMultipleObjects(2, pointer(events), False, INFINITE)
+                if WAIT_FAILED == res:
+                    raise WinError()
+        else:
+            read_fds = [self.dev.interface.eventfd, self.tfd]
+            ready = []
+            def tg_is_ready():
+                return (self.dev.interface.eventfd in ready) 
+            def tap_is_ready():
+                return (self.tfd in ready)
+            def wait_for_something():
+                ready, _, _ = select.select(read_fds, [], [])
+
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
-        read_fds = [self.dev.interface.eventfd, self.tfd]
 
         while True:
-            ready, _, _ = select.select(read_fds, [], [])
-            for i in ready:
-                if i == self.dev.interface.eventfd:
-                    os.read(i, 8)
-                    self._handle_interrupt()
-                elif i == self.tfd:
-                    b = self.mm.alloc(0x800)
-                    l = c.read(self.tfd, b, 0x800)
-                    self._send_b(b, l)
+            wait_for_something()
+            if tg_is_ready():
+                os.read(i, 8)
+                self._handle_interrupt()
+            elif tap_is_ready():
+                b = self.mm.alloc(0x800)
+                l = c.read(self.tfd, b, 0x800)
+                self._send_b(b, l)

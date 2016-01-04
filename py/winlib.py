@@ -144,6 +144,8 @@ class SID_AND_ATTRIBUTES(Structure):
 class TOKEN_USER(Structure):
     _fields_ = [('User', SID_AND_ATTRIBUTES)]
 
+class SECURITY_ATTRIBUTES(Structure):
+    pass
 
 HDEVINFO = HANDLE
 DI_FUNCTION = UINT
@@ -192,12 +194,15 @@ TOKEN_INFORMATION_CLASS_USER = 1
 PAGE_READWRITE = 0x4
 MEM_RESERVE = 0x2000
 MEM_PHYSICAL = 0x400000
+WAIT_FAILED = 0xffffffff
+INFINITE = 0xffffffff
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
 IOCTL_TGWINK_SAY_HELLO = CTL_CODE(0x8000, 0x8000, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 IOCTL_TGWINK_MAP_BAR_0 = CTL_CODE(0x8000, 0x8001, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 IOCTL_TGWINK_READ_PHYS = CTL_CODE(0x8000, 0x8002, METHOD_BUFFERED, FILE_ANY_ACCESS)
+IOCTL_TGWINK_PEND_INTR = CTL_CODE(0x8000, 0x8003, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 
 TAP_WIN_IOCTL_GET_VERSION = CTL_CODE(FILE_DEVICE_UNKNOWN, 2, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
@@ -209,15 +214,18 @@ setupapi = windll.setupapi
 kernel32 = windll.kernel32
 ntdll = windll.ntdll
 
+
 fun_prototypes = [
     (kernel32, "CreateFileA", [LPCSTR, DWORD, DWORD, c_void_p, DWORD, DWORD, HANDLE], HANDLE),
     (kernel32, "ReadFile", [HANDLE, LPVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)], BOOL),
+    (kernel32, "CreateEvent", [POINTER(SECURITY_ATTRIBUTES), DWORD, DWORD, LPCSTR], HANDLE),    
     (kernel32, "WriteFile", [HANDLE, LPCVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)], BOOL),
     (kernel32, "DeviceIoControl", [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, POINTER(DWORD), c_void_p], BOOL),
     (kernel32, "CloseHandle", [HANDLE], BOOL),
     (kernel32, "GetSystemInfo", [POINTER(SYSTEM_INFO)], None),
     (kernel32, "VirtualAlloc", [LPVOID, SIZE_T, DWORD, DWORD], LPVOID),
     (kernel32, "MapUserPhysicalPages", [LPVOID, ULONG_PTR, POINTER(ULONG_PTR)], BOOL),
+    (kernel32, "WaitForSingleObject", [HANDLE, DWORD], DWORD),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -325,7 +333,6 @@ def del_tap_if(hdev):
 def add_account_privilege(privilege_name):
     policy = LSA_HANDLE()
     attributes = LSA_OBJECT_ATTRIBUTES()
-    result = LsaOpenPolicy(None, pointer(attributes), POLICY_ALL_ACCESS, pointer(policy))
     if STATUS_SUCCESS != result:
         raise WinError(LsaNtStatusToWinError(result))
 
@@ -374,3 +381,46 @@ def add_process_privilege(privilege_name):
         print "[!] you'll need to log out and log back in"
         sys.exit(1)
     CloseHandle(token)
+
+
+
+class _async(object):
+    def __init__(self, handle, length, offset = 0):
+        self.handle = handle
+        self.length = length
+        self.req = OVERLAPPED(Offset = offset)
+        self.buffer = (c_char * length)()
+        self._complete = False
+
+    def submit(self):
+        raise NotImplementedError()
+
+    def check(self):
+        res = WaitForSingleObject(self.handle, 0)
+        if WAIT_FAILED == res:
+            raise WinError()
+        if 0 == res:
+            return True
+        return False
+
+
+class ReadAsync(_async):
+    def submit(self):
+        if not ReadFile(self.handle, pointer(self.buffer), self.length, None, pointer(self.overlapped)):
+            raise WinError()
+
+class IoctlAsync(_async):
+    def __init__(self, ioctl, handle, length, offset = 0, indata = None):
+        super(IoctlAsync, self).__init__()
+        self.ioctl = ioctl
+        if indata is not None:
+            self.in_sz = len(indata)
+            self.in_buf = create_string_buffer(indata)
+        else:
+            self.in_sz = 0
+            self.in_buf = create_string_buffer(0)
+
+    def submit(self):
+        if not DeviceIoControl(self.handle, self.ioctl, byref(self.in_buf), self.in_sz, pointer(self.buffer), self.length, None, pointer(self.req)):
+            raise WinError()
+        

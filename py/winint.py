@@ -63,7 +63,7 @@ class WinInterface(object):
         self.mm = WinMemMgr(self.cfgfd)
 
     def _attach(self):
-        self.cfgfd = CreateFile(self.device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, 0, None)
+        self.cfgfd = CreateFile(self.device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, None)
         if self.cfgfd == INVALID_HANDLE_VALUE:
             raise WinError()
 
@@ -78,7 +78,6 @@ class WinInterface(object):
             raise WinError()
 
         self.bar0 = bar_ptr.value
-        self.eventfd = 0
 
     def __exit__(self, t, v, traceback):
         self._detach()
@@ -95,11 +94,12 @@ class WinInterface(object):
 
     def cfg_read(self, offset):
         assert offset >= 0 and offset < 0x400
-        req = OVERLAPPED(Offset=offset)
+        req = OVERLAPPED(Offset=offset, hEvent = CreateEvent(None, True, False, None))
         val = c_uint32(0)
         bytes_read = DWORD(0)
         if not ReadFile(self.cfgfd, pointer(val), 4, pointer(bytes_read), pointer(req)):
-            raise WinError()
+            err = WinError()
+            
         if bytes_read.value != 4:
             raise Exception("wrong number of bytes read")
         return val.value
@@ -110,6 +110,7 @@ class WinInterface(object):
         bytes_written = DWORD(0)
         val = c_uint32(inval)
         if not WriteFile(self.cfgfd, byref(val), 4, pointer(bytes_written), pointer(req)):
-            raise WindowsError()
+            err = WinError()
+
         if bytes_written.value != 4:
             raise Exception("wrong number of bytes written")
