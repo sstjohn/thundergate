@@ -74,7 +74,7 @@ class GPhy(object):
         cnt = 0
         res = self.read_reg(1)
         while res & (1 << 5) == 0:
-            if cnt > 5000:
+            if cnt > 10000:
                 break
             usleep(500)
             res = self.read_reg(1)
