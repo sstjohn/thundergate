@@ -689,8 +689,8 @@ class TapDriver(object):
 
     def run(self):
         if sys_name == "Windows":
-            tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8, 0)
-            tap_evt = ReadAsync(self.tfd, 1518, 0)
+            tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
+            tap_evt = ReadAsync(self.tfd, 1518)
             events = (HANDLE * 2)(tg_evt.handle, tap_evt.handle)
             tg_is_ready = tg_evt.check
             #tap_is_ready = tap_evt.check

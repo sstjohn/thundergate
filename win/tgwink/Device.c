@@ -190,6 +190,12 @@ tgwinkCreateDevice(
 		return status;
 	}
 
+	status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &context->nnLock);
+	if (!NT_SUCCESS(status)) {
+		KdPrint("Failed to create wait lock for notification queue, error 0x%x\n", status);
+		return status;
+	}
+
 	status = WdfDeviceCreateDeviceInterface(
 		device,
 		&GUID_DEVINTERFACE_tgwink,
