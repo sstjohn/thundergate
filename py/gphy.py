@@ -76,19 +76,21 @@ class GPhy(object):
         while res & (1 << 5) == 0:
             if cnt > 5000:
                 break
-            usleep(1000)
+            usleep(500)
             res = self.read_reg(1)
             cnt += 1
         return self.read_reg(0x19)
 
     def may_send_pause(self):
         val = self.read_reg(5) & (1 << 10) != 0
-        assert val == ((self.read_reg(0x19) & 1) != 0)
+        if val != ((self.read_reg(0x19) & 1) != 0):
+            print "[!] something odd in gphy::may_send_pause"
         return val
 
     def may_recv_pause(self):
         val = self.read_reg(5) & (3 << 10) != 0
-        assert val == ((self.read_reg(19) & 2) != 0)
+        if val != ((self.read_reg(19) & 2) != 0):
+            print "[!] something odd in gphy::may_recv_pause"
         return val
 
     def get_eee_cap(self):

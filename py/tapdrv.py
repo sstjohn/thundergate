@@ -587,8 +587,17 @@ class TapDriver(object):
 
                         buf = ctypes.cast(self.rx_ring_buffers[rbd.index], ctypes.POINTER(ctypes.c_char * rbd.length))[0]
                         
-                        #XXX FIXME XXX
-                        #os.write(self.tfd, buf.raw)
+                        if sys_name == "Linux":
+                            os.write(self.tfd, buf.raw)
+                        else:
+                            o = OVERLAPPED(hEvent = CreateHandle(None, True, False, None))
+                            if not WriteFile(self.tfd, buf.raw, rbd.length, None, pointer(o)):
+                                err = WinError()
+                                if err.winerror != ERROR_IO_PENDING:
+                                    raise err
+                                if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
+                                    raise WinError()
+                            CloseHandle(o.hEvent)
 
                         count -= 1
 
