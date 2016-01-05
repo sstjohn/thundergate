@@ -590,7 +590,7 @@ class TapDriver(object):
                         if sys_name == "Linux":
                             os.write(self.tfd, buf.raw)
                         else:
-                            o = OVERLAPPED(hEvent = CreateHandle(None, True, False, None))
+                            o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
                             if not WriteFile(self.tfd, buf.raw, rbd.length, None, pointer(o)):
                                 err = WinError()
                                 if err.winerror != ERROR_IO_PENDING:
