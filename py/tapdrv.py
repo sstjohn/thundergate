@@ -465,11 +465,10 @@ class TapDriver(object):
         print "[+] detecting link"
         res = self.dev.gphy.autonegotiate()
         if not res & 0x8000:
-            self._set_tapdev_status(False)
             print "[-] no link detected"
+            self._set_tapdev_status(False)
             self._hcd = 0
         else:
-            self._set_tapdev_status(True)
             hcd = (res & 0x700) >> 8
             self._hcd = hcd
             if (hcd & 0x6) == 6:
@@ -511,6 +510,7 @@ class TapDriver(object):
 
             else:
                 raise Exception("autonegotiaton failed, hcd %x" % hcd)
+            self._set_tapdev_status(True)
     
     def _set_tapdev_status(self, connected):
         if sys_name == "Windows":
@@ -522,7 +522,7 @@ class TapDriver(object):
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         try:
             val = c_int32(1 if connected else 0)
-            if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, None, 0, None, pointer(o)):
+            if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, pointer(o)):
                 err = WinError()
                 if err.winerror == ERROR_IO_PENDING:
                     if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
@@ -531,6 +531,8 @@ class TapDriver(object):
                     pass
                 else:
                     raise err
+            if connected:
+                self.tap_evt.submit()
         finally:
             CloseHandle(o.hEvent)
 
@@ -691,10 +693,10 @@ class TapDriver(object):
         if sys_name == "Windows":
             tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
             tap_evt = ReadAsync(self.tfd, 1518)
+            self.tap_evt = tap_evt
             events = (HANDLE * 2)(tg_evt.handle, tap_evt.handle)
             tg_is_ready = tg_evt.check
-            #tap_is_ready = tap_evt.check
-            tap_is_ready = lambda: False
+            tap_is_ready = tap_evt.check
             tg_evt.submit()
             #tap_evt.submit()
             def wait_for_something():
@@ -706,7 +708,9 @@ class TapDriver(object):
                 tg_evt.reset()
                 return serial
             def get_packet():
-                return (create_string_buffer(0), 0)
+                length = tg_evt.req.InternalHigh
+                pkt = tg_evt.buffer.raw
+                return (pkt, length)
 
         else:
             read_fds = [self.dev.interface.eventfd, self.tfd]
