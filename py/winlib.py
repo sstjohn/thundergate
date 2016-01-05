@@ -74,8 +74,8 @@ __OVERLAPPED__u._anonymous_ = ("o",)
 __OVERLAPPED__u._fields_ = [("o", __OVERLAPPED__u__o), ("Pointer", LPVOID)]
 
 OVERLAPPED._anonymous_ = ("u",)
-OVERLAPPED._fields_ = [("Internal", POINTER(ULONG)),
-                       ("InternalHigh", POINTER(ULONG)),
+OVERLAPPED._fields_ = [("Internal", ULONG_PTR),
+                       ("InternalHigh", ULONG_PTR),
                        ("u", __OVERLAPPED__u),
                        ("hEvent", HANDLE)]
 
@@ -419,10 +419,13 @@ class _async(object):
         return False
 
     def reset(self):
+        if not self.check():
+            if not CancelIoEx(self.handle, pointer(self.req)):
+                raise WinError()
         if not ResetEvent(self.req.hEvent):
             raise WinError()
-        self.req.Internal = None
-        self.req.InternalHigh = None
+        self.req.Internal = 0
+        self.req.InternalHigh = 0
         self.req.Pointer = None
         self.buffer.raw = "\x00" * self.length
         self.submit()

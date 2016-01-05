@@ -512,32 +512,6 @@ class TapDriver(object):
                 raise Exception("autonegotiaton failed, hcd %x" % hcd)
             self._set_tapdev_status(True)
     
-    def _set_tapdev_status(self, connected):
-        if sys_name == "Windows":
-            self._set_tapdev_status_win(connected)
-        else:
-            self._set_tapdev_status_linux(connected)
-
-    def _set_tapdev_status_win(self, connected):
-        o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
-        try:
-            val = c_int32(1 if connected else 0)
-            if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, pointer(o)):
-                err = WinError()
-                if err.winerror == ERROR_IO_PENDING:
-                    if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
-                        raise WinError()
-                elif err.winerror == 0:
-                    pass
-                else:
-                    raise err
-            if connected:
-                self.tap_evt.submit()
-        finally:
-            CloseHandle(o.hEvent)
-
-    def _set_tapdev_status_linux(self, connected):
-        pass
 
     def _handle_interrupt(self, verbose=0):
         dev = self.dev
@@ -694,11 +668,10 @@ class TapDriver(object):
             tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
             tap_evt = ReadAsync(self.tfd, 1518)
             self.tap_evt = tap_evt
-            events = (HANDLE * 2)(tg_evt.handle, tap_evt.handle)
+            events = (HANDLE * 2)(tg_evt.req.hEvent, tap_evt.req.hEvent)
             tg_is_ready = tg_evt.check
             tap_is_ready = tap_evt.check
             tg_evt.submit()
-            #tap_evt.submit()
             def wait_for_something():
                 res = WaitForMultipleObjects(2, cast(pointer(events), POINTER(c_void_p)), False, INFINITE)
                 if WAIT_FAILED == res:
@@ -708,10 +681,28 @@ class TapDriver(object):
                 tg_evt.reset()
                 return serial
             def get_packet():
-                length = tg_evt.req.InternalHigh
-                pkt = tg_evt.buffer.raw
+                length = tap_evt.req.InternalHigh
+                pkt = self.mm.alloc(length)
+                ctypes.memmove(pkt, tap_evt.buffer, length)
                 return (pkt, length)
-
+            def _set_tapdev_status(self, connected):
+                o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
+                try:
+                    val = c_int32(1 if connected else 0)
+                    if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, pointer(o)):
+                        err = WinError()
+                        if err.winerror == ERROR_IO_PENDING:
+                            if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
+                                raise WinError()
+                        elif err.winerror == 0:
+                            pass
+                        else:
+                            raise err
+                    if connected:
+                        self.tap_evt.submit()
+                finally:
+                    CloseHandle(o.hEvent)
+            TapDriver._set_tapdev_status = _set_tapdev_status
         else:
             read_fds = [self.dev.interface.eventfd, self.tfd]
             ready = []
