@@ -24,6 +24,7 @@ import select
 import reutils
 import platform
 
+verbose = 0
 sys_name = platform.system()
 
 if sys_name == "Linux":
@@ -513,7 +514,7 @@ class TapDriver(object):
             self._set_tapdev_status(True)
     
 
-    def _handle_interrupt(self, verbose=0):
+    def _handle_interrupt(self):
         dev = self.dev
         if verbose:
             print "[+] handling interrupt"
@@ -591,6 +592,8 @@ class TapDriver(object):
                             os.write(self.tfd, buf.raw)
                         else:
                             o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
+                            if verbose:
+                                print "[!] attempting to write to the tap device"
                             if not WriteFile(self.tfd, buf.raw, rbd.length, None, pointer(o)):
                                 err = WinError()
                                 if err.winerror != ERROR_IO_PENDING:
@@ -648,7 +651,7 @@ class TapDriver(object):
         
         self._send_b(b_vaddr, len(data), flags=flags)
 
-    def _send_b(self, buf, buf_sz, flags=None, verbose=0):
+    def _send_b(self, buf, buf_sz, flags=None):
         i = self._tx_pi
         if verbose:
             print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
@@ -676,7 +679,6 @@ class TapDriver(object):
         if sys_name == "Windows":
             tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
             tap_evt = ReadAsync(self.tfd, 1518)
-            self.tap_evt = tap_evt
             events = (HANDLE * 2)(tg_evt.req.hEvent, tap_evt.req.hEvent)
             tg_is_ready = tg_evt.check
             tap_is_ready = tap_evt.check
@@ -690,11 +692,16 @@ class TapDriver(object):
                 tg_evt.reset()
                 return serial
             def get_packet():
+                if verbose:
+                    print "[!] getting a packet from tap device"
                 length = tap_evt.req.InternalHigh
                 pkt = self.mm.alloc(length)
                 ctypes.memmove(pkt, tap_evt.buffer, length)
+                tap_evt.reset()
                 return (pkt, length)
             def _set_tapdev_status(self, connected):
+                if verbose:
+                    print "[!] setting tapdev status to %s" % ("up" if connected else "down")
                 o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
                 try:
                     val = c_int32(1 if connected else 0)
@@ -708,7 +715,7 @@ class TapDriver(object):
                         else:
                             raise err
                     if connected:
-                        self.tap_evt.submit()
+                        tap_evt.submit()
                 finally:
                     CloseHandle(o.hEvent)
             TapDriver._set_tapdev_status = _set_tapdev_status
@@ -728,6 +735,7 @@ class TapDriver(object):
                 l = c.read(self.tfd, b, 0x800)
                 return (b, l)
 
+        self._link_detect()
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
 
@@ -736,7 +744,7 @@ class TapDriver(object):
             if tg_is_ready():
                 serial = get_serial()
                 print "handling interrupt with serial number %d" % serial
-                self._handle_interrupt(verbose=1)
+                self._handle_interrupt()
             if tap_is_ready():
                 pkt, sz = get_packet()
                 self._send_b(pkt, sz)

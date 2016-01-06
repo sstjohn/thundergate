@@ -140,7 +140,7 @@ void init()
 
     mac_cpy(state.my_mac, (void *)0xc0000412);
 
-    gencomm[0] = ~0x4b657654;
+    gencomm[0] = 0xb49a89ab;
 
     pci.command.bus_master = 1;
 

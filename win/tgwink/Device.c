@@ -62,13 +62,14 @@ tgwinkPrepareHardware(
 				irqConfig.EvtInterruptWorkItem = &tgwinkInterruptWerk;
 				irqConfig.InterruptTranslated = desc;
 				irqConfig.InterruptRaw = WdfCmResourceListGetDescriptor(Resources, i);
-
+				irqConfig.EvtInterruptEnable = tgwinkUnmaskInterrupts;
+				irqConfig.EvtInterruptDisable = tgwinkMaskInterrupts;
 				WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&oAttrs, INTERRUPT_CONTEXT);
 
 				result = WdfInterruptCreate(Device, &irqConfig, &oAttrs, &context->hIrq);
 				if (!NT_SUCCESS(result)) {
 					KdPrint("Unable to create a WDFINTERRUPT object hey, status %x\n", result);
-					//return result;
+					return result;
 				}
 				else {
 					KdPrint("Found an interrupt-type resource!\n");
@@ -285,4 +286,30 @@ tgwinkInterruptWerk(
 	}
 	WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, 8);
 	KdPrint("Completed interrupt werk by notifying pending queue request.\n");
+}
+
+NTSTATUS
+tgwinkMaskInterrupts(
+	_In_ WDFINTERRUPT Interrupt,
+	_In_ WDFDEVICE Device
+	)
+{
+	UNREFERENCED_PARAMETER(Interrupt);
+	UNREFERENCED_PARAMETER(Device);
+	
+	KdPrint("In tgwinkMaskInterrupts.\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS
+tgwinkUnmaskInterrupts(
+	_In_ WDFINTERRUPT Interrupt,
+	_In_ WDFDEVICE Device
+	)
+{
+	UNREFERENCED_PARAMETER(Interrupt);
+	UNREFERENCED_PARAMETER(Device);
+
+	KdPrint("In tgwinkUnmaskInterrupts.\n");
+	return STATUS_SUCCESS;
 }
