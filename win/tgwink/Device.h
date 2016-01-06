@@ -56,4 +56,8 @@ EVT_WDF_DEVICE_PREPARE_HARDWARE tgwinkPrepareHardware;
 EVT_WDF_DEVICE_RELEASE_HARDWARE tgwinkReleaseHardware;
 EVT_WDF_INTERRUPT_ISR tgwinkServiceInterrupt;
 EVT_WDF_INTERRUPT_WORKITEM tgwinkInterruptWerk;
+
+EVT_WDF_INTERRUPT_ENABLE tgwinkUnmaskInterrupts;
+EVT_WDF_INTERRUPT_DISABLE tgwinkMaskInterrupts;
+
 EXTERN_C_END
