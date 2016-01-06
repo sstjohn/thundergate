@@ -713,20 +713,23 @@ class TapDriver(object):
                     CloseHandle(o.hEvent)
             TapDriver._set_tapdev_status = _set_tapdev_status
         else:
-            read_fds = [self.dev.interface.eventfd, self.tfd]
-            ready = []
+            self.read_fds = [self.dev.interface.eventfd, self.tfd]
+            self.ready = []
             def tg_is_ready():
-                return (self.dev.interface.eventfd in ready) 
+                return (self.dev.interface.eventfd in self.ready) 
             def tap_is_ready():
-                return (self.tfd in ready)
+                return (self.tfd in self.ready)
             def wait_for_something():
-                ready, _, _ = select.select(read_fds, [], [])
+                self.ready, _, _ = select.select(self.read_fds, [], [])
             def get_serial():
-                return os.read(self.dev.interface.eventfd, 8)
+                return struct.unpack("L", os.read(self.dev.interface.eventfd, 8))
             def get_packet():
                 b = self.mm.alloc(0x800)
                 l = c.read(self.tfd, b, 0x800)
                 return (b, l)
+            def _set_tapdev_status(self, connected):
+                pass
+            TapDriver._set_tapdev_status = _set_tapdev_status
 
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
