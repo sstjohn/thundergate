@@ -348,8 +348,6 @@ def del_tap_if(hdev):
 def add_account_privilege(privilege_name):
     policy = LSA_HANDLE()
     attributes = LSA_OBJECT_ATTRIBUTES()
-    if STATUS_SUCCESS != result:
-        raise WinError(LsaNtStatusToWinError(result))
 
     token = HANDLE()
     if not OpenProcessToken(-1, TOKEN_QUERY, pointer(token)):
@@ -436,10 +434,9 @@ class _async(object):
 
 
 class ReadAsync(_async):
-    #def __init__(self, handle, length, mm):
-    #    super(ReadAsync, self).__init__(handle, length)
-    #    self._pbuf = mm.alloc(length)
-    #    self.buffer = cast(self._pbuf, POINTER(c_char * length))[0]
+    def __init__(self, handle, length, mm):
+        super(ReadAsync, self).__init__(handle, length)
+        self.pkt_len = 0
 
     def check(self):
         if not self.pkt_len:
