@@ -183,7 +183,7 @@ class TapDriver(object):
         dev = self.dev
         mm = self.mm
         dev.drv = self
-	print "[+] initializing device"
+        print "[+] initializing device"
         dev.init()
         print "[+] resetting device"
         dev.reset()
@@ -435,7 +435,7 @@ class TapDriver(object):
 
         print "[+] enabling transmit mac"
         dev.emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1
-        dev.emac.tx_mac_mode.enable_flow_control = 1
+        #dev.emac.tx_mac_mode.enable_flow_control = 1
         dev.emac.tx_mac_mode.enable = 1
         
         usleep(100)
@@ -592,7 +592,7 @@ class TapDriver(object):
                             os.write(self.tfd, buf.raw)
                         else:
                             o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
-                            if True: #verbose:
+                            if verbose:
                                 print "[!] attempting to write to the tap device...",
                             if not WriteFile(self.tfd, buf.raw, rbd.length, None, pointer(o)):
                                 err = WinError()
@@ -654,7 +654,7 @@ class TapDriver(object):
 
     def _send_b(self, buf, buf_sz, flags=None):
         i = self._tx_pi
-        if True: #verbose:
+        if verbose:
             print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
         paddr = self.mm.get_paddr(buf)
         txb = ctypes.cast(self.tx_ring_vaddr, ctypes.POINTER(tg.sbd))
@@ -673,7 +673,7 @@ class TapDriver(object):
         self.dev.hpmb.box[tg.mb_sbd_host_producer].low = i
         _ = self.dev.hpmb.box[tg.mb_sbd_host_producer].low
         self._tx_pi = i
-        if True: #verbose:
+        if verbose:
             print "[+] host sbd pi now %x" % i
 
     def run(self):
@@ -693,15 +693,16 @@ class TapDriver(object):
                 tg_evt.reset()
                 return serial
             def get_packet():
-                if True: #verbose:
+                if verbose:
                     print "[+] getting a packet from tap device...",
-                length = tap_evt.req.InternalHigh
-                pkt = self.mm.alloc(length)
-                ctypes.memmove(pkt, tap_evt.buffer, length)
+                pkt_len = tap_evt.pkt_len
+                pkt = self.mm.alloc(pkt_len)
+                RtlCopyMemory(pkt, tap_evt.buffer, pkt_len)
                 tap_evt.reset()
-                if True: #verbose:
-                    print "read %d bytes" % length
-                return (pkt, length)
+                if verbose:
+                    print "read %d bytes" % pkt_len
+                _ = cast(pkt, POINTER(c_char * pkt_len))[0]
+                return (pkt, pkt_len)
             def _set_tapdev_status(self, connected):
                 if verbose:
                     print "[+] setting tapdev status to %s" % ("up" if connected else "down")
@@ -741,7 +742,6 @@ class TapDriver(object):
                 pass
             TapDriver._set_tapdev_status = _set_tapdev_status
 
-        self._link_detect()
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
 

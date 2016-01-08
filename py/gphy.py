@@ -83,15 +83,17 @@ class GPhy(object):
 
     def may_send_pause(self):
         val = self.read_reg(5) & (1 << 10) != 0
-        if val != ((self.read_reg(0x19) & 1) != 0):
+        val2 = ((self.read_reg(0x19) & 1) != 0)
+        if val != val2:
             print "[!] something odd in gphy::may_send_pause"
-        return val
+        return val2
 
     def may_recv_pause(self):
         val = self.read_reg(5) & (3 << 10) != 0
-        if val != ((self.read_reg(19) & 2) != 0):
+        val2 = ((self.read_reg(19) & 2) != 0)
+        if val != val2:
             print "[!] something odd in gphy::may_recv_pause"
-        return val
+        return val2
 
     def get_eee_cap(self):
         val = self._smi_bus.read_cl45(self._smi_port, 3, 0x14)

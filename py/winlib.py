@@ -198,6 +198,7 @@ MEM_PHYSICAL = 0x400000
 WAIT_FAILED = 0xffffffff
 INFINITE = 0xffffffff
 ERROR_IO_PENDING = 997
+ERROR_IO_INCOMPLETE = 996
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
@@ -233,6 +234,8 @@ fun_prototypes = [
     (kernel32, "ResetEvent", [HANDLE], BOOL),
     (kernel32, "CancelIoEx", [HANDLE, POINTER(OVERLAPPED)], BOOL),
     (kernel32, "SetEvent", [HANDLE], BOOL),
+    (kernel32, "GetOverlappedResult", [HANDLE, POINTER(OVERLAPPED), POINTER(DWORD), BOOL], BOOL),
+    (kernel32, "RtlCopyMemory", [LPVOID, LPVOID, SIZE_T], None),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -428,18 +431,38 @@ class _async(object):
         self.req.InternalHigh = 0
         self.req.Pointer = None
         self.buffer.raw = "\x00" * self.length
+        self.pkt_len = 0
         self.submit()
 
 
 class ReadAsync(_async):
+    #def __init__(self, handle, length, mm):
+    #    super(ReadAsync, self).__init__(handle, length)
+    #    self._pbuf = mm.alloc(length)
+    #    self.buffer = cast(self._pbuf, POINTER(c_char * length))[0]
+
+    def check(self):
+        if not self.pkt_len:
+            pkt_len = DWORD(0)
+            if not GetOverlappedResult(self.handle, pointer(self.req), pointer(pkt_len), False):
+                err = WinError()
+                if err.winerror == ERROR_IO_PENDING or err.winerror == ERROR_IO_INCOMPLETE:
+                    return False
+                raise err
+            self.pkt_len = pkt_len.value
+        return True
+    
     def submit(self):
-        if not ReadFile(self.handle, pointer(self.buffer), self.length, None, pointer(self.req)):
+        pkt_len = DWORD(0)
+        if not ReadFile(self.handle, pointer(self.buffer), self.length, pointer(pkt_len), pointer(self.req)):
             err = WinError()
             if err.winerror and err.winerror != ERROR_IO_PENDING:
                 raise err
+            self.pkt_len = 0
         else:
             if not SetEvent(self.req.hEvent):
                 raise WinError()
+            self.pkt_len = pkt_len.value
 
 class IoctlAsync(_async):
     def __init__(self, ioctl, handle, length, indata = None):
