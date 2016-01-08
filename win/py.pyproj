@@ -14,7 +14,7 @@
     <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
     <InterpreterVersion>2.7</InterpreterVersion>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <CommandLineArguments>-d</CommandLineArguments>
+    <CommandLineArguments>-s</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Name>py</Name>
   </PropertyGroup>
@@ -51,6 +51,12 @@
     <Compile Include="symgen.py" />
     <Compile Include="sysfsint.py" />
     <Compile Include="tapdrv.py" />
+    <Compile Include="tap_linux.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tap_win.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="testdrv.py" />
     <Compile Include="tginstall.py" />
     <Compile Include="tglib.py" />

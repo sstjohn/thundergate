@@ -220,6 +220,7 @@ tgwinkEvtIoDeviceControl(
 			WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, 8);
 			context->notifyNext = 0;
 			KdPrint("tgwinkEvtIoDeviceControl satisfied interrupt notification request synchronously.\n");
+			WdfInterruptEnable(context->hIrq);
 		} else {
 			KdPrint("tgwinkEvtIoDeviceControl forwarding PEND_INTR request to notification queue\n");
 			WdfRequestForwardToIoQueue(Request, context->NotificationQueue);

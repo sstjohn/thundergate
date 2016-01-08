@@ -32,10 +32,12 @@ if sys_name == "Linux":
     
     import clib as c
     from tunlib import *
-    tap_close = os.close
+    from tap_linux import TapLinuxInterface
+    TDInt = TapLinuxInterface
 elif sys_name == "Windows":
     from winlib import *
-    tap_close = del_tap_if
+    from tap_win import TapWinInterface
+    TDInt = TapWinInterface
 else:
     raise NotImplementedError("tap driver only available on linux and windows")
    
@@ -44,28 +46,21 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
 
-class TapDriver(object):
+class TapDriver(TDInt):
     def __init__(self, dev):
+        super(TapDriver, self).__init__(dev)
         self.dev = dev
         self.mm = dev.interface.mm
 
     def __enter__(self):
         print "[+] driver initialization begins"
-        if sys_name == "Linux":
-            fd = os.open("/dev/net/tun", os.O_RDWR)
-            ifr = struct.pack('16sH', 'tap0', IFF_TAP | IFF_NO_PI)
-            fcntl.ioctl(fd, TUNSETIFF, ifr)
-            self.tfd = fd
-        elif sys_name == "Windows":
-            self.tfd = create_tap_if()
-
+        super(TapDriver, self).__enter__()
         self._device_setup()
-
         return self
 
     def __exit__(self, t, v, traceback):
         self.dev.close()
-        tap_close(self.tfd)
+        super(TapDriver, self).__exit__()
         print "[+] driver terminated"
                 
     def __init_xx_ring(self, bdtype):
@@ -587,22 +582,9 @@ class TapDriver(object):
                             print " opaque:    %08x" % rbd.opaque
 
                         buf = ctypes.cast(self.rx_ring_buffers[rbd.index], ctypes.POINTER(ctypes.c_char * rbd.length))[0]
-                        
-                        if sys_name == "Linux":
-                            os.write(self.tfd, buf.raw)
-                        else:
-                            o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
-                            if verbose:
-                                print "[!] attempting to write to the tap device...",
-                            if not WriteFile(self.tfd, buf.raw, rbd.length, None, pointer(o)):
-                                err = WinError()
-                                if err.winerror != ERROR_IO_PENDING:
-                                    raise err
-                                if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
-                                    raise WinError()
-                            print "wrote %d bytes" % o.InternalHigh
-                            CloseHandle(o.hEvent)
-
+                       
+                        self._write_pkt(buf.raw, rbd.length)
+                         
                         count -= 1
 
                     mb = getattr(tg, "mb_rbd_rr%d_consumer" % i)
@@ -677,79 +659,14 @@ class TapDriver(object):
             print "[+] host sbd pi now %x" % i
 
     def run(self):
-        if sys_name == "Windows":
-            tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
-            tap_evt = ReadAsync(self.tfd, 1518)
-            events = (HANDLE * 2)(tg_evt.req.hEvent, tap_evt.req.hEvent)
-            tg_is_ready = tg_evt.check
-            tap_is_ready = tap_evt.check
-            tg_evt.submit()
-            def wait_for_something():
-                res = WaitForMultipleObjects(2, cast(pointer(events), POINTER(c_void_p)), False, INFINITE)
-                if WAIT_FAILED == res:
-                    raise WinError()
-            def get_serial():
-                serial = cast(tg_evt.buffer, POINTER(c_uint64)).contents.value
-                tg_evt.reset()
-                return serial
-            def get_packet():
-                if verbose:
-                    print "[+] getting a packet from tap device...",
-                pkt_len = tap_evt.pkt_len
-                pkt = self.mm.alloc(pkt_len)
-                RtlCopyMemory(pkt, tap_evt.buffer, pkt_len)
-                tap_evt.reset()
-                if verbose:
-                    print "read %d bytes" % pkt_len
-                _ = cast(pkt, POINTER(c_char * pkt_len))[0]
-                return (pkt, pkt_len)
-            def _set_tapdev_status(self, connected):
-                if verbose:
-                    print "[+] setting tapdev status to %s" % ("up" if connected else "down")
-                o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
-                try:
-                    val = c_int32(1 if connected else 0)
-                    if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, pointer(o)):
-                        err = WinError()
-                        if err.winerror == ERROR_IO_PENDING:
-                            if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
-                                raise WinError()
-                        elif err.winerror == 0:
-                            pass
-                        else:
-                            raise err
-                    if connected:
-                        tap_evt.submit()
-                finally:
-                    CloseHandle(o.hEvent)
-            TapDriver._set_tapdev_status = _set_tapdev_status
-        else:
-            self.read_fds = [self.dev.interface.eventfd, self.tfd]
-            self.ready = []
-            def tg_is_ready():
-                return (self.dev.interface.eventfd in self.ready) 
-            def tap_is_ready():
-                return (self.tfd in self.ready)
-            def wait_for_something():
-                self.ready, _, _ = select.select(self.read_fds, [], [])
-            def get_serial():
-                return struct.unpack("L", os.read(self.dev.interface.eventfd, 8))
-            def get_packet():
-                b = self.mm.alloc(0x800)
-                l = c.read(self.tfd, b, 0x800)
-                return (b, l)
-            def _set_tapdev_status(self, connected):
-                pass
-            TapDriver._set_tapdev_status = _set_tapdev_status
-
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
 
         while True:
-            wait_for_something()
-            if tg_is_ready():
-                serial = get_serial()
+            self._wait_for_something()
+            if self._tg_is_ready():
+                serial = self._get_serial()
                 self._handle_interrupt()
-            if tap_is_ready():
-                pkt, sz = get_packet()
+            if self._tap_is_ready():
+                pkt, sz = self._get_packet()
                 self._send_b(pkt, sz)

@@ -349,6 +349,10 @@ def add_account_privilege(privilege_name):
     policy = LSA_HANDLE()
     attributes = LSA_OBJECT_ATTRIBUTES()
 
+    result = LsaOpenPolicy(None, pointer(attributes), POLICY_ALL_ACCESS, pointer(policy))
+    if STATUS_SUCCESS != result:
+        raise WinError(LsaNtStatusToWinError(result))
+
     token = HANDLE()
     if not OpenProcessToken(-1, TOKEN_QUERY, pointer(token)):
         raise WinError()
@@ -395,8 +399,6 @@ def add_process_privilege(privilege_name):
         sys.exit(1)
     CloseHandle(token)
 
-
-
 class _async(object):
     def __init__(self, handle, length):
         self.handle = handle
@@ -419,7 +421,7 @@ class _async(object):
             return True
         return False
 
-    def reset(self):
+    def reset(self, resubmit = True):
         if not self.check():
             if not CancelIoEx(self.handle, pointer(self.req)):
                 raise WinError()
@@ -430,8 +432,8 @@ class _async(object):
         self.req.Pointer = None
         self.buffer.raw = "\x00" * self.length
         self.pkt_len = 0
-        self.submit()
-
+        if resubmit:
+            self.submit()
 
 class ReadAsync(_async):
     def __init__(self, handle, length):

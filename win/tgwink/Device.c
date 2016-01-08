@@ -263,6 +263,7 @@ tgwinkInterruptWerk(
 			if (!dCtx->notifyNext) {
 				KdPrint("No one was waiting, setting notifyNext.\n");
 				dCtx->notifyNext = 1;
+				WdfInterruptDisable(Interrupt);
 			} else {
 				KdPrint("No one was waiting and notifyNext is already set.\n");
 			}
@@ -294,10 +295,14 @@ tgwinkMaskInterrupts(
 	_In_ WDFDEVICE Device
 	)
 {
+	UINT32 val; 
+	PDEVICE_CONTEXT ctx = DeviceGetContext(Device);
 	UNREFERENCED_PARAMETER(Interrupt);
-	UNREFERENCED_PARAMETER(Device);
-	
-	KdPrint("In tgwinkMaskInterrupts.\n");
+
+	ctx->busInterface.GetBusData(ctx->busInterface.Context, PCI_WHICHSPACE_CONFIG, &val, 0x68, 4);
+	val |= 2;
+	ctx->busInterface.SetBusData(ctx->busInterface.Context, PCI_WHICHSPACE_CONFIG, &val, 0x68, 4);
+
 	return STATUS_SUCCESS;
 }
 
@@ -307,9 +312,13 @@ tgwinkUnmaskInterrupts(
 	_In_ WDFDEVICE Device
 	)
 {
+	UINT32 val; 
+	PDEVICE_CONTEXT ctx = DeviceGetContext(Device);
 	UNREFERENCED_PARAMETER(Interrupt);
-	UNREFERENCED_PARAMETER(Device);
 
-	KdPrint("In tgwinkUnmaskInterrupts.\n");
+	ctx->busInterface.GetBusData(ctx->busInterface.Context, PCI_WHICHSPACE_CONFIG, &val, 0x68, 4);
+	val &= ~2;
+	ctx->busInterface.SetBusData(ctx->busInterface.Context, PCI_WHICHSPACE_CONFIG, &val, 0x68, 4);
+
 	return STATUS_SUCCESS;
 }
