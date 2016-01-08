@@ -434,7 +434,7 @@ class _async(object):
 
 
 class ReadAsync(_async):
-    def __init__(self, handle, length, mm):
+    def __init__(self, handle, length):
         super(ReadAsync, self).__init__(handle, length)
         self.pkt_len = 0
 
