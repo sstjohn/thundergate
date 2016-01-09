@@ -2,16 +2,16 @@ from ctypes import *
 
 
 
-mb_rbd_rr2_consumer = 18
-mb_rbd_rr0_consumer = 16
-mb_sbd_host_producer = 32
-def TG3_IMAGE_TYPE(x): return ((x) >> 24) # macro
-def TG3_IMAGE_LEN(x): return (((x) & 0x3fffff) << 2) # macro
-mb_interrupt = 0
 mb_sbd_nic_producer = 112
+mb_interrupt = 0
 mb_rbd_rr3_consumer = 19
+mb_rbd_rr2_consumer = 18
 mb_rbd_rr1_consumer = 17
 mb_rbd_standard_producer = 13
+def TG3_IMAGE_TYPE(x): return ((x) >> 24) # macro
+def TG3_IMAGE_LEN(x): return (((x) & 0x3fffff) << 2) # macro
+mb_rbd_rr0_consumer = 16
+mb_sbd_host_producer = 32
 class dmar_tbl_hdr(Structure):
     pass
 uint32_t = c_uint32
