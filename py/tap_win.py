@@ -1,4 +1,5 @@
 from winlib import *
+from tapdrv import verbose
 
 class TapWinInterface(object):
     def __init__(self, dev):

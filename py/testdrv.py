@@ -28,6 +28,7 @@ from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 import socket
 from struct import pack, unpack
+from tapdrv import TapDriver
 
 class TestDriver(object):
     def __init__(self, dev):
@@ -41,17 +42,20 @@ class TestDriver(object):
 
     def run(self):
         self.dev.init()
+        self.clear_txmbufs()
+        self.clear_txbds()
 
-        #self.tap = TapDriver(self.dev)
-	#self.tap.__enter__()
-        #self.test_send(self.tap)
-        self.gate_send()
+        self.tap = TapDriver(self.dev)
+        self.tap.__enter__()
+        self.tap._link_detect()
+        self.test_send(self.tap)
+        #self.gate_send()
         #self.test_dmar()
         #self.test_rdmar()
         #self.test_dmaw()
         #self.reg_finder()
         #self.msi_wr()
-	#self.asfdiff()
+        #self.asfdiff()
         #self.pxediff()
         #self.pxeidiff()
         #self.read_oprom()
@@ -439,30 +443,29 @@ class TestDriver(object):
         dev = self.dev
         tap._link_detect()
         dev.rxcpu.halt()
-        dev.sbds.block_disable()
-        dev.sdi.block_disable()
-	dev.sdc.block_disable()
-	dev.sbds.reset()
-	dev.sdi.reset()
-	dev.sdc.reset()
+        
+        #dev.sbds.block_disable()
+        #dev.sdi.block_disable()
+        #dev.sdc.block_disable()
+        #dev.sbds.reset()
+        #dev.sdi.reset()
+        #dev.sdc.reset()
 
-	self.clear_txmbufs()
-	self.clear_txbds()
 
         print "[+] saving initial state"
         state = reutils.state_save(dev)
         
         print "[+] submitting test packet to tap driver"
-        tap.send('\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x88\xb5' + ('\xaa\x55' * 25), flags=("cpu_post_dma"))
+        tap.send('\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x88\xb5' + ('\xaa\x55' * 25)) #, flags=("cpu_post_dma"))
         usleep(10)
         state = reutils.state_diff(dev, state)
 
-	dev.sdc.block_enable()
-        dev.sdi.block_enable()
-        dev.sbds.block_enable()
-        usleep(10)
+	    #dev.sdc.block_enable()
+        #dev.sdi.block_enable()
+        #dev.sbds.block_enable()
+        #usleep(10)
 
-        state = reutils.state_diff(dev, state)
+        #state = reutils.state_diff(dev, state)
 
     def test_rdmar(self, init=1, reset=0):
         dev = self.dev
