@@ -1,12 +1,12 @@
 import struct
 import select
 import os
-import c
+import clib as c
+import fcntl
+from tunlib import *
 
 class TapLinuxInterface(object):
     def __init__(self, dev):
-        self.read_fds = [self.dev.interface.eventfd, self.tfd]
-        self.ready = []
         self.dev = dev
         self.mm = dev.interface.mm
 
@@ -15,6 +15,8 @@ class TapLinuxInterface(object):
         ifr = struct.pack('16sH', 'tap0', IFF_TAP | IFF_NO_PI)
         fcntl.ioctl(fd, TUNSETIFF, ifr)
         self.tfd = fd
+        self.read_fds = [self.dev.interface.eventfd, self.tfd]
+        self.ready = []
         return self
 
     def __exit__(self):

@@ -24,7 +24,7 @@ import select
 import reutils
 import platform
 
-verbose = 0
+verbose = 1
 sys_name = platform.system()
 
 if sys_name == "Linux":

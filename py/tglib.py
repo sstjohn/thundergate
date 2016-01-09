@@ -2,20 +2,22 @@ from ctypes import *
 
 
 
-def TG3_IMAGE_LEN(x): return (((x) & 0x3fffff) << 2) # macro
 mb_rbd_rr2_consumer = 18
-mb_sbd_nic_producer = 112
+mb_rbd_rr0_consumer = 16
 mb_sbd_host_producer = 32
+def TG3_IMAGE_TYPE(x): return ((x) >> 24) # macro
+def TG3_IMAGE_LEN(x): return (((x) & 0x3fffff) << 2) # macro
+mb_interrupt = 0
+mb_sbd_nic_producer = 112
 mb_rbd_rr3_consumer = 19
 mb_rbd_rr1_consumer = 17
-mb_rbd_rr0_consumer = 16
 mb_rbd_standard_producer = 13
-mb_interrupt = 0
-def TG3_IMAGE_TYPE(x): return ((x) >> 24) # macro
 class dmar_tbl_hdr(Structure):
     pass
-u32 = c_uint
-u8 = c_ubyte
+uint32_t = c_uint32
+u32 = uint32_t
+uint8_t = c_uint8
+u8 = uint8_t
 dmar_tbl_hdr._pack_ = 1
 dmar_tbl_hdr._fields_ = [
     ('sig', c_char * 4),
@@ -33,10 +35,11 @@ dmar_tbl_hdr._fields_ = [
 ]
 class dmar_dev_scope(Structure):
     pass
-u16 = c_ushort
-class N14dmar_dev_scope3DOLLAR_0E(Structure):
+uint16_t = c_uint16
+u16 = uint16_t
+class N14dmar_dev_scope3DOT_0E(Structure):
     pass
-N14dmar_dev_scope3DOLLAR_0E._fields_ = [
+N14dmar_dev_scope3DOT_0E._fields_ = [
     ('device', u8),
     ('function', u8),
 ]
@@ -47,11 +50,12 @@ dmar_dev_scope._fields_ = [
     ('reserved', u16),
     ('enum_id', u8),
     ('start_bus_number', u8),
-    ('path', N14dmar_dev_scope3DOLLAR_0E * 1),
+    ('path', N14dmar_dev_scope3DOT_0E * 0),
 ]
 class dmar_drhd(Structure):
     pass
-u64 = c_ulonglong
+uint64_t = c_uint64
+u64 = uint64_t
 dmar_drhd._pack_ = 1
 dmar_drhd._fields_ = [
     ('type', u16),
@@ -82,7 +86,7 @@ dmar_atsr._fields_ = [
     ('flags', u8),
     ('reserved', u8),
     ('seg_no', u16),
-    ('dev_scope', dmar_dev_scope * 1),
+    ('dev_scope', dmar_dev_scope * 0),
 ]
 class dmar_rhsa(Structure):
     pass
@@ -262,55 +266,55 @@ asf_regs._fields_ = [
 ]
 class sbd_flags(Structure):
     pass
-class N9sbd_flags3DOLLAR_1E(Union):
+class N9sbd_flags3DOT_1E(Union):
     pass
-class N9sbd_flags3DOLLAR_13DOLLAR_2E(Structure):
+class N9sbd_flags3DOT_13DOT_2E(Structure):
     pass
-N9sbd_flags3DOLLAR_13DOLLAR_2E._fields_ = [
-    ('no_crc', u16, 1),
-    ('hdrlen_7', u16, 1),
-    ('hdrlen_6', u16, 1),
-    ('hdrlen_5', u16, 1),
-    ('hdrlen_4', u16, 1),
-    ('hdrlen_3', u16, 1),
-    ('cpu_post_dma', u16, 1),
-    ('cpu_pre_dma', u16, 1),
-    ('coalesce_now', u16, 1),
-    ('vlan_tag', u16, 1),
-    ('snap', u16, 1),
-    ('hdrlen_2', u16, 1),
-    ('jumbo_frame', u16, 1),
-    ('packet_end', u16, 1),
-    ('ip_cksum_offload', u16, 1),
+N9sbd_flags3DOT_13DOT_2E._fields_ = [
     ('l4_cksum_offload', u16, 1),
+    ('ip_cksum_offload', u16, 1),
+    ('packet_end', u16, 1),
+    ('jumbo_frame', u16, 1),
+    ('hdrlen_2', u16, 1),
+    ('snap', u16, 1),
+    ('vlan_tag', u16, 1),
+    ('coalesce_now', u16, 1),
+    ('cpu_pre_dma', u16, 1),
+    ('cpu_post_dma', u16, 1),
+    ('hdrlen_3', u16, 1),
+    ('hdrlen_4', u16, 1),
+    ('hdrlen_5', u16, 1),
+    ('hdrlen_6', u16, 1),
+    ('hdrlen_7', u16, 1),
+    ('no_crc', u16, 1),
 ]
-N9sbd_flags3DOLLAR_1E._anonymous_ = ['_0']
-N9sbd_flags3DOLLAR_1E._fields_ = [
-    ('_0', N9sbd_flags3DOLLAR_13DOLLAR_2E),
+N9sbd_flags3DOT_1E._anonymous_ = ['_0']
+N9sbd_flags3DOT_1E._fields_ = [
+    ('_0', N9sbd_flags3DOT_13DOT_2E),
     ('word', u16),
 ]
 sbd_flags._anonymous_ = ['_0']
 sbd_flags._fields_ = [
-    ('_0', N9sbd_flags3DOLLAR_1E),
+    ('_0', N9sbd_flags3DOT_1E),
 ]
 class sbd(Structure):
     pass
 sbd._fields_ = [
     ('addr_hi', u32),
     ('addr_low', u32),
-    ('length', u16),
     ('flags', sbd_flags),
-    ('hdrlen_0_1', u16, 2),
-    ('mss', u16, 14),
+    ('length', u16),
     ('vlan_tag', u16),
+    ('mss', u16, 14),
+    ('hdrlen_0_1', u16, 2),
 ]
 class rbd_flags(Structure):
     pass
-class N9rbd_flags3DOLLAR_3E(Union):
+class N9rbd_flags3DOT_3E(Union):
     pass
-class N9rbd_flags3DOLLAR_33DOLLAR_4E(Structure):
+class N9rbd_flags3DOT_33DOT_4E(Structure):
     pass
-N9rbd_flags3DOLLAR_33DOLLAR_4E._fields_ = [
+N9rbd_flags3DOT_33DOT_4E._fields_ = [
     ('is_ipv6', u16, 1),
     ('is_tcp', u16, 1),
     ('l4_checksum_correct', u16, 1),
@@ -326,22 +330,22 @@ N9rbd_flags3DOLLAR_33DOLLAR_4E._fields_ = [
     ('reserved4', u16, 1),
     ('reserved5', u16, 1),
 ]
-N9rbd_flags3DOLLAR_3E._anonymous_ = ['_0']
-N9rbd_flags3DOLLAR_3E._fields_ = [
-    ('_0', N9rbd_flags3DOLLAR_33DOLLAR_4E),
+N9rbd_flags3DOT_3E._anonymous_ = ['_0']
+N9rbd_flags3DOT_3E._fields_ = [
+    ('_0', N9rbd_flags3DOT_33DOT_4E),
     ('word', u16),
 ]
 rbd_flags._anonymous_ = ['_0']
 rbd_flags._fields_ = [
-    ('_0', N9rbd_flags3DOLLAR_3E),
+    ('_0', N9rbd_flags3DOT_3E),
 ]
 class rbd_error_flags(Structure):
     pass
-class N15rbd_error_flags3DOLLAR_5E(Union):
+class N15rbd_error_flags3DOT_5E(Union):
     pass
-class N15rbd_error_flags3DOLLAR_53DOLLAR_6E(Structure):
+class N15rbd_error_flags3DOT_53DOT_6E(Structure):
     pass
-N15rbd_error_flags3DOLLAR_53DOLLAR_6E._fields_ = [
+N15rbd_error_flags3DOT_53DOT_6E._fields_ = [
     ('reserved1', u16, 1),
     ('reserved2', u16, 1),
     ('reserved3', u16, 1),
@@ -359,14 +363,14 @@ N15rbd_error_flags3DOLLAR_53DOLLAR_6E._fields_ = [
     ('collision', u16, 1),
     ('bad_crc', u16, 1),
 ]
-N15rbd_error_flags3DOLLAR_5E._anonymous_ = ['_0']
-N15rbd_error_flags3DOLLAR_5E._fields_ = [
-    ('_0', N15rbd_error_flags3DOLLAR_53DOLLAR_6E),
+N15rbd_error_flags3DOT_5E._anonymous_ = ['_0']
+N15rbd_error_flags3DOT_5E._fields_ = [
+    ('_0', N15rbd_error_flags3DOT_53DOT_6E),
     ('word', u16),
 ]
 rbd_error_flags._anonymous_ = ['_0']
 rbd_error_flags._fields_ = [
-    ('_0', N15rbd_error_flags3DOLLAR_5E),
+    ('_0', N15rbd_error_flags3DOT_5E),
 ]
 class rbd(Structure):
     pass
@@ -599,11 +603,11 @@ bdrdma_regs._fields_ = [
 ]
 class bufman_mode(Structure):
     pass
-class N11bufman_mode3DOLLAR_7E(Union):
+class N11bufman_mode3DOT_7E(Union):
     pass
-class N11bufman_mode3DOLLAR_73DOLLAR_8E(Structure):
+class N11bufman_mode3DOT_73DOT_8E(Structure):
     pass
-N11bufman_mode3DOLLAR_73DOLLAR_8E._fields_ = [
+N11bufman_mode3DOT_73DOT_8E._fields_ = [
     ('txfifo_underrun_protection', u32, 1),
     ('reserved', u32, 25),
     ('reset_rxmbuf_pointer', u32, 1),
@@ -613,14 +617,14 @@ N11bufman_mode3DOLLAR_73DOLLAR_8E._fields_ = [
     ('enable', u32, 1),
     ('reset', u32, 1),
 ]
-N11bufman_mode3DOLLAR_7E._anonymous_ = ['_0']
-N11bufman_mode3DOLLAR_7E._fields_ = [
-    ('_0', N11bufman_mode3DOLLAR_73DOLLAR_8E),
+N11bufman_mode3DOT_7E._anonymous_ = ['_0']
+N11bufman_mode3DOT_7E._fields_ = [
+    ('_0', N11bufman_mode3DOT_73DOT_8E),
     ('word', u32),
 ]
 bufman_mode._anonymous_ = ['_0']
 bufman_mode._fields_ = [
-    ('_0', N11bufman_mode3DOLLAR_7E),
+    ('_0', N11bufman_mode3DOT_7E),
 ]
 class bufman_status(Structure):
     pass
@@ -752,62 +756,62 @@ cfg_port_bar_ctrl._fields_ = [
 ]
 class cfg_port_pci_id(Structure):
     pass
-class N15cfg_port_pci_id3DOLLAR_9E(Union):
+class N15cfg_port_pci_id3DOT_9E(Union):
     pass
-class N15cfg_port_pci_id3DOLLAR_94DOLLAR_10E(Structure):
+class N15cfg_port_pci_id3DOT_94DOT_10E(Structure):
     pass
-N15cfg_port_pci_id3DOLLAR_94DOLLAR_10E._fields_ = [
+N15cfg_port_pci_id3DOT_94DOT_10E._fields_ = [
     ('vid', u16),
     ('did', u16),
 ]
-N15cfg_port_pci_id3DOLLAR_9E._anonymous_ = ['_0']
-N15cfg_port_pci_id3DOLLAR_9E._fields_ = [
-    ('_0', N15cfg_port_pci_id3DOLLAR_94DOLLAR_10E),
+N15cfg_port_pci_id3DOT_9E._anonymous_ = ['_0']
+N15cfg_port_pci_id3DOT_9E._fields_ = [
+    ('_0', N15cfg_port_pci_id3DOT_94DOT_10E),
     ('word', u32),
 ]
 cfg_port_pci_id._anonymous_ = ['_0']
 cfg_port_pci_id._fields_ = [
-    ('_0', N15cfg_port_pci_id3DOLLAR_9E),
+    ('_0', N15cfg_port_pci_id3DOT_9E),
 ]
 class cfg_port_pci_sid(Structure):
     pass
-class N16cfg_port_pci_sid4DOLLAR_11E(Union):
+class N16cfg_port_pci_sid4DOT_11E(Union):
     pass
-class N16cfg_port_pci_sid4DOLLAR_114DOLLAR_12E(Structure):
+class N16cfg_port_pci_sid4DOT_114DOT_12E(Structure):
     pass
-N16cfg_port_pci_sid4DOLLAR_114DOLLAR_12E._fields_ = [
+N16cfg_port_pci_sid4DOT_114DOT_12E._fields_ = [
     ('ssid', u16),
     ('svid', u16),
 ]
-N16cfg_port_pci_sid4DOLLAR_11E._anonymous_ = ['_0']
-N16cfg_port_pci_sid4DOLLAR_11E._fields_ = [
-    ('_0', N16cfg_port_pci_sid4DOLLAR_114DOLLAR_12E),
+N16cfg_port_pci_sid4DOT_11E._anonymous_ = ['_0']
+N16cfg_port_pci_sid4DOT_11E._fields_ = [
+    ('_0', N16cfg_port_pci_sid4DOT_114DOT_12E),
     ('word', u32),
 ]
 cfg_port_pci_sid._anonymous_ = ['_0']
 cfg_port_pci_sid._fields_ = [
-    ('_0', N16cfg_port_pci_sid4DOLLAR_11E),
+    ('_0', N16cfg_port_pci_sid4DOT_11E),
 ]
 class cfg_port_pci_class(Structure):
     pass
-class N18cfg_port_pci_class4DOLLAR_13E(Union):
+class N18cfg_port_pci_class4DOT_13E(Union):
     pass
-class N18cfg_port_pci_class4DOLLAR_134DOLLAR_14E(Structure):
+class N18cfg_port_pci_class4DOT_134DOT_14E(Structure):
     pass
-N18cfg_port_pci_class4DOLLAR_134DOLLAR_14E._fields_ = [
+N18cfg_port_pci_class4DOT_134DOT_14E._fields_ = [
     ('unknown24', u32, 8),
     ('class_code', u32, 8),
     ('subclass_code', u32, 8),
     ('unknown0', u32, 8),
 ]
-N18cfg_port_pci_class4DOLLAR_13E._anonymous_ = ['_0']
-N18cfg_port_pci_class4DOLLAR_13E._fields_ = [
-    ('_0', N18cfg_port_pci_class4DOLLAR_134DOLLAR_14E),
+N18cfg_port_pci_class4DOT_13E._anonymous_ = ['_0']
+N18cfg_port_pci_class4DOT_13E._fields_ = [
+    ('_0', N18cfg_port_pci_class4DOT_134DOT_14E),
     ('word', u32),
 ]
 cfg_port_pci_class._anonymous_ = ['_0']
 cfg_port_pci_class._fields_ = [
-    ('_0', N18cfg_port_pci_class4DOLLAR_13E),
+    ('_0', N18cfg_port_pci_class4DOT_13E),
 ]
 class cfg_port_regs(Structure):
     pass
@@ -1388,11 +1392,11 @@ cpu_mode._fields_ = [
 ]
 class cpu_status(Structure):
     pass
-class N10cpu_status4DOLLAR_15E(Union):
+class N10cpu_status4DOT_15E(Union):
     pass
-class N10cpu_status4DOLLAR_154DOLLAR_16E(Structure):
+class N10cpu_status4DOT_154DOT_16E(Structure):
     pass
-N10cpu_status4DOLLAR_154DOLLAR_16E._fields_ = [
+N10cpu_status4DOT_154DOT_16E._fields_ = [
     ('blocking_read', u32, 1),
     ('ma_request_fifo_overflow', u32, 1),
     ('ma_data_bytemask_fifo_overflow', u32, 1),
@@ -1416,14 +1420,14 @@ N10cpu_status4DOLLAR_154DOLLAR_16E._fields_ = [
     ('halt_instruction_executed', u32, 1),
     ('hardware_breakpoint', u32, 1),
 ]
-N10cpu_status4DOLLAR_15E._anonymous_ = ['_0']
-N10cpu_status4DOLLAR_15E._fields_ = [
-    ('_0', N10cpu_status4DOLLAR_154DOLLAR_16E),
+N10cpu_status4DOT_15E._anonymous_ = ['_0']
+N10cpu_status4DOT_15E._fields_ = [
+    ('_0', N10cpu_status4DOT_154DOT_16E),
     ('word', u32),
 ]
 cpu_status._anonymous_ = ['_0']
 cpu_status._fields_ = [
-    ('_0', N10cpu_status4DOLLAR_15E),
+    ('_0', N10cpu_status4DOT_15E),
 ]
 class cpu_event_mask(Structure):
     pass
@@ -1446,43 +1450,43 @@ cpu_event_mask._fields_ = [
 ]
 class cpu_breakpoint(Structure):
     pass
-class N14cpu_breakpoint4DOLLAR_17E(Union):
+class N14cpu_breakpoint4DOT_17E(Union):
     pass
-class N14cpu_breakpoint4DOLLAR_174DOLLAR_18E(Structure):
+class N14cpu_breakpoint4DOT_174DOT_18E(Structure):
     pass
-N14cpu_breakpoint4DOLLAR_174DOLLAR_18E._fields_ = [
+N14cpu_breakpoint4DOT_174DOT_18E._fields_ = [
     ('addr_word', u32, 30),
     ('reserved', u32, 1),
     ('disabled', u32, 1),
 ]
-N14cpu_breakpoint4DOLLAR_17E._anonymous_ = ['_0']
-N14cpu_breakpoint4DOLLAR_17E._fields_ = [
+N14cpu_breakpoint4DOT_17E._anonymous_ = ['_0']
+N14cpu_breakpoint4DOT_17E._fields_ = [
     ('address', u32),
-    ('_0', N14cpu_breakpoint4DOLLAR_174DOLLAR_18E),
+    ('_0', N14cpu_breakpoint4DOT_174DOT_18E),
 ]
 cpu_breakpoint._anonymous_ = ['_0']
 cpu_breakpoint._fields_ = [
-    ('_0', N14cpu_breakpoint4DOLLAR_17E),
+    ('_0', N14cpu_breakpoint4DOT_17E),
 ]
 class cpu_last_branch_address(Structure):
     pass
-class N23cpu_last_branch_address4DOLLAR_19E(Union):
+class N23cpu_last_branch_address4DOT_19E(Union):
     pass
-class N23cpu_last_branch_address4DOLLAR_194DOLLAR_20E(Structure):
+class N23cpu_last_branch_address4DOT_194DOT_20E(Structure):
     pass
-N23cpu_last_branch_address4DOLLAR_194DOLLAR_20E._fields_ = [
+N23cpu_last_branch_address4DOT_194DOT_20E._fields_ = [
     ('addr_word', u32, 30),
     ('type', u32, 1),
     ('reserved', u32, 1),
 ]
-N23cpu_last_branch_address4DOLLAR_19E._anonymous_ = ['_0']
-N23cpu_last_branch_address4DOLLAR_19E._fields_ = [
+N23cpu_last_branch_address4DOT_19E._anonymous_ = ['_0']
+N23cpu_last_branch_address4DOT_19E._fields_ = [
     ('address', u32),
-    ('_0', N23cpu_last_branch_address4DOLLAR_194DOLLAR_20E),
+    ('_0', N23cpu_last_branch_address4DOT_194DOT_20E),
 ]
 cpu_last_branch_address._anonymous_ = ['_0']
 cpu_last_branch_address._fields_ = [
-    ('_0', N23cpu_last_branch_address4DOLLAR_19E),
+    ('_0', N23cpu_last_branch_address4DOT_19E),
 ]
 class cpu_regs(Structure):
     pass
@@ -1782,9 +1786,9 @@ cr_port_regs._fields_ = [
 ]
 class dma_desc(Structure):
     pass
-class N8dma_desc4DOLLAR_21E(Structure):
+class N8dma_desc4DOT_23E(Structure):
     pass
-N8dma_desc4DOLLAR_21E._fields_ = [
+N8dma_desc4DOT_23E._fields_ = [
     ('length', u32, 16),
     ('cqid_sqid', u32, 16),
 ]
@@ -1793,7 +1797,7 @@ dma_desc._fields_ = [
     ('addr_hi', u32),
     ('addr_lo', u32),
     ('nic_mbuf', u32),
-    ('_0', N8dma_desc4DOLLAR_21E),
+    ('_0', N8dma_desc4DOT_23E),
     ('flags', u32),
     ('opaque1', u32),
     ('opaque2', u32),
@@ -1801,23 +1805,23 @@ dma_desc._fields_ = [
 ]
 class dmac_mode(Structure):
     pass
-class N9dmac_mode4DOLLAR_22E(Union):
+class N9dmac_mode4DOT_21E(Union):
     pass
-class N9dmac_mode4DOLLAR_224DOLLAR_23E(Structure):
+class N9dmac_mode4DOT_214DOT_22E(Structure):
     pass
-N9dmac_mode4DOLLAR_224DOLLAR_23E._fields_ = [
+N9dmac_mode4DOT_214DOT_22E._fields_ = [
     ('reserved', u32, 30),
     ('enable', u32, 1),
     ('reset', u32, 1),
 ]
-N9dmac_mode4DOLLAR_22E._anonymous_ = ['_0']
-N9dmac_mode4DOLLAR_22E._fields_ = [
-    ('_0', N9dmac_mode4DOLLAR_224DOLLAR_23E),
+N9dmac_mode4DOT_21E._anonymous_ = ['_0']
+N9dmac_mode4DOT_21E._fields_ = [
+    ('_0', N9dmac_mode4DOT_214DOT_22E),
     ('word', u32),
 ]
 dmac_mode._anonymous_ = ['_0']
 dmac_mode._fields_ = [
-    ('_0', N9dmac_mode4DOLLAR_22E),
+    ('_0', N9dmac_mode4DOT_21E),
 ]
 class dmac_regs(Structure):
     pass
@@ -1891,11 +1895,11 @@ emac_event_enable._fields_ = [
 ]
 class emac_led_control(Structure):
     pass
-class N16emac_led_control4DOLLAR_24E(Union):
+class N16emac_led_control4DOT_24E(Union):
     pass
-class N16emac_led_control4DOLLAR_244DOLLAR_25E(Structure):
+class N16emac_led_control4DOT_244DOT_25E(Structure):
     pass
-N16emac_led_control4DOLLAR_244DOLLAR_25E._fields_ = [
+N16emac_led_control4DOT_244DOT_25E._fields_ = [
     ('override_blink_rate', u32, 1),
     ('blink_period', u32, 12),
     ('reserved16', u32, 3),
@@ -1915,14 +1919,14 @@ N16emac_led_control4DOLLAR_244DOLLAR_25E._fields_ = [
     ('gig_mbps_led', u32, 1),
     ('override_link_leds', u32, 1),
 ]
-N16emac_led_control4DOLLAR_24E._anonymous_ = ['_0']
-N16emac_led_control4DOLLAR_24E._fields_ = [
-    ('_0', N16emac_led_control4DOLLAR_244DOLLAR_25E),
+N16emac_led_control4DOT_24E._anonymous_ = ['_0']
+N16emac_led_control4DOT_24E._fields_ = [
+    ('_0', N16emac_led_control4DOT_244DOT_25E),
     ('word', u32),
 ]
 emac_led_control._anonymous_ = ['_0']
 emac_led_control._fields_ = [
-    ('_0', N16emac_led_control4DOLLAR_24E),
+    ('_0', N16emac_led_control4DOT_24E),
 ]
 class transmit_mac_mode(Structure):
     pass
@@ -1950,11 +1954,11 @@ transmit_mac_mode._fields_ = [
 ]
 class transmit_mac_status(Structure):
     pass
-class N19transmit_mac_status4DOLLAR_26E(Union):
+class N19transmit_mac_status4DOT_26E(Union):
     pass
-class N19transmit_mac_status4DOLLAR_264DOLLAR_27E(Structure):
+class N19transmit_mac_status4DOT_264DOT_27E(Structure):
     pass
-N19transmit_mac_status4DOLLAR_264DOLLAR_27E._fields_ = [
+N19transmit_mac_status4DOT_264DOT_27E._fields_ = [
     ('reserved', u32, 26),
     ('odi_overrun', u32, 1),
     ('odi_underrun', u32, 1),
@@ -1963,14 +1967,14 @@ N19transmit_mac_status4DOLLAR_264DOLLAR_27E._fields_ = [
     ('sent_xoff', u32, 1),
     ('currently_xoffed', u32, 1),
 ]
-N19transmit_mac_status4DOLLAR_26E._anonymous_ = ['_0']
-N19transmit_mac_status4DOLLAR_26E._fields_ = [
-    ('_0', N19transmit_mac_status4DOLLAR_264DOLLAR_27E),
+N19transmit_mac_status4DOT_26E._anonymous_ = ['_0']
+N19transmit_mac_status4DOT_26E._fields_ = [
+    ('_0', N19transmit_mac_status4DOT_264DOT_27E),
     ('word', u32),
 ]
 transmit_mac_status._anonymous_ = ['_0']
 transmit_mac_status._fields_ = [
-    ('_0', N19transmit_mac_status4DOLLAR_26E),
+    ('_0', N19transmit_mac_status4DOT_26E),
 ]
 class transmit_mac_lengths(Structure):
     pass
@@ -2015,11 +2019,11 @@ receive_mac_mode._fields_ = [
 ]
 class receive_mac_status(Structure):
     pass
-class N18receive_mac_status4DOLLAR_28E(Union):
+class N18receive_mac_status4DOT_28E(Union):
     pass
-class N18receive_mac_status4DOLLAR_284DOLLAR_29E(Structure):
+class N18receive_mac_status4DOT_284DOT_29E(Structure):
     pass
-N18receive_mac_status4DOLLAR_284DOLLAR_29E._fields_ = [
+N18receive_mac_status4DOT_284DOT_29E._fields_ = [
     ('reserved', u32, 26),
     ('acpi_packet_rcvd', u32, 1),
     ('magic_packet_rcvd', u32, 1),
@@ -2028,58 +2032,58 @@ N18receive_mac_status4DOLLAR_284DOLLAR_29E._fields_ = [
     ('xoff_received', u32, 1),
     ('remote_transmitter_xoffed', u32, 1),
 ]
-N18receive_mac_status4DOLLAR_28E._anonymous_ = ['_0']
-N18receive_mac_status4DOLLAR_28E._fields_ = [
-    ('_0', N18receive_mac_status4DOLLAR_284DOLLAR_29E),
+N18receive_mac_status4DOT_28E._anonymous_ = ['_0']
+N18receive_mac_status4DOT_28E._fields_ = [
+    ('_0', N18receive_mac_status4DOT_284DOT_29E),
     ('word', u32),
 ]
 receive_mac_status._anonymous_ = ['_0']
 receive_mac_status._fields_ = [
-    ('_0', N18receive_mac_status4DOLLAR_28E),
+    ('_0', N18receive_mac_status4DOT_28E),
 ]
 class emac_mac_addr(Structure):
     pass
-class N13emac_mac_addr4DOLLAR_30E(Union):
+class N13emac_mac_addr4DOT_30E(Union):
     pass
-class N13emac_mac_addr4DOLLAR_304DOLLAR_31E(Structure):
+class N13emac_mac_addr4DOT_304DOT_31E(Structure):
     pass
-N13emac_mac_addr4DOLLAR_304DOLLAR_31E._fields_ = [
+N13emac_mac_addr4DOT_304DOT_31E._fields_ = [
     ('byte_2', u32, 8),
     ('byte_1', u32, 8),
     ('reserved', u32, 16),
 ]
-N13emac_mac_addr4DOLLAR_30E._anonymous_ = ['_0']
-N13emac_mac_addr4DOLLAR_30E._fields_ = [
-    ('_0', N13emac_mac_addr4DOLLAR_304DOLLAR_31E),
+N13emac_mac_addr4DOT_30E._anonymous_ = ['_0']
+N13emac_mac_addr4DOT_30E._fields_ = [
+    ('_0', N13emac_mac_addr4DOT_304DOT_31E),
     ('word_hi', u32),
 ]
-class N13emac_mac_addr4DOLLAR_32E(Union):
+class N13emac_mac_addr4DOT_32E(Union):
     pass
-class N13emac_mac_addr4DOLLAR_324DOLLAR_33E(Structure):
+class N13emac_mac_addr4DOT_324DOT_33E(Structure):
     pass
-N13emac_mac_addr4DOLLAR_324DOLLAR_33E._fields_ = [
+N13emac_mac_addr4DOT_324DOT_33E._fields_ = [
     ('byte_3', u32, 8),
     ('byte_4', u32, 8),
     ('byte_5', u32, 8),
     ('byte_6', u32, 8),
 ]
-N13emac_mac_addr4DOLLAR_32E._anonymous_ = ['_0']
-N13emac_mac_addr4DOLLAR_32E._fields_ = [
-    ('_0', N13emac_mac_addr4DOLLAR_324DOLLAR_33E),
+N13emac_mac_addr4DOT_32E._anonymous_ = ['_0']
+N13emac_mac_addr4DOT_32E._fields_ = [
+    ('_0', N13emac_mac_addr4DOT_324DOT_33E),
     ('word_low', u32),
 ]
-emac_mac_addr._anonymous_ = ['_0', '_1']
+emac_mac_addr._anonymous_ = ['_1', '_0']
 emac_mac_addr._fields_ = [
-    ('_0', N13emac_mac_addr4DOLLAR_30E),
-    ('_1', N13emac_mac_addr4DOLLAR_32E),
+    ('_0', N13emac_mac_addr4DOT_30E),
+    ('_1', N13emac_mac_addr4DOT_32E),
 ]
 class emac_rx_rule_control(Structure):
     pass
-class N20emac_rx_rule_control4DOLLAR_34E(Union):
+class N20emac_rx_rule_control4DOT_34E(Union):
     pass
-class N20emac_rx_rule_control4DOLLAR_344DOLLAR_35E(Structure):
+class N20emac_rx_rule_control4DOT_344DOT_35E(Structure):
     pass
-N20emac_rx_rule_control4DOLLAR_344DOLLAR_35E._fields_ = [
+N20emac_rx_rule_control4DOT_344DOT_35E._fields_ = [
     ('enable', u32, 1),
     ('and_with_next', u32, 1),
     ('activate_rxcpu', u32, 1),
@@ -2094,14 +2098,14 @@ N20emac_rx_rule_control4DOLLAR_344DOLLAR_35E._fields_ = [
     ('pclass', u32, 5),
     ('offset', u32, 8),
 ]
-N20emac_rx_rule_control4DOLLAR_34E._anonymous_ = ['_0']
-N20emac_rx_rule_control4DOLLAR_34E._fields_ = [
-    ('_0', N20emac_rx_rule_control4DOLLAR_344DOLLAR_35E),
+N20emac_rx_rule_control4DOT_34E._anonymous_ = ['_0']
+N20emac_rx_rule_control4DOT_34E._fields_ = [
+    ('_0', N20emac_rx_rule_control4DOT_344DOT_35E),
     ('word', u32),
 ]
 emac_rx_rule_control._anonymous_ = ['_0']
 emac_rx_rule_control._fields_ = [
-    ('_0', N20emac_rx_rule_control4DOLLAR_34E),
+    ('_0', N20emac_rx_rule_control4DOT_34E),
 ]
 class receive_mac_rules_configuration(Structure):
     pass
@@ -2183,9 +2187,9 @@ emac_regulator_voltage_control._fields_ = [
 ]
 class emac_regs(Structure):
     pass
-class N9emac_regs4DOLLAR_36E(Structure):
+class N9emac_regs4DOT_36E(Structure):
     pass
-N9emac_regs4DOLLAR_36E._fields_ = [
+N9emac_regs4DOT_36E._fields_ = [
     ('control', emac_rx_rule_control),
     ('mask_value', u32),
 ]
@@ -2215,7 +2219,7 @@ emac_regs._fields_ = [
     ('mac_hash_1', u32),
     ('mac_hash_2', u32),
     ('mac_hash_3', u32),
-    ('rx_rule', N9emac_regs4DOLLAR_36E * 8),
+    ('rx_rule', N9emac_regs4DOT_36E * 8),
     ('ofs_c0', u32),
     ('ofs_c4', u32),
     ('ofs_c8', u32),
@@ -2299,36 +2303,36 @@ frame._fields_ = [
 ]
 class vlan_frame(Structure):
     pass
-class N10vlan_frame4DOLLAR_37E(Union):
+class N10vlan_frame4DOT_37E(Union):
     pass
-class N10vlan_frame4DOLLAR_374DOLLAR_38E(Structure):
+class N10vlan_frame4DOT_374DOT_38E(Structure):
     pass
-N10vlan_frame4DOLLAR_374DOLLAR_38E._fields_ = [
+N10vlan_frame4DOT_374DOT_38E._fields_ = [
     ('priority', u16, 3),
     ('cfi', u16, 1),
     ('vlan', u16, 12),
 ]
-N10vlan_frame4DOLLAR_37E._anonymous_ = ['_0']
-N10vlan_frame4DOLLAR_37E._fields_ = [
+N10vlan_frame4DOT_37E._anonymous_ = ['_0']
+N10vlan_frame4DOT_37E._fields_ = [
     ('tci', u16),
-    ('_0', N10vlan_frame4DOLLAR_374DOLLAR_38E),
+    ('_0', N10vlan_frame4DOT_374DOT_38E),
 ]
 vlan_frame._anonymous_ = ['_0']
 vlan_frame._fields_ = [
     ('dest', u8 * 6),
     ('src', u8 * 6),
     ('tpid', u16),
-    ('_0', N10vlan_frame4DOLLAR_37E),
+    ('_0', N10vlan_frame4DOT_37E),
     ('type', u16),
     ('data', u8 * 0),
 ]
 class ftq_reset(Structure):
     pass
-class N9ftq_reset4DOLLAR_39E(Union):
+class N9ftq_reset4DOT_39E(Union):
     pass
-class N9ftq_reset4DOLLAR_394DOLLAR_40E(Structure):
+class N9ftq_reset4DOT_394DOT_40E(Structure):
     pass
-N9ftq_reset4DOLLAR_394DOLLAR_40E._fields_ = [
+N9ftq_reset4DOT_394DOT_40E._fields_ = [
     ('reserved', u32, 15),
     ('receive_data_completion', u32, 1),
     ('reserved2', u32, 1),
@@ -2348,43 +2352,43 @@ N9ftq_reset4DOLLAR_394DOLLAR_40E._fields_ = [
     ('dma_read', u32, 1),
     ('reserved7', u32, 1),
 ]
-N9ftq_reset4DOLLAR_39E._anonymous_ = ['_0']
-N9ftq_reset4DOLLAR_39E._fields_ = [
+N9ftq_reset4DOT_39E._anonymous_ = ['_0']
+N9ftq_reset4DOT_39E._fields_ = [
     ('word', u32),
-    ('_0', N9ftq_reset4DOLLAR_394DOLLAR_40E),
+    ('_0', N9ftq_reset4DOT_394DOT_40E),
 ]
 ftq_reset._anonymous_ = ['_0']
 ftq_reset._fields_ = [
-    ('_0', N9ftq_reset4DOLLAR_39E),
+    ('_0', N9ftq_reset4DOT_39E),
 ]
 class ftq_enqueue_dequeue(Structure):
     pass
-class N19ftq_enqueue_dequeue4DOLLAR_41E(Union):
+class N19ftq_enqueue_dequeue4DOT_41E(Union):
     pass
-class N19ftq_enqueue_dequeue4DOLLAR_414DOLLAR_42E(Structure):
+class N19ftq_enqueue_dequeue4DOT_414DOT_42E(Structure):
     pass
-N19ftq_enqueue_dequeue4DOLLAR_414DOLLAR_42E._fields_ = [
+N19ftq_enqueue_dequeue4DOT_414DOT_42E._fields_ = [
     ('ignored1', u32, 10),
     ('head_txmbuf_ptr', u32, 6),
     ('ignored2', u32, 10),
     ('tail_txmbuf_ptr', u32, 6),
 ]
-N19ftq_enqueue_dequeue4DOLLAR_41E._anonymous_ = ['_0']
-N19ftq_enqueue_dequeue4DOLLAR_41E._fields_ = [
-    ('_0', N19ftq_enqueue_dequeue4DOLLAR_414DOLLAR_42E),
+N19ftq_enqueue_dequeue4DOT_41E._anonymous_ = ['_0']
+N19ftq_enqueue_dequeue4DOT_41E._fields_ = [
+    ('_0', N19ftq_enqueue_dequeue4DOT_414DOT_42E),
     ('word', u32),
 ]
 ftq_enqueue_dequeue._anonymous_ = ['_0']
 ftq_enqueue_dequeue._fields_ = [
-    ('_0', N19ftq_enqueue_dequeue4DOLLAR_41E),
+    ('_0', N19ftq_enqueue_dequeue4DOT_41E),
 ]
 class ftq_write_peek(Structure):
     pass
-class N14ftq_write_peek4DOLLAR_43E(Union):
+class N14ftq_write_peek4DOT_43E(Union):
     pass
-class N14ftq_write_peek4DOLLAR_434DOLLAR_44E(Structure):
+class N14ftq_write_peek4DOT_434DOT_44E(Structure):
     pass
-N14ftq_write_peek4DOLLAR_434DOLLAR_44E._fields_ = [
+N14ftq_write_peek4DOT_434DOT_44E._fields_ = [
     ('reserved', u32, 11),
     ('valid', u32, 1),
     ('skip', u32, 1),
@@ -2392,14 +2396,14 @@ N14ftq_write_peek4DOLLAR_434DOLLAR_44E._fields_ = [
     ('head_rxmbuf_ptr', u32, 9),
     ('tail_rxmbuf_ptr', u32, 9),
 ]
-N14ftq_write_peek4DOLLAR_43E._anonymous_ = ['_0']
-N14ftq_write_peek4DOLLAR_43E._fields_ = [
-    ('_0', N14ftq_write_peek4DOLLAR_434DOLLAR_44E),
+N14ftq_write_peek4DOT_43E._anonymous_ = ['_0']
+N14ftq_write_peek4DOT_43E._fields_ = [
+    ('_0', N14ftq_write_peek4DOT_434DOT_44E),
     ('word', u32),
 ]
 ftq_write_peek._anonymous_ = ['_0']
 ftq_write_peek._fields_ = [
-    ('_0', N14ftq_write_peek4DOLLAR_43E),
+    ('_0', N14ftq_write_peek4DOT_43E),
 ]
 class ftq_queue_regs(Structure):
     pass
@@ -2533,11 +2537,11 @@ grc_misc_local_control._fields_ = [
 ]
 class grc_cpu_event(Structure):
     pass
-class N13grc_cpu_event4DOLLAR_45E(Union):
+class N13grc_cpu_event4DOT_45E(Union):
     pass
-class N13grc_cpu_event4DOLLAR_454DOLLAR_46E(Structure):
+class N13grc_cpu_event4DOT_454DOT_46E(Structure):
     pass
-N13grc_cpu_event4DOLLAR_454DOLLAR_46E._fields_ = [
+N13grc_cpu_event4DOT_454DOT_46E._fields_ = [
     ('sw_event_13', u32, 1),
     ('sw_event_12', u32, 1),
     ('timer', u32, 1),
@@ -2571,14 +2575,14 @@ N13grc_cpu_event4DOLLAR_454DOLLAR_46E._fields_ = [
     ('sw_event_1', u32, 1),
     ('sw_event_0', u32, 1),
 ]
-N13grc_cpu_event4DOLLAR_45E._anonymous_ = ['_0']
-N13grc_cpu_event4DOLLAR_45E._fields_ = [
-    ('_0', N13grc_cpu_event4DOLLAR_454DOLLAR_46E),
+N13grc_cpu_event4DOT_45E._anonymous_ = ['_0']
+N13grc_cpu_event4DOT_45E._fields_ = [
+    ('_0', N13grc_cpu_event4DOT_454DOT_46E),
     ('word', u32),
 ]
 grc_cpu_event._anonymous_ = ['_0']
 grc_cpu_event._fields_ = [
-    ('_0', N13grc_cpu_event4DOLLAR_45E),
+    ('_0', N13grc_cpu_event4DOT_45E),
 ]
 class grc_cpu_semaphore(Structure):
     pass
@@ -2608,11 +2612,11 @@ grc_pcie_misc_status._fields_ = [
 ]
 class grc_cpu_event_enable(Structure):
     pass
-class N20grc_cpu_event_enable4DOLLAR_47E(Union):
+class N20grc_cpu_event_enable4DOT_47E(Union):
     pass
-class N20grc_cpu_event_enable4DOLLAR_474DOLLAR_48E(Structure):
+class N20grc_cpu_event_enable4DOT_474DOT_48E(Structure):
     pass
-N20grc_cpu_event_enable4DOLLAR_474DOLLAR_48E._fields_ = [
+N20grc_cpu_event_enable4DOT_474DOT_48E._fields_ = [
     ('flash', u32, 1),
     ('vpd', u32, 1),
     ('timer', u32, 1),
@@ -2646,14 +2650,14 @@ N20grc_cpu_event_enable4DOLLAR_474DOLLAR_48E._fields_ = [
     ('asf_location_9', u32, 1),
     ('asf_location_8', u32, 1),
 ]
-N20grc_cpu_event_enable4DOLLAR_47E._anonymous_ = ['_0']
-N20grc_cpu_event_enable4DOLLAR_47E._fields_ = [
-    ('_0', N20grc_cpu_event_enable4DOLLAR_474DOLLAR_48E),
+N20grc_cpu_event_enable4DOT_47E._anonymous_ = ['_0']
+N20grc_cpu_event_enable4DOT_47E._fields_ = [
+    ('_0', N20grc_cpu_event_enable4DOT_474DOT_48E),
     ('word', u32),
 ]
 grc_cpu_event_enable._anonymous_ = ['_0']
 grc_cpu_event_enable._fields_ = [
-    ('_0', N20grc_cpu_event_enable4DOLLAR_47E),
+    ('_0', N20grc_cpu_event_enable4DOT_47E),
 ]
 class grc_secfg_1(Structure):
     pass
@@ -2752,22 +2756,22 @@ grc_misc_control._fields_ = [
 ]
 class grc_fastboot_program_counter(Structure):
     pass
-class N28grc_fastboot_program_counter4DOLLAR_49E(Union):
+class N28grc_fastboot_program_counter4DOT_49E(Union):
     pass
-class N28grc_fastboot_program_counter4DOLLAR_494DOLLAR_50E(Structure):
+class N28grc_fastboot_program_counter4DOT_494DOT_50E(Structure):
     pass
-N28grc_fastboot_program_counter4DOLLAR_494DOLLAR_50E._fields_ = [
+N28grc_fastboot_program_counter4DOT_494DOT_50E._fields_ = [
     ('enable', u32, 1),
     ('addr', u32, 31),
 ]
-N28grc_fastboot_program_counter4DOLLAR_49E._anonymous_ = ['_0']
-N28grc_fastboot_program_counter4DOLLAR_49E._fields_ = [
-    ('_0', N28grc_fastboot_program_counter4DOLLAR_494DOLLAR_50E),
+N28grc_fastboot_program_counter4DOT_49E._anonymous_ = ['_0']
+N28grc_fastboot_program_counter4DOT_49E._fields_ = [
+    ('_0', N28grc_fastboot_program_counter4DOT_494DOT_50E),
     ('word', u32),
 ]
 grc_fastboot_program_counter._anonymous_ = ['_0']
 grc_fastboot_program_counter._fields_ = [
-    ('_0', N28grc_fastboot_program_counter4DOLLAR_49E),
+    ('_0', N28grc_fastboot_program_counter4DOT_49E),
 ]
 class grc_power_management_debug(Structure):
     pass
@@ -2989,11 +2993,11 @@ hc_regs._fields_ = [
 ]
 class ma_mode(Structure):
     pass
-class N7ma_mode4DOLLAR_51E(Union):
+class N7ma_mode4DOT_51E(Union):
     pass
-class N7ma_mode4DOLLAR_514DOLLAR_52E(Structure):
+class N7ma_mode4DOT_514DOT_52E(Structure):
     pass
-N7ma_mode4DOLLAR_514DOLLAR_52E._fields_ = [
+N7ma_mode4DOT_514DOT_52E._fields_ = [
     ('tx_mbuf_cfg', u32, 2),
     ('cpu_pipeline_request_disable', u32, 1),
     ('low_latency_enable', u32, 1),
@@ -3021,14 +3025,14 @@ N7ma_mode4DOLLAR_514DOLLAR_52E._fields_ = [
     ('enable', u32, 1),
     ('reset', u32, 1),
 ]
-N7ma_mode4DOLLAR_51E._anonymous_ = ['_0']
-N7ma_mode4DOLLAR_51E._fields_ = [
-    ('_0', N7ma_mode4DOLLAR_514DOLLAR_52E),
+N7ma_mode4DOT_51E._anonymous_ = ['_0']
+N7ma_mode4DOT_51E._fields_ = [
+    ('_0', N7ma_mode4DOT_514DOT_52E),
     ('word', u32),
 ]
 ma_mode._anonymous_ = ['_0']
 ma_mode._fields_ = [
-    ('_0', N7ma_mode4DOLLAR_51E),
+    ('_0', N7ma_mode4DOT_51E),
 ]
 class ma_status(Structure):
     pass
@@ -3081,40 +3085,40 @@ lpmb_regs._fields_ = [
 class mbuf_hdr(Structure):
     pass
 mbuf_hdr._fields_ = [
-    ('c', u32, 1),
-    ('f', u32, 1),
-    ('reserved', u32, 7),
-    ('next_mbuf', u32, 16),
     ('length', u32, 7),
+    ('next_mbuf', u32, 16),
+    ('reserved', u32, 7),
+    ('f', u32, 1),
+    ('c', u32, 1),
 ]
 class mbuf_frame_desc(Structure):
     pass
 mbuf_frame_desc._fields_ = [
     ('status_ctrl', u32),
-    ('qids', u8),
-    ('reserved', u8),
     ('len', u16),
-    ('ip_hdr_start', u16),
+    ('reserved', u8),
+    ('qids', u8),
     ('tcp_udp_hdr_start', u16),
-    ('data_start', u16),
+    ('ip_hdr_start', u16),
     ('vlan_id', u16),
-    ('ip_checksum', u16),
+    ('data_start', u16),
     ('tcp_udp_checksum', u16),
-    ('pseudo_checksum', u16),
+    ('ip_checksum', u16),
     ('checksum_status', u16),
-    ('rule_match', u16),
-    ('rule_class', u8),
+    ('pseudo_checksum', u16),
     ('rupt', u8),
-    ('reserved2', u16),
+    ('rule_class', u8),
+    ('rule_match', u16),
     ('mbuf', u16),
+    ('reserved2', u16),
     ('reserved3', u32),
     ('reserved4', u32),
 ]
 class mbuf(Structure):
     pass
-class N4mbuf4DOLLAR_53E(Union):
+class N4mbuf4DOT_53E(Union):
     pass
-N4mbuf4DOLLAR_53E._fields_ = [
+N4mbuf4DOT_53E._fields_ = [
     ('frame', mbuf_frame_desc),
     ('word', u32 * 30),
     ('byte', u8 * 120),
@@ -3122,7 +3126,7 @@ N4mbuf4DOLLAR_53E._fields_ = [
 mbuf._fields_ = [
     ('hdr', mbuf_hdr),
     ('next_frame_ptr', u32),
-    ('data', N4mbuf4DOLLAR_53E),
+    ('data', N4mbuf4DOT_53E),
 ]
 class msi_mode(Structure):
     pass
@@ -3421,18 +3425,18 @@ nvram_dir_item._fields_ = [
 ]
 class nvram_header(Structure):
     pass
-class N12nvram_header4DOLLAR_54E(Structure):
+class N12nvram_header4DOT_54E(Structure):
     pass
-N12nvram_header4DOLLAR_54E._fields_ = [
+N12nvram_header4DOT_54E._fields_ = [
     ('mgaic', u32),
     ('bc_sram_start', u32),
     ('bc_words', u32),
     ('bc_nvram_start', u32),
     ('crc', u32),
 ]
-class N12nvram_header4DOLLAR_55E(Structure):
+class N12nvram_header4DOT_55E(Structure):
     pass
-N12nvram_header4DOLLAR_55E._fields_ = [
+N12nvram_header4DOT_55E._fields_ = [
     ('len', u16),
     ('dir_cksum', u8),
     ('rev', u8),
@@ -3472,9 +3476,9 @@ N12nvram_header4DOLLAR_55E._fields_ = [
     ('crc', u32),
 ]
 nvram_header._fields_ = [
-    ('bs', N12nvram_header4DOLLAR_54E),
+    ('bs', N12nvram_header4DOT_54E),
     ('directory', nvram_dir_item * 8),
-    ('mfg', N12nvram_header4DOLLAR_55E),
+    ('mfg', N12nvram_header4DOT_55E),
 ]
 class nvram_command(Structure):
     pass
@@ -3663,11 +3667,11 @@ otp_regs._fields_ = [
 ]
 class pci_status(Structure):
     pass
-class N10pci_status4DOLLAR_56E(Union):
+class N10pci_status4DOT_57E(Union):
     pass
-class N10pci_status4DOLLAR_564DOLLAR_57E(Structure):
+class N10pci_status4DOT_574DOT_58E(Structure):
     pass
-N10pci_status4DOLLAR_564DOLLAR_57E._fields_ = [
+N10pci_status4DOT_574DOT_58E._fields_ = [
     ('detected_parity_error', u16, 1),
     ('signaled_system_error', u16, 1),
     ('received_master_abort', u16, 1),
@@ -3682,22 +3686,22 @@ N10pci_status4DOLLAR_564DOLLAR_57E._fields_ = [
     ('interrupt_status', u16, 1),
     ('reserved2', u16, 3),
 ]
-N10pci_status4DOLLAR_56E._anonymous_ = ['_0']
-N10pci_status4DOLLAR_56E._fields_ = [
-    ('_0', N10pci_status4DOLLAR_564DOLLAR_57E),
+N10pci_status4DOT_57E._anonymous_ = ['_0']
+N10pci_status4DOT_57E._fields_ = [
+    ('_0', N10pci_status4DOT_574DOT_58E),
     ('word', u16),
 ]
 pci_status._anonymous_ = ['_0']
 pci_status._fields_ = [
-    ('_0', N10pci_status4DOLLAR_56E),
+    ('_0', N10pci_status4DOT_57E),
 ]
 class pci_command(Structure):
     pass
-class N11pci_command4DOLLAR_58E(Union):
+class N11pci_command4DOT_59E(Union):
     pass
-class N11pci_command4DOLLAR_584DOLLAR_59E(Structure):
+class N11pci_command4DOT_594DOT_60E(Structure):
     pass
-N11pci_command4DOLLAR_584DOLLAR_59E._fields_ = [
+N11pci_command4DOT_594DOT_60E._fields_ = [
     ('reserved3', u16, 5),
     ('interrupt_disable', u16, 1),
     ('fast_back_to_back_enable', u16, 1),
@@ -3711,14 +3715,14 @@ N11pci_command4DOLLAR_584DOLLAR_59E._fields_ = [
     ('memory_space', u16, 1),
     ('io_space', u16, 1),
 ]
-N11pci_command4DOLLAR_58E._anonymous_ = ['_0']
-N11pci_command4DOLLAR_58E._fields_ = [
-    ('_0', N11pci_command4DOLLAR_584DOLLAR_59E),
+N11pci_command4DOT_59E._anonymous_ = ['_0']
+N11pci_command4DOT_59E._fields_ = [
+    ('_0', N11pci_command4DOT_594DOT_60E),
     ('word', u16),
 ]
 pci_command._anonymous_ = ['_0']
 pci_command._fields_ = [
-    ('_0', N11pci_command4DOLLAR_58E),
+    ('_0', N11pci_command4DOT_59E),
 ]
 class pci_pm_cap(Structure):
     pass
@@ -3824,52 +3828,52 @@ pci_class_code_rev_id._fields_ = [
 ]
 class pci_regs(Structure):
     pass
-class N8pci_regs4DOLLAR_60E(Structure):
+class N8pci_regs4DOT_61E(Structure):
     pass
-N8pci_regs4DOLLAR_60E._fields_ = [
+N8pci_regs4DOT_61E._fields_ = [
     ('did', u32, 16),
     ('vid', u32, 16),
 ]
-class N8pci_regs4DOLLAR_61E(Structure):
+class N8pci_regs4DOT_62E(Structure):
     pass
-N8pci_regs4DOLLAR_61E._fields_ = [
+N8pci_regs4DOT_62E._fields_ = [
     ('status', pci_status),
     ('command', pci_command),
 ]
-class N8pci_regs4DOLLAR_62E(Structure):
+class N8pci_regs4DOT_63E(Structure):
     pass
-N8pci_regs4DOLLAR_62E._fields_ = [
+N8pci_regs4DOT_63E._fields_ = [
     ('bist', u8, 8),
     ('hdr_type', u32, 8),
     ('lat_timer', u32, 8),
     ('cache_line_sz', u32, 8),
 ]
-class N8pci_regs4DOLLAR_63E(Structure):
+class N8pci_regs4DOT_64E(Structure):
     pass
-N8pci_regs4DOLLAR_63E._fields_ = [
+N8pci_regs4DOT_64E._fields_ = [
     ('ssid', u16),
     ('svid', u16),
 ]
-class N8pci_regs4DOLLAR_64E(Structure):
+class N8pci_regs4DOT_65E(Structure):
     pass
-N8pci_regs4DOLLAR_64E._fields_ = [
+N8pci_regs4DOT_65E._fields_ = [
     ('reserved1', u32, 24),
     ('cap_ptr', u32, 8),
 ]
-class N8pci_regs4DOLLAR_65E(Structure):
+class N8pci_regs4DOT_66E(Structure):
     pass
-N8pci_regs4DOLLAR_65E._fields_ = [
+N8pci_regs4DOT_66E._fields_ = [
     ('max_lat', u32, 8),
     ('min_gnt', u32, 8),
     ('int_pin', u32, 8),
     ('int_line', u32, 8),
 ]
-pci_regs._anonymous_ = ['_0', '_1', '_3', '_2', '_4', '_5']
+pci_regs._anonymous_ = ['_0', '_5', '_2', '_3', '_1', '_4']
 pci_regs._fields_ = [
-    ('_0', N8pci_regs4DOLLAR_60E),
-    ('_1', N8pci_regs4DOLLAR_61E),
+    ('_0', N8pci_regs4DOT_61E),
+    ('_1', N8pci_regs4DOT_62E),
     ('class_code_rev_id', pci_class_code_rev_id),
-    ('_2', N8pci_regs4DOLLAR_62E),
+    ('_2', N8pci_regs4DOT_63E),
     ('bar0_hi', u32),
     ('bar0_low', u32),
     ('bar1_hi', u32),
@@ -3877,11 +3881,11 @@ pci_regs._fields_ = [
     ('bar2_hi', u32),
     ('bar2_low', u32),
     ('cardbus_cis_ptr', u32),
-    ('_3', N8pci_regs4DOLLAR_63E),
+    ('_3', N8pci_regs4DOT_64E),
     ('rombar', u32),
-    ('_4', N8pci_regs4DOLLAR_64E),
+    ('_4', N8pci_regs4DOT_65E),
     ('reserved2', u32),
-    ('_5', N8pci_regs4DOLLAR_65E),
+    ('_5', N8pci_regs4DOT_66E),
     ('int_mailbox', u64),
     ('pm_cap', pci_pm_cap),
     ('pm_ctrl_status', pci_pm_ctrl_status),
@@ -4259,21 +4263,21 @@ pcie_dl_lo_regs._fields_ = [
 ]
 class pcie_alt_regs(Structure):
     pass
-class N13pcie_alt_regs4DOLLAR_66E(Union):
+class N13pcie_alt_regs4DOT_56E(Union):
     pass
-N13pcie_alt_regs4DOLLAR_66E._fields_ = [
+N13pcie_alt_regs4DOT_56E._fields_ = [
     ('dll', pcie_dl_lo_regs),
     ('pll', pcie_pl_lo_regs),
 ]
 pcie_alt_regs._anonymous_ = ['_0']
 pcie_alt_regs._fields_ = [
-    ('_0', N13pcie_alt_regs4DOLLAR_66E),
+    ('_0', N13pcie_alt_regs4DOT_56E),
 ]
 class rbdc_mode(Structure):
     pass
-class N9rbdc_mode4DOLLAR_67E(Structure):
+class N9rbdc_mode4DOT_67E(Structure):
     pass
-N9rbdc_mode4DOLLAR_67E._fields_ = [
+N9rbdc_mode4DOT_67E._fields_ = [
     ('reserved', u32, 29),
     ('attention_enable', u32, 1),
     ('enable', u32, 1),
@@ -4281,7 +4285,7 @@ N9rbdc_mode4DOLLAR_67E._fields_ = [
 ]
 rbdc_mode._anonymous_ = ['_0']
 rbdc_mode._fields_ = [
-    ('_0', N9rbdc_mode4DOLLAR_67E),
+    ('_0', N9rbdc_mode4DOT_67E),
 ]
 class rbdc_status(Structure):
     pass
@@ -4307,24 +4311,24 @@ rbdc_regs._fields_ = [
 ]
 class rbdi_mode(Structure):
     pass
-class N9rbdi_mode4DOLLAR_68E(Union):
+class N9rbdi_mode4DOT_68E(Union):
     pass
-class N9rbdi_mode4DOLLAR_684DOLLAR_69E(Structure):
+class N9rbdi_mode4DOT_684DOT_69E(Structure):
     pass
-N9rbdi_mode4DOLLAR_684DOLLAR_69E._fields_ = [
+N9rbdi_mode4DOT_684DOT_69E._fields_ = [
     ('reserved', u32, 29),
     ('receive_bds_available_on_disabled_rbd_ring_attn_enable', u32, 1),
     ('enable', u32, 1),
     ('reset', u32, 1),
 ]
-N9rbdi_mode4DOLLAR_68E._anonymous_ = ['_0']
-N9rbdi_mode4DOLLAR_68E._fields_ = [
-    ('_0', N9rbdi_mode4DOLLAR_684DOLLAR_69E),
+N9rbdi_mode4DOT_68E._anonymous_ = ['_0']
+N9rbdi_mode4DOT_68E._fields_ = [
+    ('_0', N9rbdi_mode4DOT_684DOT_69E),
     ('word', u32),
 ]
 rbdi_mode._anonymous_ = ['_0']
 rbdi_mode._fields_ = [
-    ('_0', N9rbdi_mode4DOLLAR_68E),
+    ('_0', N9rbdi_mode4DOT_68E),
 ]
 class rbdi_status(Structure):
     pass
@@ -4395,24 +4399,24 @@ rcb._fields_ = [
 ]
 class rdc_mode(Structure):
     pass
-class N8rdc_mode4DOLLAR_70E(Union):
+class N8rdc_mode4DOT_70E(Union):
     pass
-class N8rdc_mode4DOLLAR_704DOLLAR_71E(Structure):
+class N8rdc_mode4DOT_704DOT_71E(Structure):
     pass
-N8rdc_mode4DOLLAR_704DOLLAR_71E._fields_ = [
+N8rdc_mode4DOT_704DOT_71E._fields_ = [
     ('reserved', u32, 29),
     ('attention_enable', u32, 1),
     ('enable', u32, 1),
     ('reset', u32, 1),
 ]
-N8rdc_mode4DOLLAR_70E._anonymous_ = ['_0']
-N8rdc_mode4DOLLAR_70E._fields_ = [
-    ('_0', N8rdc_mode4DOLLAR_704DOLLAR_71E),
+N8rdc_mode4DOT_70E._anonymous_ = ['_0']
+N8rdc_mode4DOT_70E._fields_ = [
+    ('_0', N8rdc_mode4DOT_704DOT_71E),
     ('word', u32),
 ]
 rdc_mode._anonymous_ = ['_0']
 rdc_mode._fields_ = [
-    ('_0', N8rdc_mode4DOLLAR_70E),
+    ('_0', N8rdc_mode4DOT_70E),
 ]
 class rdc_regs(Structure):
     pass
@@ -4439,9 +4443,9 @@ rdi_status._fields_ = [
 ]
 class rcb_registers(Structure):
     pass
-class N13rcb_registers4DOLLAR_72E(Structure):
+class N13rcb_registers4DOT_72E(Structure):
     pass
-N13rcb_registers4DOLLAR_72E._fields_ = [
+N13rcb_registers4DOT_72E._fields_ = [
     ('ring_size', u32, 16),
     ('max_frame_len', u32, 14),
     ('disable_ring', u32, 1),
@@ -4451,7 +4455,7 @@ rcb_registers._anonymous_ = ['_0']
 rcb_registers._fields_ = [
     ('host_addr_hi', u32),
     ('host_addr_low', u32),
-    ('_0', N13rcb_registers4DOLLAR_72E),
+    ('_0', N13rcb_registers4DOT_72E),
     ('nic_addr', u32),
 ]
 class rdi_regs(Structure):
@@ -4814,11 +4818,11 @@ receive_list_placement_statistics_control._fields_ = [
 ]
 class receive_list_placement_statistics_enable_mask(Structure):
     pass
-class N45receive_list_placement_statistics_enable_mask4DOLLAR_73E(Union):
+class N45receive_list_placement_statistics_enable_mask4DOT_73E(Union):
     pass
-class N45receive_list_placement_statistics_enable_mask4DOLLAR_734DOLLAR_74E(Structure):
+class N45receive_list_placement_statistics_enable_mask4DOT_734DOT_74E(Structure):
     pass
-N45receive_list_placement_statistics_enable_mask4DOLLAR_734DOLLAR_74E._fields_ = [
+N45receive_list_placement_statistics_enable_mask4DOT_734DOT_74E._fields_ = [
     ('reserved', u32, 6),
     ('rss_priority', u32, 1),
     ('rc_return_ring_enable', u32, 1),
@@ -4832,14 +4836,14 @@ N45receive_list_placement_statistics_enable_mask4DOLLAR_734DOLLAR_74E._fields_ =
     ('a1_silent_indication', u32, 1),
     ('enable_cos_stats', u32, 1),
 ]
-N45receive_list_placement_statistics_enable_mask4DOLLAR_73E._anonymous_ = ['_0']
-N45receive_list_placement_statistics_enable_mask4DOLLAR_73E._fields_ = [
-    ('_0', N45receive_list_placement_statistics_enable_mask4DOLLAR_734DOLLAR_74E),
+N45receive_list_placement_statistics_enable_mask4DOT_73E._anonymous_ = ['_0']
+N45receive_list_placement_statistics_enable_mask4DOT_73E._fields_ = [
+    ('_0', N45receive_list_placement_statistics_enable_mask4DOT_734DOT_74E),
     ('word', u32),
 ]
 receive_list_placement_statistics_enable_mask._anonymous_ = ['_0']
 receive_list_placement_statistics_enable_mask._fields_ = [
-    ('_0', N45receive_list_placement_statistics_enable_mask4DOLLAR_73E),
+    ('_0', N45receive_list_placement_statistics_enable_mask4DOT_73E),
 ]
 class receive_list_placement_statistics_increment_mask(Structure):
     pass
@@ -4863,9 +4867,9 @@ receive_list_lock._fields_ = [
 ]
 class rlp_regs(Structure):
     pass
-class N8rlp_regs4DOLLAR_75E(Structure):
+class N8rlp_regs4DOT_75E(Structure):
     pass
-N8rlp_regs4DOLLAR_75E._fields_ = [
+N8rlp_regs4DOT_75E._fields_ = [
     ('list_head', u32),
     ('list_tail', u32),
     ('list_count', u32),
@@ -4881,7 +4885,7 @@ rlp_regs._fields_ = [
     ('stats_enable_mask', receive_list_placement_statistics_enable_mask),
     ('stats_increment_mask', receive_list_placement_statistics_increment_mask),
     ('unknown', u32 * 56),
-    ('rx_selector', N8rlp_regs4DOLLAR_75E * 16),
+    ('rx_selector', N8rlp_regs4DOT_75E * 16),
     ('stat_counter', receive_list_local_statistics_counter * 23),
 ]
 class rss_ind_table_1(Structure):
@@ -5532,52 +5536,52 @@ mac_stats_regs._fields_ = [
 ]
 class status_block(Structure):
     pass
-class N12status_block4DOLLAR_76E(Structure):
+class N12status_block4DOT_76E(Structure):
     pass
-N12status_block4DOLLAR_76E._fields_ = [
+N12status_block4DOT_76E._fields_ = [
     ('updated', u32, 1),
     ('link_status', u32, 1),
     ('attention', u32, 1),
     ('reserved1', u32, 29),
 ]
-class N12status_block4DOLLAR_77E(Structure):
+class N12status_block4DOT_77E(Structure):
     pass
-N12status_block4DOLLAR_77E._fields_ = [
+N12status_block4DOT_77E._fields_ = [
     ('status_tag', u32, 8),
     ('reserved2', u32, 24),
 ]
-class N12status_block4DOLLAR_78E(Structure):
+class N12status_block4DOT_78E(Structure):
     pass
-N12status_block4DOLLAR_78E._fields_ = [
+N12status_block4DOT_78E._fields_ = [
     ('rr1_pi', u32, 16),
     ('rpci', u32, 16),
 ]
-class N12status_block4DOLLAR_79E(Structure):
+class N12status_block4DOT_79E(Structure):
     pass
-N12status_block4DOLLAR_79E._fields_ = [
+N12status_block4DOT_79E._fields_ = [
     ('rr3_pi', u32, 16),
     ('rr2_pi', u32, 16),
 ]
-class N12status_block4DOLLAR_80E(Structure):
+class N12status_block4DOT_80E(Structure):
     pass
-N12status_block4DOLLAR_80E._fields_ = [
+N12status_block4DOT_80E._fields_ = [
     ('rr0_pi', u32, 16),
     ('sbdci', u32, 16),
 ]
-class N12status_block4DOLLAR_81E(Structure):
+class N12status_block4DOT_81E(Structure):
     pass
-N12status_block4DOLLAR_81E._fields_ = [
+N12status_block4DOT_81E._fields_ = [
     ('rjpci', u32, 16),
     ('reserved6', u32, 16),
 ]
-status_block._anonymous_ = ['_0', '_2', '_4', '_1', '_5', '_3']
+status_block._anonymous_ = ['_4', '_5', '_1', '_2', '_0', '_3']
 status_block._fields_ = [
-    ('_0', N12status_block4DOLLAR_76E),
-    ('_1', N12status_block4DOLLAR_77E),
-    ('_2', N12status_block4DOLLAR_78E),
-    ('_3', N12status_block4DOLLAR_79E),
-    ('_4', N12status_block4DOLLAR_80E),
-    ('_5', N12status_block4DOLLAR_81E),
+    ('_0', N12status_block4DOT_76E),
+    ('_1', N12status_block4DOT_77E),
+    ('_2', N12status_block4DOT_78E),
+    ('_3', N12status_block4DOT_79E),
+    ('_4', N12status_block4DOT_80E),
+    ('_5', N12status_block4DOT_81E),
 ]
 class tsc_length_offset(Structure):
     pass
@@ -5682,24 +5686,23 @@ wdma_regs._fields_ = [
 RBD_RULE_HDR_FRAME = 0 # Variable c_int '0'
 UNKNOWN_CMD = 65535 # Variable c_int '65535'
 HIDE_FUNC_ACK = 32775 # Variable c_int '32775'
-CAP_VPD = 4 # Variable c_int '4'
-READ_DMA_REPLY = 32772 # Variable c_int '32772'
+TG3_IMAGE_EXE_A_MASK = 8388608 # Variable c_int '8388608'
 CAP_CTRL_ACK = 32774 # Variable c_int '32774'
 RBD_RULE_OP_LESS = 3 # Variable c_int '3'
 SEND_MSI_ACK = 32773 # Variable c_int '32773'
-TG3_IMAGE_TYPE_PXE = 0 # Variable c_int '0'
+CAP_MSIX = 1 # Variable c_int '1'
 WRITE_NVRAM_ACK = 32778 # Variable c_int '32778'
 READ_DMA_CMD = 4 # Variable c_int '4'
 PME_ASSERT_ACK = 32776 # Variable c_int '32776'
-CAP_MSIX = 1 # Variable c_int '1'
+READ_DMA_REPLY = 32772 # Variable c_int '32772'
 READ_LOCAL_REPLY = 32770 # Variable c_int '32770'
 READ_LOCAL_CMD = 2 # Variable c_int '2'
 CAP_MSI = 2 # Variable c_int '2'
 ERR_REPLY = 36864 # Variable c_int '36864'
 TG3_IMAGE_TYPE_ASF_INIT = 1 # Variable c_int '1'
-CLOAK_EN_ACK = 32780 # Variable c_int '32780'
+PME_ASSERT_CMD = 8 # Variable c_int '8'
 RBD_RULE_HDR_UDP = 3 # Variable c_int '3'
-TG3_IMAGE_EXE_A_MASK = 8388608 # Variable c_int '8388608'
+CAP_VPD = 4 # Variable c_int '4'
 PING_REPLY = 32769 # Variable c_int '32769'
 WRITE_LOCAL_ACK = 32771 # Variable c_int '32771'
 WRITE_LOCAL_CMD = 3 # Variable c_int '3'
@@ -5708,25 +5711,26 @@ PING_CMD = 1 # Variable c_int '1'
 CAP_CTRL_CMD = 6 # Variable c_int '6'
 RBD_RULE_OP_GREATER = 2 # Variable c_int '2'
 RBD_RULE_HDR_IP = 1 # Variable c_int '1'
-ANYSIZE_ARRAY = 1 # Variable c_int '1'
-CLOAK_EN_CMD = 12 # Variable c_int '12'
+ANYSIZE_ARRAY = 0 # Variable c_int '0'
+TG3_MAGIC = 1721324970 # Variable c_int '1721324970'
 CMD_REPLY = 32768 # Variable c_int '32768'
 HIDE_FUNC_CMD = 7 # Variable c_int '7'
 READ_NVRAM_CMD = 9 # Variable c_int '9'
-PME_ASSERT_CMD = 8 # Variable c_int '8'
+RBD_RULE_OP_NOTEQUAL = 1 # Variable c_int '1'
+CLOAK_EN_ACK = 32780 # Variable c_int '32780'
 TX_STD_ENQ_ACK = 32782 # Variable c_int '32782'
 CAP_POWER_MANAGEMENT = 8 # Variable c_int '8'
 RBD_RULE_OP_EQUAL = 0 # Variable c_int '0'
 TX_STD_ENQ_CMD = 14 # Variable c_int '14'
-RBD_RULE_OP_NOTEQUAL = 1 # Variable c_int '1'
+TG3_IMAGE_TYPE_PXE = 0 # Variable c_int '0'
 RBD_RULE_HDR_TCP = 2 # Variable c_int '2'
 TX_STD_ENQ_ERR = 36878 # Variable c_int '36878'
-CRC32_POLYNOMIAL = 3988292384L # Variable c_uint '-306674912u'
+CRC32_POLYNOMIAL = 3988292384L # Variable c_uint '3988292384u'
 TG3_FEAT_ASF = 128 # Variable c_int '128'
 RBD_RULE_HDR_DATA = 4 # Variable c_int '4'
 TG3_IMAGE_EXE_B_MASK = 4194304 # Variable c_int '4194304'
 WRITE_NVRAM_CMD = 10 # Variable c_int '10'
-TG3_MAGIC = 1721324970 # Variable c_int '1721324970'
+CLOAK_EN_CMD = 12 # Variable c_int '12'
 SEND_MSI_CMD = 5 # Variable c_int '5'
 PCIE_RETRY_BUFFER_DUMP_ACK = 32779 # Variable c_int '32779'
 MA_ALL_TRAPS = 1121660 # Variable c_int '1121660'
@@ -5734,239 +5738,263 @@ PCIE_RETRY_BUFFER_DUMP_CMD = 11 # Variable c_int '11'
 CLOAK_DIS_CMD = 13 # Variable c_int '13'
 TG3_FEAT_PXE = 2 # Variable c_int '2'
 READ_NVRAM_ACK = 32777 # Variable c_int '32777'
+int8_t = c_int8
+int16_t = c_int16
+int32_t = c_int32
+int64_t = c_int64
+int_least8_t = c_byte
+int_least16_t = c_short
+int_least32_t = c_int
+int_least64_t = c_long
+uint_least8_t = c_ubyte
+uint_least16_t = c_ushort
+uint_least32_t = c_uint
+uint_least64_t = c_ulong
+int_fast8_t = c_byte
+int_fast16_t = c_long
+int_fast32_t = c_long
+int_fast64_t = c_long
+uint_fast8_t = c_ubyte
+uint_fast16_t = c_ulong
+uint_fast32_t = c_ulong
+uint_fast64_t = c_ulong
+intptr_t = c_long
+uintptr_t = c_ulong
+intmax_t = c_long
+uintmax_t = c_ulong
 __all__ = ['nrdma_mbuf_addr_debug', 'pcie_dl_ack_timeout',
-           'otp_status', 'receive_list_lock', 'nvram_command',
+           'N20grc_cpu_event_enable4DOT_474DOT_48E',
+           'receive_list_lock', 'nvram_command',
            'TG3_IMAGE_EXE_A_MASK', 'receive_selector_not_empty_bits',
-           'acpi_sdt_hdr', 'dmar_rmrr', 'rss_hash_key',
+           'N13emac_mac_addr4DOT_32E', 'acpi_sdt_hdr', 'otp_status',
+           'uint8_t', 'dmar_rmrr', 'rss_hash_key',
            'mb_rbd_rr0_consumer',
-           'N10cpu_status4DOLLAR_154DOLLAR_16E',
            'rmac_programmable_ipv6_extension_header',
            'sdc_pre_dma_command_exchange', 'RBD_RULE_OP_GREATER',
-           'sdc_mode', 'rss_regs', 'ANYSIZE_ARRAY',
-           'cpmu_cr_idle_det_debounce_ctrl', 'TG3_FEAT_PXE',
-           'nvram_arbitration_watchdog', 'sbd_flags',
-           'N8rdc_mode4DOLLAR_70E', 'dmar_atsr', 'dmar_dev_scope',
+           'N12nvram_header4DOT_54E', 'sdc_mode', 'rss_regs',
+           'ANYSIZE_ARRAY', 'cpmu_cr_idle_det_debounce_ctrl',
+           'TG3_FEAT_PXE', 'nvram_arbitration_watchdog', 'sbd_flags',
+           'transmit_mac_lengths', 'dmar_atsr', 'dmar_dev_scope',
            'nrdma_programmable_ipv6_extension_header', 'sbdi_regs',
-           'N15rbd_error_flags3DOLLAR_5E', 'RBD_RULE_HDR_DATA',
-           'N19ftq_enqueue_dequeue4DOLLAR_41E', 'rss_ind_table_13',
+           'N14ftq_write_peek4DOT_43E', 'int_fast32_t',
+           'RBD_RULE_HDR_DATA', 'uint_least8_t', 'rss_ind_table_13',
            'cfg_port_regs', 'wdma_mode', 'pcie_tl_msi_len_req_diag',
-           'rtsdi_mode', 'N11pci_command4DOLLAR_584DOLLAR_59E',
-           'TG3_IMAGE_TYPE_PXE', 'N9sbd_flags3DOLLAR_1E',
-           'WRITE_NVRAM_ACK', 'N20grc_cpu_event_enable4DOLLAR_47E',
+           'rss_ind_table_15', 'N11pci_command4DOT_59E',
+           'TG3_IMAGE_TYPE_PXE', 'WRITE_NVRAM_ACK',
            'grc_seeprom_ctrl', 'nrdma_rstate2_debug',
            'bdrdma_pcie_dma_rd_req_addr_dbg',
            'asf_time_stamp_counter', 'TG3_IMAGE_LEN',
            'emac_low_watermark_max_receive_frame', 'nrdma_status',
-           'bufman_risc_mbuf_cluster_allocation_response', 'u32',
-           'bufman_regs', 'receive_list_local_statistics_counter',
+           'N8pci_regs4DOT_63E',
+           'bufman_risc_mbuf_cluster_allocation_response',
+           'N12status_block4DOT_79E', 'u32', 'bufman_regs',
+           'receive_list_local_statistics_counter',
            'RBD_RULE_HDR_TCP', 'bufman_mbuf_high_watermark',
-           'N45receive_list_placement_statistics_enable_mask4DOLLAR_734DOLLAR_74E',
            'receive_list_placement_statistics_control',
            'cpmu_clock_status', 'emac_regs', 'hc_regs',
-           'ftq_write_peek', 'nrdma_req_ptr_debug',
+           'N13emac_mac_addr4DOT_324DOT_33E', 'nrdma_req_ptr_debug',
            'CAP_POWER_MANAGEMENT', 'grc_exp_rom_addr',
            'rdma_mbuf_byte_count_debug', 'TG3_IMAGE_EXE_B_MASK',
-           'asf_heartbeat_timer', 'hpmb_regs',
-           'N13emac_mac_addr4DOLLAR_30E', 'transmit_mac_mode',
-           'nrdma_rstates_debug', 'rdc_regs', 'grc_pcie_misc_status',
-           'bufman_rdma_mbuf_low_watermark',
-           'N9sbd_flags3DOLLAR_13DOLLAR_2E', 'pcie_pl_lo_regs',
-           'ma_status', 'rdma_req_ptr_debug', 'pcie_dl_ctrl',
-           'wdma_regs', 'status_block',
+           'hpmb_regs', 'uint_fast8_t', 'transmit_mac_mode',
+           'N13rcb_registers4DOT_72E', 'rdc_regs',
+           'N16emac_led_control4DOT_244DOT_25E',
+           'grc_pcie_misc_status', 'bufman_rdma_mbuf_low_watermark',
+           'N14cpu_breakpoint4DOT_174DOT_18E', 'pcie_pl_lo_regs',
+           'N9rbdi_mode4DOT_684DOT_69E', 'ma_status',
+           'rdma_req_ptr_debug', 'pcie_dl_ctrl', 'wdma_regs',
+           'N12status_block4DOT_81E', 'status_block',
            'pcie_tl_xmt_state_machines_gated_reqs_diag',
-           'nrdma_pcie_dma_req_length_debug', 'known_mailboxes',
-           'sbdc_regs', 'READ_NVRAM_CMD', 'rdma_tcp_checksum_debug',
-           'tsc_length_offset',
-           'N15rbd_error_flags3DOLLAR_53DOLLAR_6E', 'TX_STD_ENQ_ACK',
+           'uint_least32_t', 'int_least64_t', 'sbds_mode',
+           'nrdma_pcie_dma_req_length_debug', 'pcie_tl_tlp_ctrl',
+           'N10vlan_frame4DOT_37E', 'N9dmac_mode4DOT_214DOT_22E',
+           'sbdc_regs', 'READ_NVRAM_CMD',
+           'N11pci_command4DOT_594DOT_60E',
+           'mb_rbd_standard_producer', 'tsc_length_offset',
+           'N9rbdi_mode4DOT_68E', 'TX_STD_ENQ_ACK',
            'pcie_tl_flow_control_inputs_diag', 'rss_ind_table_11',
            'rss_ind_table_10', 'cpmu_clock', 'rss_ind_table_12',
-           'rss_ind_table_15', 'rss_ind_table_14', 'TG3_FEAT_ASF',
-           'N7ma_mode4DOLLAR_514DOLLAR_52E', 'sbdi_status',
-           'wdma_status', 'rdma_hold_d_dmad_debug',
-           'N8pci_regs4DOLLAR_65E', 'N12status_block4DOLLAR_79E',
-           'asf_poll_timer', 'tsc_pre_dma_cmd_xchng', 'u64',
-           'nrdma_bd_status_debug', 'CAP_MSIX', 'READ_LOCAL_CMD',
-           'otp_control', 'receive_list_placement_status',
-           'rtsdi_statistics_mask', 'nrdma_reserved_control',
-           'rdma_mode', 'N10vlan_frame4DOLLAR_37E',
+           'N8dma_desc4DOT_23E', 'rss_ind_table_14', 'TG3_FEAT_ASF',
+           'rss_ind_table_16', 'sbdi_status', 'N8rlp_regs4DOT_75E',
+           'sbds_regs', 'wdma_status', 'rdma_hold_d_dmad_debug',
+           'asf_heartbeat_timer',
+           'N20emac_rx_rule_control4DOT_344DOT_35E', 'asf_poll_timer',
+           'tsc_pre_dma_cmd_xchng', 'u64', 'nrdma_bd_status_debug',
+           'CAP_MSIX', 'READ_LOCAL_CMD', 'otp_control',
+           'receive_list_placement_status', 'rtsdi_statistics_mask',
+           'rdma_tcp_checksum_debug', 'nrdma_reserved_control',
+           'rdma_mode', 'rdma_packet_request_debug_3',
            'cpmu_gphy_control_status', 'rdma_packet_request_debug_1',
            'bufman_hardware_diagnostic_3',
            'bufman_hardware_diagnostic_2',
            'bufman_hardware_diagnostic_1',
-           'N23cpu_last_branch_address4DOLLAR_194DOLLAR_20E',
-           'N45receive_list_placement_statistics_enable_mask4DOLLAR_73E',
-           'receive_mac_rules_configuration',
-           'N19transmit_mac_status4DOLLAR_264DOLLAR_27E',
-           'sbds_status', 'bdrdma_pcie_dma_req_len_dbg',
-           'pcie_dl_attn', 'bdrdma_rstate2_dbg', 'pcie_dl_test',
-           'vlan_frame', 'RBD_RULE_OP_LESS', 'rbd_flags', 'ofs_7c',
-           'cpmu_override', 'pci_pm_cap', 'dma_desc', 'emac_status',
-           'N18receive_mac_status4DOLLAR_284DOLLAR_29E',
-           'pcie_pl_regs', 'rdi_mode', 'gencomm',
-           'N16cfg_port_pci_sid4DOLLAR_11E', 'grc_misc_control',
-           'HIDE_FUNC_ACK', 'N8pci_regs4DOLLAR_61E',
+           'receive_mac_rules_configuration', 'sbds_status',
+           'bdrdma_pcie_dma_req_len_dbg', 'pcie_dl_attn',
+           'bdrdma_rstate2_dbg', 'pcie_dl_test', 'vlan_frame',
+           'N12nvram_header4DOT_55E', 'rbd_value_mask', 'rbd_flags',
+           'ofs_7c', 'cpmu_override', 'pci_pm_cap', 'dma_desc',
+           'emac_status', 'N12status_block4DOT_77E', 'pcie_pl_regs',
+           'rdi_mode', 'gencomm', 'grc_misc_control', 'HIDE_FUNC_ACK',
+           'rdma_mbuf_address_debug', 'N12status_block4DOT_78E',
+           'rtsdi_statistics_increment_mask', 'N9ftq_reset4DOT_39E',
            'nrdma_corruption_enable_control', 'emac_event_enable',
-           'cr_port_regs', 'rbd_ex', 'rdma_packet_request_debug_3',
-           'bufman_status', 'rdma_packet_request_debug_2',
-           'pci_pm_ctrl_status', 'lpmb_regs', 'SEND_MSI_ACK',
-           'RBD_RULE_OP_NOTEQUAL', 'rdma_fifo2_debug',
-           'nrdma_fifo1_debug', 'TG3_IMAGE_TYPE',
-           'PCIE_RETRY_BUFFER_DUMP_CMD', 'CAP_CTRL_CMD',
-           'bufman_mbuf_pool_bar', 'cpu_mode', 'pci_state',
-           'N14ftq_write_peek4DOLLAR_43E', 'N8dma_desc4DOLLAR_21E',
-           'nrdma_fifo2_debug', 'sdi_statistics_control',
-           'rbd_value_mask', 'dmac_mode',
-           'N14cpu_breakpoint4DOLLAR_174DOLLAR_18E', 'READ_NVRAM_ACK',
-           'sbd', 'sdi_statistics_increment_mask', 'otp_regs',
-           'PME_ASSERT_CMD', 'N9emac_regs4DOLLAR_36E', 'u8',
-           'N12status_block4DOLLAR_80E', 'bdrdma_mode',
-           'mb_rbd_standard_producer',
-           'N9dmac_mode4DOLLAR_224DOLLAR_23E',
+           'cr_port_regs', 'rbd_ex', 'bufman_status',
+           'rdma_packet_request_debug_2', 'pci_pm_ctrl_status',
+           'lpmb_regs', 'SEND_MSI_ACK', 'RBD_RULE_OP_NOTEQUAL',
+           'rdma_fifo2_debug', 'nrdma_fifo1_debug', 'TG3_IMAGE_TYPE',
+           'PCIE_RETRY_BUFFER_DUMP_CMD', 'uint_fast16_t',
+           'uint_fast32_t', 'CAP_CTRL_CMD', 'bufman_mbuf_pool_bar',
+           'cpu_mode', 'pci_state', 'nrdma_fifo2_debug',
+           'sdi_statistics_control',
+           'N13grc_cpu_event4DOT_454DOT_46E', 'dmac_mode',
+           'N14dmar_dev_scope3DOT_0E', 'READ_NVRAM_ACK', 'sbd',
+           'otp_regs', 'PME_ASSERT_CMD', 'nvram_status',
+           'bdrdma_mode', 'N13pcie_alt_regs4DOT_56E',
            'receive_list_placement_statistics_enable_mask',
-           'grc_seeprom_addr', 'N9ftq_reset4DOLLAR_394DOLLAR_40E',
-           'xsdt', 'N12status_block4DOLLAR_78E',
+           'grc_seeprom_addr', 'N10pci_status4DOT_574DOT_58E', 'xsdt',
+           'N19ftq_enqueue_dequeue4DOT_41E',
            'receive_list_placement_mode', 'otp_addr', 'hc_mode',
            'CLOAK_DIS_CMD', 'nrdma_mode',
            'rdma_length_and_address_index_debug', 'UNKNOWN_CMD',
            'RBD_RULE_HDR_FRAME', 'CAP_CTRL_ACK', 'bdrdma_fifo1_dbg',
-           'sdi_regs', 'dmar_rhsa', 'N8pci_regs4DOLLAR_64E',
-           'sbdc_mode', 'N14ftq_write_peek4DOLLAR_434DOLLAR_44E',
-           'cpu_breakpoint', 'N10pci_status4DOLLAR_56E',
+           'N18receive_mac_status4DOT_28E', 'sdi_regs', 'dmar_rhsa',
+           'sbdc_mode', 'cpu_breakpoint',
+           'N28grc_fastboot_program_counter4DOT_49E',
            'rdma_rstates_debug', 'mb_rbd_rr2_consumer',
            'WRITE_LOCAL_CMD', 'nrdma_flow_reserved_control',
            'nrdma_pcie_debug_status', 'rdma_regs',
-           'grc_fastboot_program_counter', 'N9ftq_reset4DOLLAR_39E',
-           'N13pcie_alt_regs4DOLLAR_66E',
-           'N10pci_status4DOLLAR_564DOLLAR_57E',
+           'grc_fastboot_program_counter', 'N11bufman_mode3DOT_7E',
+           'rdma_ip_tcp_header_checksum_debug',
            'cpmu_pcie_idle_det_debounce_ctrl', 'cfg_port_pci_class',
-           'SEND_MSI_CMD', 'PCIE_RETRY_BUFFER_DUMP_ACK',
-           'asf_retransmission_timer', 'TX_STD_ENQ_ERR',
+           'SEND_MSI_CMD', 'PCIE_RETRY_BUFFER_DUMP_ACK', 'int16_t',
+           'uint64_t', 'asf_retransmission_timer', 'TX_STD_ENQ_ERR',
            'rss_ind_table_9', 'rss_ind_table_8', 'rss_ind_table_5',
            'rss_ind_table_4', 'rss_ind_table_7', 'rss_ind_table_6',
            'bufman_dma_mbuf_low_watermark',
-           'N15cfg_port_pci_id3DOLLAR_9E', 'rss_ind_table_3',
-           'rss_ind_table_2', 'rdma_misc_ctrl_3',
-           'bdrdma_req_ptr_dbg', 'sbdi_mode', 'tsc_vlan_tag',
-           'cfg_port_pci_sid', 'nvram_software_arbitration',
-           'pci_command', 'RBD_RULE_HDR_UDP',
-           'cpu_last_branch_address', 'N12nvram_header4DOLLAR_55E',
-           'bufman_mbuf_pool_length', 'N9rbdc_mode4DOLLAR_67E',
+           'N20grc_cpu_event_enable4DOT_47E', 'rss_ind_table_3',
+           'rss_ind_table_2', 'bdrdma_req_ptr_dbg', 'sbdi_mode',
+           'N9rbd_flags3DOT_3E', 'tsc_vlan_tag', 'cfg_port_pci_sid',
+           'nvram_software_arbitration', 'pci_command',
+           'RBD_RULE_HDR_UDP', 'cpu_last_branch_address',
+           'N10cpu_status4DOT_15E', 'bufman_mbuf_pool_length',
            'bdrdma_addr_idx_dbg', 'dmac_regs', 'bufman_mode',
            'rbdi_mode', 'receive_mac_status', 'grc_cpu_event',
-           'emac_mii_communication', 'cfg_port_pci_id',
-           'rdma_pcie_mbuf_byte_count_debug',
-           'N14dmar_dev_scope3DOLLAR_0E', 'pci_misc_host_ctrl',
-           'pci_device_id',
-           'N16cfg_port_pci_sid4DOLLAR_114DOLLAR_12E',
-           'RBD_RULE_OP_EQUAL', 'emac_mii_status',
+           'emac_mii_communication',
+           'N19transmit_mac_status4DOT_264DOT_27E',
+           'rdma_pcie_mbuf_byte_count_debug', 'pci_misc_host_ctrl',
+           'pci_device_id', 'N9dmac_mode4DOT_21E',
+           'N15rbd_error_flags3DOT_5E', 'N12status_block4DOT_80E',
+           'RBD_RULE_OP_EQUAL', 'rtsdi_mode', 'emac_mii_status',
            'cpmu_padring_control', 'asf_smbus_output',
-           'sdi_statistics_mask',
-           'N20emac_rx_rule_control4DOLLAR_344DOLLAR_35E',
-           'grc_misc_local_control', 'N12status_block4DOLLAR_77E',
-           'READ_DMA_CMD', 'N9rbd_flags3DOLLAR_3E',
+           'sdi_statistics_mask', 'N19transmit_mac_status4DOT_26E',
+           'grc_misc_local_control', 'READ_DMA_CMD',
+           'N10pci_status4DOT_57E', 'N8pci_regs4DOT_64E',
            'rdma_pcie_read_request_address_debug', 'hc_status',
-           'N8pci_regs4DOLLAR_60E', 'ma_regs', 'ftq_queue_regs',
+           'N10vlan_frame4DOT_374DOT_38E',
+           'N13emac_mac_addr4DOT_304DOT_31E',
+           'N15cfg_port_pci_id3DOT_9E', 'ma_regs', 'ftq_queue_regs',
            'pcie_dl_status', 'cpmu_pcie_status', 'grc_mode',
-           'N10cpu_status4DOLLAR_15E', 'rdi_regs', 'PING_CMD',
-           'N13emac_mac_addr4DOLLAR_32E', 'mb_rbd_rr3_consumer',
-           'rtsdi_status', 'otp_soft_reset', 'rbdi_regs',
-           'mb_sbd_host_producer', 'ERR_REPLY', 'nrdma_regs',
-           'cpmu_energy_det_debounce_ctrl',
-           'N19transmit_mac_status4DOLLAR_26E',
-           'N15cfg_port_pci_id3DOLLAR_94DOLLAR_10E',
-           'WRITE_NVRAM_CMD', 'sbds_mode', 'grc_misc_config',
-           'grc_power_management_debug', 'pcie_dl_pm_threshold',
-           'pcie_dl_replay', 'N13emac_mac_addr4DOLLAR_304DOLLAR_31E',
+           'uintptr_t', 'rdi_regs', 'PING_CMD', 'intptr_t',
+           'mb_rbd_rr3_consumer', 'int_fast8_t', 'otp_soft_reset',
+           'RBD_RULE_OP_LESS', 'rbdi_regs', 'mb_sbd_host_producer',
+           'ERR_REPLY', 'nrdma_regs', 'cpmu_energy_det_debounce_ctrl',
+           'WRITE_NVRAM_CMD',
+           'rdma_programmable_ipv6_extension_header',
+           'grc_misc_config', 'grc_power_management_debug',
+           'pcie_dl_pm_threshold', 'pcie_dl_replay',
            'pcie_tl_wdma_len_byte_en_req_diag', 'pcie_dl_lo_regs',
-           'frame', 'nvram_write1',
-           'rdma_ip_tcp_header_checksum_debug',
-           'N13grc_cpu_event4DOLLAR_45E',
+           'frame', 'nvram_write1', 'mb_interrupt',
+           'N13emac_mac_addr4DOT_30E',
+           'N15cfg_port_pci_id3DOT_94DOT_10E',
            'pcie_tl_transaction_config', 'cpmu_status',
            'pci_msi_cap_hdr', 'cpmu_core_idle_det_debounce_ctrl',
            'rdma_rstate2_debug', 'dmar_drhd', 'cpmu_mutex',
-           'N13rcb_registers4DOLLAR_72E', 'N11bufman_mode3DOLLAR_7E',
-           'dmar_andd', 'cpmu_chip_id', 'mailbox', 'CMD_REPLY',
+           'rtsdi_status', 'dmar_andd', 'cpmu_chip_id',
+           'N18cfg_port_pci_class4DOT_13E', 'mailbox',
+           'N9sbd_flags3DOT_13DOT_2E', 'N13grc_cpu_event4DOT_45E',
            'rbd_rule', 'bdrdma_regs', 'CLOAK_EN_ACK',
-           'cfg_port_bar_ctrl', 'N18receive_mac_status4DOLLAR_28E',
-           'asf_smbus_input', 'nvram_regs', 'rtsdi_regs', 'otp_mode',
+           'cfg_port_bar_ctrl', 'asf_smbus_input', 'nvram_regs',
+           'rtsdi_regs', 'otp_mode',
            'sbds_local_nic_send_bd_consumer_idx', 'nrdma_tce_debug1',
-           'nrdma_tce_debug3', 'nrdma_tce_debug2', 'grc_bond_id',
-           'receive_list_placement_statistics_increment_mask',
-           'N7ma_mode4DOLLAR_51E',
-           'N20grc_cpu_event_enable4DOLLAR_474DOLLAR_48E',
-           'ftq_enqueue_dequeue', 'asf_regs',
-           'N23cpu_last_branch_address4DOLLAR_19E',
+           'CMD_REPLY', 'nrdma_tce_debug3', 'nrdma_tce_debug2',
+           'uint16_t', 'grc_bond_id', 'ftq_write_peek',
+           'ftq_enqueue_dequeue', 'int32_t',
+           'N10cpu_status4DOT_154DOT_16E', 'asf_regs',
            'pci_class_code_rev_id',
-           'N10vlan_frame4DOLLAR_374DOLLAR_38E', 'rbdc_mode',
-           'pcie_dl_seq_no', 'emac_rx_rule_control', 'rcb_flags',
-           'rbdi_status', 'N16emac_led_control4DOLLAR_244DOLLAR_25E',
-           'N28grc_fastboot_program_counter4DOLLAR_494DOLLAR_50E',
-           'u16', 'nvram_access', 'rss_ind_table_1', 'sdi_mode',
-           'rdc_mode', 'emac_mode', 'cpu_event_mask',
-           'N12status_block4DOLLAR_81E', 'pcie_dl_regs',
-           'rdma_status', 'cfg_port_cap_ctrl', 'bdrdma_bd_status_dbg',
+           'N18receive_mac_status4DOT_284DOT_29E', 'uint_least16_t',
+           'rbdc_mode', 'pcie_dl_seq_no', 'emac_rx_rule_control',
+           'rcb_flags', 'rbdi_status',
+           'N14ftq_write_peek4DOT_434DOT_44E',
+           'bufman_risc_mbuf_cluster_allocation_request', 'u16',
+           'msi_regs',
+           'receive_list_placement_statistics_increment_mask',
+           'N8pci_regs4DOT_66E', 'N9ftq_reset4DOT_394DOT_40E',
+           'rss_ind_table_1', 'sdi_mode', 'rdc_mode', 'emac_mode',
+           'cpu_event_mask', 'pcie_dl_regs', 'rdma_status',
+           'cfg_port_cap_ctrl', 'bdrdma_bd_status_dbg',
            'mbuf_frame_desc', 'transmit_mac_status', 'grc_secfg_2',
-           'grc_secfg_1', 'ftq_regs', 'N14cpu_breakpoint4DOLLAR_17E',
-           'N16emac_led_control4DOLLAR_24E', 'rbd',
-           'N9rbdi_mode4DOLLAR_68E', 'nrdma_length_and_address_debug',
-           'sbds_regs', 'grc_mdi_ctrl', 'sdi_status',
+           'grc_secfg_1', 'ftq_regs', 'rbd', 'uintmax_t',
+           'N45receive_list_placement_statistics_enable_mask4DOT_73E',
+           'nrdma_length_and_address_debug', 'N9rbdc_mode4DOT_67E',
+           'int_fast16_t', 'N8rdc_mode4DOT_704DOT_71E',
+           'grc_mdi_ctrl', 'N9rbd_flags3DOT_33DOT_4E', 'sdi_status',
            'pcie_dl_retry_buffer_ptr', 'cpmu_dll_lock_timer',
-           'rtsdi_statistics_control', 'rdma_mbuf_address_debug',
+           'rtsdi_statistics_control', 'N4mbuf4DOT_53E',
            'pcie_tl_slave_req_len_type_diag', 'receive_mac_mode',
            'cpmu_ram_control', 'emac_mii_mode', 'rbdc_regs',
-           'N18cfg_port_pci_class4DOLLAR_13E',
-           'nrdma_pcie_dma_read_req_debug', 'asf_watchdog_timer',
-           'N8pci_regs4DOLLAR_63E', 'N8pci_regs4DOLLAR_62E',
-           'N13grc_cpu_event4DOLLAR_454DOLLAR_46E',
-           'emac_regulator_voltage_control', 'pci_status',
-           'mb_sbd_nic_producer', 'rcb_registers',
-           'rdma_programmable_ipv6_extension_header',
-           'pcie_dl_attn_mask', 'rbdc_status', 'READ_LOCAL_REPLY',
-           'ma_mode', 'N13emac_mac_addr4DOLLAR_324DOLLAR_33E',
-           'nrdma_mbuf_byte_count_debug', 'rbdc_rbd_pi',
-           'bdrdma_len_dbg',
-           'N19ftq_enqueue_dequeue4DOLLAR_414DOLLAR_42E',
-           'emac_autopolling_status', 'PING_REPLY',
-           'N9rbd_flags3DOLLAR_33DOLLAR_4E',
-           'pcie_tl_rdma_len_req_diag', 'N8rlp_regs4DOLLAR_75E',
-           'rdma_fifo1_debug', 'nvram_dir_item', 'bdrdma_status',
-           'pcie_tl_tlp_bdf', 'nrdma_hold_d_dmad_debug', 'cpu_regs',
-           'N9rbdi_mode4DOLLAR_684DOLLAR_69E', 'bdrdma_rstates_dbg',
-           'N12nvram_header4DOLLAR_54E', 'N4mbuf4DOLLAR_53E',
-           'cpmu_regs', 'msi_mode', 'hc_flow_attention',
-           'rdma_pseudo_checksum_debug', 'bdrdma_rsvrd_ctrl',
-           'PME_ASSERT_ACK', 'READ_DMA_REPLY', 'emac_mac_addr',
-           'mbuf_hdr', 'bufman_receive_flow_threshold',
-           'WRITE_LOCAL_ACK', 'transmit_mac_lengths',
-           'bdrdma_pcie_dbg_status',
-           'N11bufman_mode3DOLLAR_73DOLLAR_8E', 'ftq_reset',
+           'N8pci_regs4DOT_61E', 'nrdma_pcie_dma_read_req_debug',
+           'asf_watchdog_timer', 'N9emac_regs4DOT_36E',
+           'uint_fast64_t', 'rdma_misc_ctrl_3', 'uint32_t',
+           'nrdma_rstates_debug', 'emac_regulator_voltage_control',
+           'pci_status', 'mb_sbd_nic_producer',
+           'N20emac_rx_rule_control4DOT_34E', 'rcb_registers',
+           'N9sbd_flags3DOT_1E', 'pcie_dl_attn_mask', 'rbdc_status',
+           'READ_LOCAL_REPLY', 'ma_mode', 'nvram_header',
+           'N7ma_mode4DOT_51E', 'nrdma_mbuf_byte_count_debug',
+           'rbdc_rbd_pi', 'bdrdma_len_dbg', 'emac_autopolling_status',
+           'int_least32_t', 'PING_REPLY', 'pcie_tl_rdma_len_req_diag',
+           'N16emac_led_control4DOT_24E', 'rdma_fifo1_debug',
+           'nvram_dir_item', 'bdrdma_status', 'pcie_tl_tlp_bdf',
+           'nrdma_hold_d_dmad_debug', 'cpu_regs',
+           'N45receive_list_placement_statistics_enable_mask4DOT_734DOT_74E',
+           'bdrdma_rstates_dbg',
+           'N19ftq_enqueue_dequeue4DOT_414DOT_42E', 'cpmu_regs',
+           'msi_mode', 'hc_flow_attention',
+           'N14cpu_breakpoint4DOT_17E',
+           'N16cfg_port_pci_sid4DOT_114DOT_12E', 'intmax_t',
+           'bdrdma_rsvrd_ctrl', 'PME_ASSERT_ACK', 'READ_DMA_REPLY',
+           'tsc_dma_flags', 'CAP_MSI',
+           'N28grc_fastboot_program_counter4DOT_494DOT_50E',
+           'mbuf_hdr', 'int_least8_t',
+           'bufman_receive_flow_threshold', 'WRITE_LOCAL_ACK',
+           'N15rbd_error_flags3DOT_53DOT_6E',
+           'bdrdma_pcie_dbg_status', 'int_least16_t', 'ftq_reset',
            'asf_poll_legacy_timer', 'CAP_VPD', 'msi_status',
-           'grc_cpu_event_enable', 'N12status_block4DOLLAR_76E',
-           'pci_regs', 'bdrdma_len_and_addr_idx_dbg', 'pcie_alt_regs',
-           'TG3_MAGIC', 'mb_rbd_rr1_consumer',
-           'N28grc_fastboot_program_counter4DOLLAR_49E', 'cpu_status',
-           'bdrdma_hold_d_dmad_dbg',
-           'rtsdi_statistics_increment_mask', 'pcie_tl_regs',
-           'nrdma_post_proc_pkt_req_cnt',
-           'N20emac_rx_rule_control4DOLLAR_34E',
-           'TG3_IMAGE_TYPE_ASF_INIT', 'N9dmac_mode4DOLLAR_22E',
-           'nvram_status', 'tsc_dma_flags', 'rdma_bd_status_debug',
-           'rcb', 'bufman_risc_mbuf_cluster_allocation_request',
-           'HIDE_FUNC_CMD', 'receive_list_placement_configuration',
-           'mac_stats_regs', 'nvram_auto_sense_status',
-           'CLOAK_EN_CMD', 'dmar_tbl_hdr', 'grc_cpu_semaphore',
-           'CRC32_POLYNOMIAL', 'pcie_dl_lo_ftsmax', 'mb_interrupt',
-           'pci_dma_rw_ctrl', 'N11pci_command4DOLLAR_58E',
-           'MA_ALL_TRAPS', 'rdi_status', 'msi_regs', 'rlp_regs',
-           'sbdc_debug', 'pcie_tl_tlp_ctrl', 'nvram_header',
+           'grc_cpu_event_enable', 'pci_regs',
+           'N18cfg_port_pci_class4DOT_134DOT_14E',
+           'N8pci_regs4DOT_65E', 'bdrdma_len_and_addr_idx_dbg',
+           'pcie_alt_regs', 'N8pci_regs4DOT_62E',
+           'mb_rbd_rr1_consumer', 'cpu_status', 'uint_least64_t',
+           'bdrdma_hold_d_dmad_dbg', 'N11bufman_mode3DOT_73DOT_8E',
+           'pcie_tl_regs', 'nrdma_post_proc_pkt_req_cnt',
+           'N8rdc_mode4DOT_70E', 'TG3_IMAGE_TYPE_ASF_INIT',
+           'bdrdma_fifo2_dbg', 'sdi_statistics_increment_mask', 'u8',
+           'cfg_port_pci_id', 'rdma_bd_status_debug', 'rcb',
+           'HIDE_FUNC_CMD', 'rdma_pseudo_checksum_debug',
+           'receive_list_placement_configuration', 'mac_stats_regs',
+           'nvram_auto_sense_status', 'int8_t', 'CLOAK_EN_CMD',
+           'dmar_tbl_hdr', 'grc_cpu_semaphore', 'CRC32_POLYNOMIAL',
+           'pcie_dl_lo_ftsmax', 'N23cpu_last_branch_address4DOT_19E',
+           'pci_dma_rw_ctrl', 'MA_ALL_TRAPS', 'rdi_status',
+           'nvram_access', 'rlp_regs', 'sbdc_debug',
+           'known_mailboxes',
+           'N23cpu_last_branch_address4DOT_194DOT_20E', 'int64_t',
            'asf_control', 'rdma_misc_ctrl_1', 'rdma_misc_ctrl_2',
            'rsdp2_t', 'mbuf', 'pcie_dl_packet_bist', 'grc_regs',
-           'N8rdc_mode4DOLLAR_704DOLLAR_71E', 'rsdp_t',
-           'rbd_error_flags', 'CAP_MSI',
+           'rsdp_t', 'rbd_error_flags', 'int_fast64_t',
            'rbdi_ring_replenish_threshold', 'CLOAK_DIS_ACK',
-           'N18cfg_port_pci_class4DOLLAR_134DOLLAR_14E',
-           'RBD_RULE_HDR_IP', 'sdc_regs', 'cpmu_control',
-           'rss_ind_table_16', 'tcp_seg_ctrl_regs',
-           'emac_led_control', 'bdrdma_fifo2_dbg',
+           'emac_mac_addr', 'RBD_RULE_HDR_IP', 'sdc_regs',
+           'N12status_block4DOT_76E', 'cpmu_control', 'TG3_MAGIC',
+           'tcp_seg_ctrl_regs', 'N7ma_mode4DOT_514DOT_52E',
+           'emac_led_control', 'N16cfg_port_pci_sid4DOT_11E',
            'asf_smbus_driver_select', 'TX_STD_ENQ_CMD',
            'grc_clock_ctrl']
