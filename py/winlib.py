@@ -25,6 +25,10 @@ ULONG_PTR = c_uintptr
 PULONG_PTR = POINTER(ULONG_PTR)
 SIZE_T = ULONG_PTR
 
+class COORD(Structure):
+    _fields_ = [("X", SHORT),
+                ("Y", SHORT)]
+
 class GUID(Structure):
     _fields_ = [("Data1", c_ulong),
                 ("Data2", c_ushort),
@@ -41,6 +45,48 @@ class GUID(Structure):
        return ret
 
 
+class __KEY_EVENT_RECORD__uChar(Union):
+    pass
+
+class KEY_EVENT_RECORD(Structure):
+    pass
+
+__KEY_EVENT_RECORD__uChar._fields_ = [("UnicodeChar", WCHAR),
+                                  ("AsciiChar", WCHAR)]
+
+KEY_EVENT_RECORD._fields_ = [("bKeyDown", BOOL),
+                             ("wRepeatCount", WORD),
+                             ("wVirtualKeyCode", WORD),
+                             ("wVirtualScanCode", WORD),
+                             ("uChar", __KEY_EVENT_RECORD__uChar),
+                             ("dwControlKeyState", DWORD)]
+
+class MOUSE_EVENT_RECORD(Structure):
+    _fields_ = [("dwMousePosition", COORD),
+                ("dwButtonState", DWORD),
+                ("dwControlKeyState", DWORD),
+                ("dwEventFlags", DWORD)]
+class WINDOW_BUFFER_SIZE_RECORD(Structure):
+    _fields_ = [("dwSize", COORD)]
+class MENU_EVENT_RECORD(Structure):
+    _fields_ = [("dwCommandId", UINT)]
+class FOCUS_EVENT_RECORD(Structure):
+    _fields_ = [("bSetFocus", BOOL)]
+
+class __INPUT_RECORD__event(Union):
+    pass
+
+class INPUT_RECORD(Structure):
+    pass
+
+__INPUT_RECORD__event._fields_ = [("KeyEvent", KEY_EVENT_RECORD),
+               ("MouseEvent", MOUSE_EVENT_RECORD),
+               ("WindowBufferSizeEvent", WINDOW_BUFFER_SIZE_RECORD),
+               ("MenuEvent", MENU_EVENT_RECORD),
+               ("FocusEvent", FOCUS_EVENT_RECORD)]
+INPUT_RECORD._fields_ = [("EventType", WORD),
+                ("Event", __INPUT_RECORD__event)]
+                         
 class LSA_UNICODE_STRING(Structure):
     _fields_ = [("Length", USHORT),
                 ("MaximumLength", USHORT),
@@ -199,6 +245,8 @@ WAIT_FAILED = 0xffffffff
 INFINITE = 0xffffffff
 ERROR_IO_PENDING = 997
 ERROR_IO_INCOMPLETE = 996
+STD_INPUT_HANDLE = DWORD(-10)
+KEY_EVENT = 1
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
@@ -236,6 +284,9 @@ fun_prototypes = [
     (kernel32, "SetEvent", [HANDLE], BOOL),
     (kernel32, "GetOverlappedResult", [HANDLE, POINTER(OVERLAPPED), POINTER(DWORD), BOOL], BOOL),
     (kernel32, "RtlCopyMemory", [LPVOID, LPVOID, SIZE_T], None),
+    (kernel32, "GetStdHandle", [DWORD], HANDLE),
+    (kernel32, "ReadConsoleInputA", [HANDLE, POINTER(INPUT_RECORD), DWORD, POINTER(DWORD)], BOOL),
+    (kernel32, "GetNumberOfConsoleInputEvents", [HANDLE, POINTER(DWORD)], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -422,11 +473,8 @@ class _async(object):
         return False
 
     def reset(self, resubmit = True):
-        if not self.check():
-            if not CancelIoEx(self.handle, pointer(self.req)):
-                raise WinError()
-        if not ResetEvent(self.req.hEvent):
-            raise WinError()
+        CancelIoEx(self.handle, pointer(self.req))
+        ResetEvent(self.req.hEvent)
         self.req.Internal = 0
         self.req.InternalHigh = 0
         self.req.Pointer = None
