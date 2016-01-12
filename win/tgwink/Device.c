@@ -346,12 +346,13 @@ void tgwinkFileCreate(
 	_In_ WDFFILEOBJECT FileObject
 	)
 {
-	UNREFERENCED_PARAMETER(Request);
 	UNREFERENCED_PARAMETER(FileObject);
 	PDEVICE_CONTEXT ctx = DeviceGetContext(Device);
 
 	if (1 == InterlockedIncrement(&ctx->holders))
 		WdfInterruptEnable(ctx->hIrq);
+
+	WdfRequestComplete(Request, STATUS_SUCCESS);
 }
 
 void tgwinkFileClose(
