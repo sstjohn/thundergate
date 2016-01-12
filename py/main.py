@@ -65,6 +65,10 @@ if __name__ == "__main__":
         parser.add_argument("device", help="BDF of tg3 PCI device")
         parser.add_argument("-u", "--uio", help="use uio pci generic interface", action="store_true")
         parser.add_argument("-v", "--vfio", help="use vfio interface", action="store_true")
+    elif sys_name == "Windows":
+        parser.add_argument("-p", "--ptvsd", help="enable ptvsd server", action="store_true")
+        parser.add_argument("--ptvsdpass", help="ptvsd server password", default=None)
+        parser.add_argument("--ptvsdwait", help="wait for ptvsd attachment at startup", action="store_true")
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
     parser.add_argument("-s", "--shell", help="ipython cli", action="store_true")
     parser.add_argument("-b", "--backup", help="create eeprom backup", action="store_true", default=False)
@@ -103,12 +107,16 @@ if __name__ == "__main__":
                 raise Exception("device %s currently bound by %s, bind to uio_pci_generic instead")
             dev_interface = UioInterface(dbdf)
     elif sys_name == 'Windows':
-        try:
+        if args.ptvsd:
             import ptvsd
-            ptvsd.enable_attach(secret=None)
-            print "[+] ptvsd server enabled"
-        except:
-            print "[!] ptvsd unavailable"
+            ptvsd.enable_attach(secret=args.ptvsdpass)
+            if args.ptvsdwait:
+                print "[+] waiting for ptvsd client..."
+                ptvsd.wait_for_attach()
+                print "[+] ptvsd client attached!"
+            else:
+                print "[+] ptvsd server enabled"
+
         dev_interface = WinInterface()
 
     if not args.backup:
