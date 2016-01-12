@@ -81,6 +81,8 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <WppMinimalRebuildFromTracking>false</WppMinimalRebuildFromTracking>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4201;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

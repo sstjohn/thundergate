@@ -35,6 +35,8 @@ typedef struct _DEVICE_CONTEXT
 	WDFQUEUE NotificationQueue;
 	WDFWAITLOCK nnLock;
 	BOOLEAN notifyNext;
+	volatile LONG holders;
+	struct grc_regs *grc;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, DeviceGetContext)
@@ -59,5 +61,8 @@ EVT_WDF_INTERRUPT_WORKITEM tgwinkInterruptWerk;
 
 EVT_WDF_INTERRUPT_ENABLE tgwinkUnmaskInterrupts;
 EVT_WDF_INTERRUPT_DISABLE tgwinkMaskInterrupts;
+
+EVT_WDF_DEVICE_FILE_CREATE tgwinkFileCreate;
+EVT_WDF_FILE_CLOSE tgwinkFileClose;
 
 EXTERN_C_END

@@ -18,6 +18,7 @@
 
 #include "driver.h"
 
+
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (PAGE, tgwinkCreateDevice)
 #pragma alloc_text (PAGE, tgwinkPrepareHardware)
@@ -93,6 +94,9 @@ tgwinkPrepareHardware(
 			context->bar[barSeen].busAddr = desc->u.Memory.Start;
 			KdPrint("  bus address: %08x\n", desc->u.Memory.Start);
 
+			if (barSeen == 0)
+				context->grc = (struct grc_regs *)((uintptr_t)context->bar[barSeen].mapAddr + 0x6800);
+
 			barSeen++;
 			break;
 
@@ -159,20 +163,32 @@ tgwinkCreateDevice(
 	PDEVICE_CONTEXT context;
 	UNICODE_STRING pmemDevNam;
 	OBJECT_ATTRIBUTES oAttr;
+	WDF_FILEOBJECT_CONFIG fConfig;
 
 	PAGED_CODE();
+
+	WdfDeviceInitSetIoType(DeviceInit, WdfDeviceIoDirect);
 
 	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpCallbacks);
 	pnpCallbacks.EvtDevicePrepareHardware = tgwinkPrepareHardware;
 	pnpCallbacks.EvtDeviceReleaseHardware = tgwinkReleaseHardware;
 	WdfDeviceInitSetPnpPowerEventCallbacks(DeviceInit, &pnpCallbacks);
 
-	WdfDeviceInitSetIoType(DeviceInit, WdfDeviceIoDirect);
-
+	WDF_FILEOBJECT_CONFIG_INIT(
+		&fConfig, 
+		tgwinkFileCreate, 
+		tgwinkFileClose, 
+		WDF_NO_EVENT_CALLBACK
+	);
+	fConfig.FileObjectClass = WdfFileObjectNotRequired;
+	WDF_OBJECT_ATTRIBUTES_INIT(&wdfAttr);
+	wdfAttr.SynchronizationScope = WdfSynchronizationScopeNone;
+	wdfAttr.ExecutionLevel = WdfExecutionLevelPassive;
+	
+	
 	WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&wdfAttr, DEVICE_CONTEXT);
 	wdfAttr.SynchronizationScope = WdfSynchronizationScopeDevice;
 	wdfAttr.EvtCleanupCallback = tgwinkDeviceContextCleanup;
-
 	status = WdfDeviceCreate(&DeviceInit, &wdfAttr, &device);
 
 	if (!NT_SUCCESS(status)) {
@@ -321,4 +337,43 @@ tgwinkUnmaskInterrupts(
 	ctx->busInterface.SetBusData(ctx->busInterface.Context, PCI_WHICHSPACE_CONFIG, &val, 0x68, 4);
 
 	return STATUS_SUCCESS;
+}
+
+void tgwinkFileCreate(
+	_In_ WDFDEVICE     Device,
+	_In_ WDFREQUEST    Request,
+	_In_ WDFFILEOBJECT FileObject
+	)
+{
+	UNREFERENCED_PARAMETER(Request);
+	UNREFERENCED_PARAMETER(FileObject);
+	PDEVICE_CONTEXT ctx = DeviceGetContext(Device);
+
+	if (1 == InterlockedIncrement(&ctx->holders))
+		WdfInterruptEnable(ctx->hIrq);
+}
+
+void tgwinkFileClose(
+	_In_ WDFFILEOBJECT FileObject
+	)
+{
+	WDFDEVICE dev = WdfFileObjectGetDevice(FileObject);
+	PDEVICE_CONTEXT ctx = DeviceGetContext(dev);
+
+	if (0 == ctx->holders) {
+		ctx->grc->misc_config.disable_grc_reset_on_pcie_block = 1;
+		ctx->grc->misc_config.gphy_keep_power_during_reset = 1;
+		ctx->grc->misc_config.grc_reset = 1;
+	}
+}
+
+void tgwinkFileCleanup(
+	_In_ WDFFILEOBJECT FileObject
+	)
+{
+	WDFDEVICE dev = WdfFileObjectGetDevice(FileObject);
+	PDEVICE_CONTEXT ctx = DeviceGetContext(dev);	
+
+	if (0 == InterlockedDecrement(&ctx->holders))
+		WdfInterruptDisable(ctx->hIrq);
 }

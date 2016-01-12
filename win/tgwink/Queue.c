@@ -41,7 +41,6 @@ tgwinkQueueInitialize(
     queueConfig.EvtIoStop = tgwinkEvtIoStop;
     queueConfig.EvtIoRead = tgwinkEvtIoRead;
     queueConfig.EvtIoWrite = tgwinkEvtIoWrite;
-	queueConfig.Evt
 
     deviceContext = DeviceGetContext(Device);
 

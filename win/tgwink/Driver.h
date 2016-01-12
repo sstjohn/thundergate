@@ -25,6 +25,9 @@
 #include "device.h"
 #include "queue.h"
 
+#include "utypes.h"
+#include "grc.h"
+
 #undef KdPrint
 #define KdPrint(format, ...) DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, format, __VA_ARGS__)
 
