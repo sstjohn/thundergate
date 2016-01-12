@@ -114,6 +114,7 @@ if __name__ == "__main__":
                 print "[+] waiting for ptvsd client..."
                 ptvsd.wait_for_attach()
                 print "[+] ptvsd client attached!"
+                ptvsd.break_into_debugger()
             else:
                 print "[+] ptvsd server enabled"
 
