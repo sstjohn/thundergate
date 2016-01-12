@@ -103,6 +103,12 @@ if __name__ == "__main__":
                 raise Exception("device %s currently bound by %s, bind to uio_pci_generic instead")
             dev_interface = UioInterface(dbdf)
     elif sys_name == 'Windows':
+        try:
+            import ptvsd
+            ptvsd.enable_attach(secret=None)
+            print "[+] ptvsd server enabled"
+        except:
+            print "[!] ptvsd unavailable"
         dev_interface = WinInterface()
 
     if not args.backup:
