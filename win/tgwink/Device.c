@@ -156,7 +156,7 @@ tgwinkCreateDevice(
 	_Inout_ PWDFDEVICE_INIT DeviceInit
 	)
 {
-	WDF_OBJECT_ATTRIBUTES   wdfAttr;
+	WDF_OBJECT_ATTRIBUTES   wdfAttr, fAttr;
 	WDFDEVICE device;
 	WDF_PNPPOWER_EVENT_CALLBACKS pnpCallbacks;
 	NTSTATUS status;
@@ -181,9 +181,10 @@ tgwinkCreateDevice(
 		WDF_NO_EVENT_CALLBACK
 	);
 	fConfig.FileObjectClass = WdfFileObjectNotRequired;
-	WDF_OBJECT_ATTRIBUTES_INIT(&wdfAttr);
-	wdfAttr.SynchronizationScope = WdfSynchronizationScopeNone;
-	wdfAttr.ExecutionLevel = WdfExecutionLevelPassive;
+	WDF_OBJECT_ATTRIBUTES_INIT(&fAttr);
+	fAttr.SynchronizationScope = WdfSynchronizationScopeNone;
+	fAttr.ExecutionLevel = WdfExecutionLevelPassive;
+	WdfDeviceInitSetFileObjectConfig(DeviceInit, &fConfig, &fAttr);
 	
 	
 	WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&wdfAttr, DEVICE_CONTEXT);
