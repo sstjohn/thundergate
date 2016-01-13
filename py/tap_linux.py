@@ -48,6 +48,10 @@ class TapLinuxInterface(object):
 
     def _wait_for_something(self):
         self.ready, _, _ = select.select(self.read_fds, [], [])
+        if self.dev.interface.eventfd in self.ready:
+            return 0
+        if self.tfd in self.ready:
+            return 1
 
     def _get_serial(self):
         return struct.unpack("L", os.read(self.dev.interface.eventfd, 8))

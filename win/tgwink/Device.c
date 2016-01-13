@@ -180,7 +180,8 @@ tgwinkCreateDevice(
 		tgwinkFileClose, 
 		WDF_NO_EVENT_CALLBACK
 	);
-	fConfig.FileObjectClass = WdfFileObjectNotRequired;
+	fConfig.FileObjectClass = WdfFileObjectWdfCanUseFsContext;
+
 	WDF_OBJECT_ATTRIBUTES_INIT(&fAttr);
 	fAttr.SynchronizationScope = WdfSynchronizationScopeNone;
 	fAttr.ExecutionLevel = WdfExecutionLevelPassive;

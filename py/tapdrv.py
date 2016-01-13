@@ -23,6 +23,7 @@ import os
 import select
 import reutils
 import platform
+import functools
 
 verbose = 1
 sys_name = platform.system()
@@ -45,6 +46,10 @@ from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
+
+def _toggle_verbosity():
+    global verbose
+    verbose = not verbose
 
 class TapDriver(TDInt):
     def __init__(self, dev):
@@ -510,6 +515,8 @@ class TapDriver(TDInt):
     
 
     def _handle_interrupt(self):
+        _ = self._get_serial()
+
         dev = self.dev
         if verbose:
             print "[+] handling interrupt"
@@ -657,16 +664,39 @@ class TapDriver(TDInt):
         self._tx_pi = i
         if verbose:
             print "[+] host sbd pi now %x" % i
+    
+    def _handle_tap(self):
+        pkt, sz = self._get_packet()
+        self._send_b(pkt, sz)
+
+    def _handle_keypress(self, handlers):
+        k = self._get_key()
+        if k in handlers:
+            handlers[k][1]()
+        elif k == '' or k == ' ' or k == None:
+            pass
+        else:
+            print "keypress '%s' unhandled. press 'h' for help."
+
+    def _help(self, handlers):
+        print 
+        for k in handlers:
+            print "%s - %s" % (k, handlers[k][0])
+        print
 
     def run(self):
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
 
+        k_handlers = {'q': ("quit", functools.partial(sys.exit, 0)),
+                      'd': ("link detect", functools.partial(TapDriver._link_detect, self)),
+                      'v': ("toggle verbosity", _toggle_verbosity)}
+
+        k_handlers['h'] = ("help", functools.partial(TapDriver._help, self, k_handlers))
+
+        e_handlers = {0: functools.partial(TapDriver._handle_interrupt, self),
+                      1: functools.partial(TapDriver._handle_tap, self),
+                      2: functools.partial(TapDriver._handle_keypress, self, k_handlers)}
+
         while True:
-            self._wait_for_something()
-            if self._tg_is_ready():
-                serial = self._get_serial()
-                self._handle_interrupt()
-            if self._tap_is_ready():
-                pkt, sz = self._get_packet()
-                self._send_b(pkt, sz)
+            handlers[self._wait_for_something()]()

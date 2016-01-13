@@ -34,14 +34,6 @@ class TapWinInterface(object):
         self._tg_evt.submit()
         return self
     
-    def _tg_is_ready(self):
-        return self._tg_evt.check()
-
-    def _tap_is_ready(self):
-        if not self._connected:
-            return False
-        return self._tap_evt.check()
-
     def __exit__(self):
         self._tap_evt.reset(False)
         self._tg_evt.reset(False)
@@ -50,12 +42,6 @@ class TapWinInterface(object):
         del self._tg_evt
 
         del_tap_if(self.tfd)
-
-    def _conin_is_ready(self):
-        res = WaitForSingleObject(self._hCon, 0)
-        if WAIT_FAILED == res:
-            raise WinError()
-        return (res == 0)
 
     def _get_key(self):
         res = None
@@ -72,25 +58,23 @@ class TapWinInterface(object):
             raise WinError()
 
         if 0 == rr.value:
-            print "[.] no input records available to examine"
+            print "[!] no input records available (??)"
             return ''
 
-        print "[.] examining %d input records" % rr.value
         for i in range(rr.value):
             if ir[i].EventType != KEY_EVENT:
                 continue
             if not ir[i].Event.KeyEvent.bKeyDown:
                 continue
             res = ir[i].Event.KeyEvent.uChar.AsciiChar
-            print "[.] found keydown event for key \"%s\" in input record #%d" % (res, i)
             return res
-        print "[.] found no keydown events"
         return ''
 
     def _wait_for_something(self):
         res = WaitForMultipleObjects(3, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
         if WAIT_FAILED == res:
             raise WinError()
+        return res
 
     def _get_serial(self):
         serial = cast(self._tg_evt.buffer, POINTER(c_uint64)).contents.value

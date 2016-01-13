@@ -464,14 +464,6 @@ class _async(object):
     def submit(self):
         raise NotImplementedError()
 
-    def check(self):
-        res = WaitForSingleObject(self.req.hEvent, 0)
-        if WAIT_FAILED == res:
-            raise WinError()
-        if 0 == res:
-            return True
-        return False
-
     def reset(self, resubmit = True):
         CancelIoEx(self.handle, pointer(self.req))
         ResetEvent(self.req.hEvent)
@@ -488,16 +480,17 @@ class ReadAsync(_async):
         super(ReadAsync, self).__init__(handle, length)
         self.pkt_len = 0
 
-    def check(self):
-        if not self.pkt_len:
+    @property
+    def pkt_len(self):
+        if not self._pkt_len:
             pkt_len = DWORD(0)
             if not GetOverlappedResult(self.handle, pointer(self.req), pointer(pkt_len), False):
                 err = WinError()
                 if err.winerror == ERROR_IO_PENDING or err.winerror == ERROR_IO_INCOMPLETE:
                     return False
                 raise err
-            self.pkt_len = pkt_len.value
-        return True
+            self._pkt_len = pkt_len.value
+        return self._pkt_len
     
     def submit(self):
         pkt_len = DWORD(0)
@@ -509,7 +502,7 @@ class ReadAsync(_async):
         else:
             if not SetEvent(self.req.hEvent):
                 raise WinError()
-            self.pkt_len = pkt_len.value
+            self._pkt_len = pkt_len.value
 
 class IoctlAsync(_async):
     def __init__(self, ioctl, handle, length, indata = None):
