@@ -104,7 +104,8 @@ class TapWinInterface(object):
                     raise err
                 if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
                     raise WinError()
-            print "wrote %d bytes" % o.InternalHigh
+            if self.verbose:
+                print "wrote %d bytes" % o.InternalHigh
         finally:
             CloseHandle(o.hEvent)
 
