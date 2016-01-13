@@ -34,9 +34,8 @@ class TapLinuxInterface(object):
 
     def __enter__(self):
         fd = os.open("/dev/net/tun", os.O_RDWR)
-        self.tap_name = "tap0" #??
-        ifr = struct.pack('16sH', self.tap_name, IFF_TAP | IFF_NO_PI)
-        fcntl.ioctl(fd, TUNSETIFF, ifr)
+        ifr = struct.pack('16sH', "", IFF_TAP | IFF_NO_PI)
+        self.tap_name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
         self.tfd = fd
         self.confd = sys.stdin.fileno()
         self._old_con_settings = termios.tcgetattr(self.confd)
