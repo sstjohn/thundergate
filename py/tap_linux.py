@@ -22,29 +22,32 @@ import os
 import clib as c
 import fcntl
 from tunlib import *
+import tty
+import sys
+import termios
 
 class TapLinuxInterface(object):
     def __init__(self, dev):
         self.dev = dev
         self.mm = dev.interface.mm
+        self.serial = 0
 
     def __enter__(self):
         fd = os.open("/dev/net/tun", os.O_RDWR)
-        ifr = struct.pack('16sH', 'tap0', IFF_TAP | IFF_NO_PI)
+        self.tap_name = "tap0" #??
+        ifr = struct.pack('16sH', self.tap_name, IFF_TAP | IFF_NO_PI)
         fcntl.ioctl(fd, TUNSETIFF, ifr)
         self.tfd = fd
-        self.read_fds = [self.dev.interface.eventfd, self.tfd]
+        self.confd = sys.stdin.fileno()
+        self._old_con_settings = termios.tcgetattr(self.confd)
+        tty.setraw(self.confd)
+        self.read_fds = [self.dev.interface.eventfd, self.tfd, self.confd]
         self.ready = []
         return self
 
     def __exit__(self):
+        termios.tcsetattr(self.confd, termios.TCSADRAIN, self._old_con_settings)
         os.close(self.tfd)
-
-    def _tg_is_ready(self):
-        return (self.dev.interface.eventfd in self.ready) 
-
-    def _tap_is_ready(self):
-        return (self.tfd in self.ready)
 
     def _wait_for_something(self):
         self.ready, _, _ = select.select(self.read_fds, [], [])
@@ -52,17 +55,33 @@ class TapLinuxInterface(object):
             return 0
         if self.tfd in self.ready:
             return 1
+        if self.confd in self.ready:
+            return 2
 
     def _get_serial(self):
-        return struct.unpack("L", os.read(self.dev.interface.eventfd, 8))
+        self.serial += struct.unpack("L", os.read(self.dev.interface.eventfd, 8))
+        return self.serial
 
     def _get_packet(self):
         b = self.mm.alloc(0x800)
         l = c.read(self.tfd, b, 0x800)
         return (b, l)
 
+    def _get_key(self):
+        return sys.stdin.read(1)
+
     def _write_pkt(self, pkt, length):
         os.write(self.tfd, pkt)
 
     def _set_tapdev_status(self, connected):
-        pass
+       ifr = struct.pack('16sH', self.tap_name, 0)
+       flags = struct.unpack('16sH', fcntl.ioctl(self.tfd, SIOCGIFFLAGS, ifr))[1]
+       
+       if connected:
+           flags |= IFF_UP
+       else:
+           flags &= ~IFF_UP
+
+       ifr = struct.pack('16sH', self.tap_name, flags)
+       fcntl.ioctl(self.tfd, SIOCSIFFLAGS, ifreq)
+            
