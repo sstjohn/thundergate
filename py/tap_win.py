@@ -127,6 +127,6 @@ class TapWinInterface(object):
                 self._tap_evt.submit()
             else:
                 self._tap_evt.reset(False)
-            self.connected = connected
+            self._connected = connected
         finally:
             CloseHandle(o.hEvent)

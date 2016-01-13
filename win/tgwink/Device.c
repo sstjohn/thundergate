@@ -200,6 +200,7 @@ tgwinkCreateDevice(
 
 	context = DeviceGetContext(device);
 	context->hIrq = NULL;
+	context->holders = 0;
 
 	RtlInitUnicodeString(&pmemDevNam, L"\\Device\\PhysicalMemory");
 	InitializeObjectAttributes(&oAttr, &pmemDevNam, OBJ_CASE_INSENSITIVE, NULL, NULL);
@@ -281,7 +282,7 @@ tgwinkInterruptWerk(
 			if (!dCtx->notifyNext) {
 				KdPrint("No one was waiting, setting notifyNext.\n");
 				dCtx->notifyNext = 1;
-				WdfInterruptDisable(Interrupt);
+				//WdfInterruptDisable(Interrupt);
 			} else {
 				KdPrint("No one was waiting and notifyNext is already set.\n");
 			}
@@ -351,7 +352,8 @@ void tgwinkFileCreate(
 	PDEVICE_CONTEXT ctx = DeviceGetContext(Device);
 
 	if (1 == InterlockedIncrement(&ctx->holders))
-		WdfInterruptEnable(ctx->hIrq);
+		//WdfInterruptEnable(ctx->hIrq);
+		;
 
 	WdfRequestComplete(Request, STATUS_SUCCESS);
 }
@@ -364,9 +366,9 @@ void tgwinkFileClose(
 	PDEVICE_CONTEXT ctx = DeviceGetContext(dev);
 
 	if (0 == ctx->holders) {
-		ctx->grc->misc_config.disable_grc_reset_on_pcie_block = 1;
-		ctx->grc->misc_config.gphy_keep_power_during_reset = 1;
-		ctx->grc->misc_config.grc_reset = 1;
+		// ctx->grc->misc_config.disable_grc_reset_on_pcie_block = 1;
+		// ctx->grc->misc_config.gphy_keep_power_during_reset = 1;
+		// ctx->grc->misc_config.grc_reset = 1;
 	}
 }
 
@@ -378,5 +380,6 @@ void tgwinkFileCleanup(
 	PDEVICE_CONTEXT ctx = DeviceGetContext(dev);	
 
 	if (0 == InterlockedDecrement(&ctx->holders))
-		WdfInterruptDisable(ctx->hIrq);
+		//WdfInterruptDisable(ctx->hIrq);
+		;
 }

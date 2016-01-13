@@ -144,7 +144,7 @@ class Device(object):
             except:
                 pass
         
-        try: self.ftq.reset()
+        try: self.ftq.block_reset()
         except: pass
 
         try: self.reset()
