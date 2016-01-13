@@ -634,7 +634,7 @@ class TapDriver(TDInt):
 
     def _write_pkt(self, pkt, length):
         super(TapDriver, self)._write_pkt(pkt, length)
-        self.stats.pkt_out(length)
+        self.stats.pkt_in(length)
 
     def send(self, data, flags=None):
         if len(data) < 64:
