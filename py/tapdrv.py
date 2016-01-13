@@ -699,4 +699,4 @@ class TapDriver(TDInt):
                       2: functools.partial(TapDriver._handle_keypress, self, k_handlers)}
 
         while True:
-            handlers[self._wait_for_something()]()
+            e_handlers[self._wait_for_something()]()
