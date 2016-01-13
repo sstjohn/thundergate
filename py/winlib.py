@@ -478,7 +478,7 @@ class _async(object):
 class ReadAsync(_async):
     def __init__(self, handle, length):
         super(ReadAsync, self).__init__(handle, length)
-        self.pkt_len = 0
+        self._pkt_len = 0
 
     @property
     def pkt_len(self):
@@ -498,7 +498,7 @@ class ReadAsync(_async):
             err = WinError()
             if err.winerror and err.winerror != ERROR_IO_PENDING:
                 raise err
-            self.pkt_len = 0
+            self._pkt_len = 0
         else:
             if not SetEvent(self.req.hEvent):
                 raise WinError()
