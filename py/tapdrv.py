@@ -25,7 +25,8 @@ import reutils
 import platform
 import functools
 
-verbose = 1
+default_verbosity = 0
+
 sys_name = platform.system()
 
 if sys_name == "Linux":
@@ -47,12 +48,9 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
 
-def _toggle_verbosity():
-    global verbose
-    verbose = not verbose
-
 class TapDriver(TDInt):
     def __init__(self, dev):
+        self.verbose = default_verbosity
         super(TapDriver, self).__init__(dev)
         self.dev = dev
         self.mm = dev.interface.mm
@@ -518,7 +516,7 @@ class TapDriver(TDInt):
         _ = self._get_serial()
 
         dev = self.dev
-        if verbose:
+        if self.verbose:
             print "[+] handling interrupt"
         
         _ = dev.hpmb.box[tg.mb_interrupt].low
@@ -526,12 +524,12 @@ class TapDriver(TDInt):
 
         while self.status_block.updated:
             tag = self.status_block.status_tag
-            if verbose:
+            if self.verbose:
                 print "[+] status tag %x" % tag
             tag = tag << 24
 
             self.status_block.updated = 0
-            if verbose:
+            if self.verbose:
                 print "[+] status block updated! link: %d, attention: %d" % (self.status_block.link_status, self.status_block.attention)
 
             if dev.emac.status.link_state_changed:
@@ -543,7 +541,7 @@ class TapDriver(TDInt):
                 ci = self.rr_rings_ci[i]
 
                 if pi != ci:
-                    if verbose:
+                    if self.verbose:
                         print "[+] rr %d: pi is %x, ci was %x," % (i, pi, ci),
 
                     if pi < ci:
@@ -552,7 +550,7 @@ class TapDriver(TDInt):
                     else:
                         count = pi - ci
                     
-                    if verbose:
+                    if self.verbose:
                         print "%d bds received" % count
                     rbds = ctypes.cast(self.rr_rings_vaddr[i], ctypes.POINTER(tg.rbd))
                     while count > 0:
@@ -561,7 +559,7 @@ class TapDriver(TDInt):
                             ci = 1
                         rbd = rbds[ci - 1]
 
-                        if verbose:
+                        if self.verbose:
                             print "consuming bd 0x%x" % ci
                             print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
                             print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))
@@ -602,7 +600,7 @@ class TapDriver(TDInt):
             old_ci = self._std_rbd_ci
             count = 0
             if new_ci != old_ci:
-                if verbose:
+                if self.verbose:
                     print "[+] rbdp ci now %x, was %x" % (new_ci, old_ci)
                 rbds = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
                 while new_ci != old_ci:
@@ -620,14 +618,14 @@ class TapDriver(TDInt):
                 if self._std_rbd_pi >= self.rx_ring_len:
                     self._std_rbd_pi -= self.rx_ring_len
 
-                if verbose:
+                if self.verbose:
                     print "[+] moving std rbd pi to %x" % self._std_rbd_pi
                 self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
 
-            if verbose:
+            if self.verbose:
                 print "[+] sbd ci: %x" % self.status_block.sbdci
 
-        if verbose:
+        if self.verbose:
             print "[+] interrupt handling concluded"
         self.dev.hpmb.box[tg.mb_interrupt].low = tag
         _ = self.dev.hpmb.box[tg.mb_interrupt].low
@@ -643,7 +641,7 @@ class TapDriver(TDInt):
 
     def _send_b(self, buf, buf_sz, flags=None):
         i = self._tx_pi
-        if verbose:
+        if self.verbose:
             print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
         paddr = self.mm.get_paddr(buf)
         txb = ctypes.cast(self.tx_ring_vaddr, ctypes.POINTER(tg.sbd))
@@ -662,7 +660,7 @@ class TapDriver(TDInt):
         self.dev.hpmb.box[tg.mb_sbd_host_producer].low = i
         _ = self.dev.hpmb.box[tg.mb_sbd_host_producer].low
         self._tx_pi = i
-        if verbose:
+        if self.verbose:
             print "[+] host sbd pi now %x" % i
     
     def _handle_tap(self):
@@ -676,7 +674,7 @@ class TapDriver(TDInt):
         elif k == '' or k == ' ' or k == None:
             pass
         else:
-            print "keypress '%s' unhandled. press 'h' for help."
+            print "keypress '%s' unhandled. press 'h' for help." % k
 
     def _help(self, handlers):
         print 
@@ -684,13 +682,17 @@ class TapDriver(TDInt):
             print "%s - %s" % (k, handlers[k][0])
         print
 
+    def toggle_verbosity(self):
+        self.verbose = not self.verbose
+        print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
+
     def run(self):
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
 
         k_handlers = {'q': ("quit", functools.partial(sys.exit, 0)),
                       'd': ("link detect", functools.partial(TapDriver._link_detect, self)),
-                      'v': ("toggle verbosity", _toggle_verbosity)}
+                      'v': ("toggle verbosity", functools.partial(TapDriver.toggle_verbosity, self))}
 
         k_handlers['h'] = ("help", functools.partial(TapDriver._help, self, k_handlers))
 

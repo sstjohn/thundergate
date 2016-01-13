@@ -17,7 +17,6 @@
 '''
 
 from winlib import *
-from tapdrv import verbose
 
 class TapWinInterface(object):
     def __init__(self, dev):
@@ -82,13 +81,13 @@ class TapWinInterface(object):
         return serial
  
     def _get_packet(self):
-        if verbose:
+        if self.verbose:
             print "[+] getting a packet from tap device...",
         pkt_len = self._tap_evt.pkt_len
         pkt = self.mm.alloc(pkt_len)
         RtlCopyMemory(pkt, self._tap_evt.buffer, pkt_len)
         self._tap_evt.reset()
-        if verbose:
+        if self.verbose:
             print "read %d bytes" % pkt_len
         return (pkt, pkt_len)
 
@@ -97,7 +96,7 @@ class TapWinInterface(object):
             return
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         try:
-            if verbose:
+            if self.verbose:
                 print "[!] attempting to write to the tap device...",
             if not WriteFile(self.tfd, pkt, length, None, pointer(o)):
                 err = WinError()
@@ -110,7 +109,7 @@ class TapWinInterface(object):
             CloseHandle(o.hEvent)
 
     def _set_tapdev_status(self, connected):
-        if verbose:
+        if self.verbose:
             print "[+] setting tapdev status to %s" % ("up" if connected else "down")
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         try:
