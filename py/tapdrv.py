@@ -24,6 +24,7 @@ import select
 import reutils
 import platform
 import functools
+from tap_stats import TapStatistics
 
 default_verbosity = 0
 
@@ -54,6 +55,7 @@ class TapDriver(TDInt):
         super(TapDriver, self).__init__(dev)
         self.dev = dev
         self.mm = dev.interface.mm
+        self.stats = TapStatistics()
 
     def __enter__(self):
         print "[+] driver initialization begins"
@@ -630,6 +632,10 @@ class TapDriver(TDInt):
         self.dev.hpmb.box[tg.mb_interrupt].low = tag
         _ = self.dev.hpmb.box[tg.mb_interrupt].low
 
+    def _write_pkt(self, pkt, length):
+        super(TapDriver, self)._write_pkt(pkt, length)
+        self.stats.pkt_out(length)
+
     def send(self, data, flags=None):
         if len(data) < 64:
             data = data + ('\x00' * (64 - len(data)))
@@ -662,6 +668,7 @@ class TapDriver(TDInt):
         self._tx_pi = i
         if self.verbose:
             print "[+] host sbd pi now %x" % i
+        self.stats.pkt_out(buf_sz)
     
     def _handle_tap(self):
         pkt, sz = self._get_packet()
@@ -692,7 +699,9 @@ class TapDriver(TDInt):
 
         k_handlers = {'q': ("quit", functools.partial(sys.exit, 0)),
                       'd': ("link detect", functools.partial(TapDriver._link_detect, self)),
-                      'v': ("toggle verbosity", functools.partial(TapDriver.toggle_verbosity, self))}
+                      'v': ("toggle verbosity", functools.partial(TapDriver.toggle_verbosity, self)),
+                      's': ("dump statistics", functools.partial(TapStatistics.display, self.stats)),
+                      'r': ("reset statistics", functools.partial(TapStatistics.reset, self.stats))}
 
         k_handlers['h'] = ("help", functools.partial(TapDriver._help, self, k_handlers))
 

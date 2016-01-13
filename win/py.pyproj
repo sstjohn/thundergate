@@ -54,6 +54,9 @@
     <Compile Include="tap_linux.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tap_stats.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tap_win.py">
       <SubType>Code</SubType>
     </Compile>
