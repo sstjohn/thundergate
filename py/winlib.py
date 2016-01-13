@@ -471,7 +471,6 @@ class _async(object):
         self.req.InternalHigh = 0
         self.req.Pointer = None
         self.buffer.raw = "\x00" * self.length
-        self.pkt_len = 0
         if resubmit:
             self.submit()
 
@@ -487,7 +486,7 @@ class ReadAsync(_async):
             if not GetOverlappedResult(self.handle, pointer(self.req), pointer(pkt_len), False):
                 err = WinError()
                 if err.winerror == ERROR_IO_PENDING or err.winerror == ERROR_IO_INCOMPLETE:
-                    return False
+                    return 0
                 raise err
             self._pkt_len = pkt_len.value
         return self._pkt_len
