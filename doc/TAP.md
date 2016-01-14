@@ -14,19 +14,19 @@ Specify `-d` on the command line to start the execution of the driver. Eg:
 
 Windows:
 
-    ~~~
+   ~~~
 c:\thundergate\>python py\main.py -d
-    ~~~
+   ~~~
 
 Linux:
 
-    ~~~
+   ~~~
 $ python py/main.py -d $DEVICE_BDF
-    ~~~
+   ~~~
 
 The driver runs in the foreground offers a minimal single-key interface.
 
-    ~~~
+   ~~~
 ...
 [+] produced 128 rx buffers
 [+] enabling transmit mac
@@ -42,7 +42,7 @@ q - quit
 s - dump statistics
 r - reset statistics
 v - toggle verbosity
-    ~~~
+   ~~~
 
 ## Notes ##
 
