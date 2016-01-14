@@ -65,8 +65,8 @@ connecting a MacBook Air running Debian 8 and a MacBook Pro running Windows 10.
 All compilation was performed without optimization and the standard CPython 2.7
 interpreter was used. These numbers are only meaningful relatively.
 
-Server: Windows 10 w/ b57nd60a
-Client: Debian 8 w/ tg3
+Server: Windows 10 w/ b57nd60a  
+Client: Debian 8 w/ tg3  
 Result:
 
    ~~~
@@ -75,8 +75,8 @@ Result:
 [  4]   0.00-10.00  sec   949 MBytes   796 Mbits/sec                  receiver
    ~~~
 
-Server: Windows 10 w/ b57nd60a
-Client: Debian 8 w/ Thundergate TAP
+Server: Windows 10 w/ b57nd60a  
+Client: Debian 8 w/ Thundergate TAP  
 Result:
 
    ~~~
@@ -85,4 +85,22 @@ Result:
 [  4]   0.00-10.00  sec   150 MBytes   126 Mbits/sec                  receiver
    ~~~
 
+Server: Debian 8 w/ tg3  
+Client: Windows 10 w/ Thundergate TAP  
+Result:
 
+   ~~~
+[ ID] Interval           Transfer     Bandwidth
+[  4]   0.00-10.02  sec  11.8 MBytes  9.84 Mbits/sec                  sender
+[  4]   0.00-10.02  sec  11.8 MBytes  9.84 Mbits/sec                  receiver
+   ~~~
+
+Server: Debian 8 w/ Thundergate TAP  
+Client: Windows 10 w/ Thundergate TAP  
+Result:
+
+   ~~~
+[ ID] Interval           Transfer     Bandwidth
+[  4]   0.00-10.01  sec  17.1 MBytes  14.4 Mbits/sec                  sender
+[  4]   0.00-10.01  sec  16.9 MBytes  14.2 Mbits/sec                  receiver
+   ~~~
