@@ -13,11 +13,13 @@ This functionality is available on Windows and Linux.
 Specify `-d` on the command line to start the execution of the driver. Eg:
 
 Windows:
+
     ~~~
 c:\thundergate\>python py\main.py -d
     ~~~
 
 Linux:
+
     ~~~
 $ python py/main.py -d $DEVICE_BDF
     ~~~
