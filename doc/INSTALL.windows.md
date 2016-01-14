@@ -48,6 +48,9 @@ c:\thundergate>pip install .\python-eficompressor
 [firmware.md] to install a binutils/gcc
 toolchain targeting the Tigon3's MIPS processor.
 
+9. Optionally, install the TAP-Windows6 package from OpenVPN. This package is
+required in order to use the Thundergate TAP adapter functionality.
+
 ## Build ##
 
 To build from the IDE, open the file win\tgwin.sln in Visual Studio 2015, and
@@ -55,9 +58,9 @@ select "Build Solution" from the Build menu.
 
 To build from a VS2015 x64 Native Tools Command Prompt:
 
-    ~~~
+   ~~~
 c:\thundergate>msbuild win\tgwin.sln
-    ~~~
+   ~~~
 
 ## Install ##
 
@@ -70,10 +73,10 @@ As a result of Windows 10's driver signing requirements, you will need to
 enable "Test Mode" to install the Thundergate driver. From an administrative
 command prompt, run:
 
-    ~~~
+   ~~~
 c:\>bcdedit -set testsigning on
 The operation completed successfully.
-    ~~~
+   ~~~
 
 After rebooting, the words "Test Mode" should appear in the lower left corner
 of your desktop.
@@ -82,18 +85,18 @@ Next, you will need to install your test signing certificate, generated during
 the build, into the Windows Trusted Root Certificate store. From an
 administrative VS2015 x64 Native Tools Command Prompt:
 
-    ~~~
+   ~~~
 c:\>certmgr.exe -add thundergate\win\x64\debug\tgwink.cer -s -r localMachine root
 CertMgr Succeeded
-    ~~~
+   ~~~
 
 Finally, install the driver itself:
 
-    ~~~
+   ~~~
 c:\>devcon update thundergate\win\x64\debug\tgwink\tgwink.inf "pci\ven_14e4&dev_1682"
 Updating drivers for pci\ven_14e4&dev_1682 from c:\thundergate\win\x64\debug\tgwink\tgwink.inf.
 Drivers installed successfully.
-    ~~~
+   ~~~
 
 Possibly subsequent to a reboot, your Broadcom NetLink device will have
 disappeared from the 'Network Adapters' subtree in Device Manager, and a new
