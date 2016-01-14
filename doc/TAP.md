@@ -20,7 +20,7 @@ c:\thundergate\>python py\main.py -d
 Linux:
 
    ~~~
-$ python py/main.py -d $DEVICE_BDF
+$ python py/main.py -d -v $DEVICE_BDF
    ~~~
 
 The driver runs in the foreground offers a minimal single-key interface.
@@ -62,6 +62,27 @@ at startup. Press `d` to force link re-negotiation.
 
 Performance was measured using iPerf3 over a point-to-point Cat5 cable
 connecting a MacBook Air running Debian 8 and a MacBook Pro running Windows 10.
-These numbers are only meaningful relatively.
+All compilation was performed without optimization and the standard CPython 2.7
+interpreter was used. These numbers are only meaningful relatively.
 
-(to be continued...)
+Server: Windows 10 w/ b57nd60a
+Client: Debian 8 w/ tg3
+Result:
+
+   ~~~
+[ ID] Interval           Transfer     Bandwidth       Retr
+[  4]   0.00-10.00  sec   950 MBytes   797 Mbits/sec    0             sender
+[  4]   0.00-10.00  sec   949 MBytes   796 Mbits/sec                  receiver
+   ~~~
+
+Server: Windows 10 w/ b57nd60a
+Client: Debian 8 w/ Thundergate TAP
+Result:
+
+   ~~~
+[ ID] Interval           Transfer     Bandwidth       Retr
+[  4]   0.00-10.00  sec   151 MBytes   127 Mbits/sec    0             sender
+[  4]   0.00-10.00  sec   150 MBytes   126 Mbits/sec                  receiver
+   ~~~
+
+
