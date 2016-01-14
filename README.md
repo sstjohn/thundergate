@@ -38,9 +38,10 @@ for details.
 
 # Further Reading #
 
- * [Linux usage](doc/README.linux.md)
- * [Windows usage](doc/README.windows.md)
- * [Firmware usage](doc/README.firmware.md)
+ * [Linux setup](doc/INSTALL.linux.md)
+ * [Windows setup](doc/INSTALL.windows.md)
+ * [Firmware usage](doc/firmware.md)
+ * [TAP driver usage](doc/TAP.md)
 
 Additionally, an old report describing an older version of this project can be
 found at <http://thundergate.io/tg_old.pdf>.

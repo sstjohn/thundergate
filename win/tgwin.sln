@@ -7,10 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tgwink", "tgwink\tgwink.vcx
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{979D2CDB-0013-44A8-BB6D-93A319C430AF}"
 	ProjectSection(SolutionItems) = preProject
-		..\doc\README.firmware.md = ..\doc\README.firmware.md
-		..\doc\README.linux.md = ..\doc\README.linux.md
+		..\doc\firmware.md = ..\doc\firmware.md
+		..\doc\INSTALL.linux.md = ..\doc\INSTALL.linux.md
+		..\doc\INSTALL.windows.md = ..\doc\INSTALL.windows.md
 		..\README.md = ..\README.md
-		..\doc\README.windows.md = ..\doc\README.windows.md
+		..\doc\TAP.md = ..\doc\TAP.md
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gnu-efi", "gnu-efi.vcxproj", "{3135D563-9596-4584-9ED6-616ADEC52974}"

@@ -20,8 +20,7 @@ $ sudo easy_install git+http://github.com/sstjohn/python-eficompressor.git
 $ git clone http://github.com/sstjohn/thundergate.git
     ~~~
 
-3. Build Tigon3 cross-tools following the instructions in [README.firmware.md](doc/README.firmware.md).
-
+3. Build Tigon3 cross-tools following the instructions in (firmware.md).
 
 4. Compile ThunderGate:
 

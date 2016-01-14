@@ -25,7 +25,7 @@ C:\>git clone http://github.com/sstjohn/thundergate.git
 C:\>cd thundergate
 C:\thundergate>git submodule init
 C:\thundergate>git submodule update
-
+    ~~~
 
 6. Optionally, install CMake, and then Python packages required for firmware
 debugging. From an administrative VS2015 x64 Native Tools Command Crompt (found
@@ -45,7 +45,7 @@ c:\thundergate>pip install .\python-eficompressor
     ~~~
 
 8. Optionally, install MSYS2, and then follow the instructions in
-[README.firmware.md](doc/README.firmware.md) to install a binutils/gcc
+[firmware.md] to install a binutils/gcc
 toolchain targeting the Tigon3's MIPS processor.
 
 ## Build ##
