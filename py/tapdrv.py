@@ -24,6 +24,7 @@ import select
 import reutils
 import platform
 import functools
+import sys
 from tap_stats import TapStatistics
 
 default_verbosity = 0

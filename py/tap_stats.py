@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+_ctr_inc = lambda x, y: tuple(map(sum, zip(x, (1, y))))
+
 class TapStatistics(object):
     def __init__(self):
         self.reset(True)
@@ -26,7 +28,6 @@ class TapStatistics(object):
         if not quiet:
             print "[+] statistics reset"
 
-    _ctr_inc = lambda x, y: tuple(map(sum, zip(x, (1, y))))
 
     def pkt_in(self, length):
         self.inbound = _ctr_inc(self.inbound, length)

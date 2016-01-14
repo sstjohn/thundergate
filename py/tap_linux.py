@@ -25,40 +25,50 @@ from tunlib import *
 import tty
 import sys
 import termios
+import socket
+from contextlib import closing
 
 class TapLinuxInterface(object):
     def __init__(self, dev):
         self.dev = dev
         self.mm = dev.interface.mm
         self.serial = 0
+        self._key = ''
+        self._connected = False
 
     def __enter__(self):
         fd = os.open("/dev/net/tun", os.O_RDWR)
         ifr = struct.pack('16sH', "", IFF_TAP | IFF_NO_PI)
         self.tap_name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
+        print "[+] tap device name: \"%s\"" % self.tap_name
         self.tfd = fd
         self.confd = sys.stdin.fileno()
-        self._old_con_settings = termios.tcgetattr(self.confd)
-        tty.setraw(self.confd)
         self.read_fds = [self.dev.interface.eventfd, self.tfd, self.confd]
         self.ready = []
         return self
 
     def __exit__(self):
-        termios.tcsetattr(self.confd, termios.TCSADRAIN, self._old_con_settings)
+        if self._connected:
+            self._set_tapdev_status(False)
         os.close(self.tfd)
 
     def _wait_for_something(self):
-        self.ready, _, _ = select.select(self.read_fds, [], [])
-        if self.dev.interface.eventfd in self.ready:
-            return 0
-        if self.tfd in self.ready:
-            return 1
-        if self.confd in self.ready:
-            return 2
+        old_con_settings = termios.tcgetattr(self.confd)
+        try:
+            tty.setraw(self.confd)
+            self.ready, _, _ = select.select(self.read_fds, [], [])
+            if self.dev.interface.eventfd in self.ready:
+                return 0
+            if self.tfd in self.ready:
+                return 1
+            if self.confd in self.ready:
+                self._key = sys.stdin.read(1)
+                return 2
+        finally:
+            termios.tcsetattr(self.confd, termios.TCSADRAIN, old_con_settings)
 
     def _get_serial(self):
-        self.serial += struct.unpack("L", os.read(self.dev.interface.eventfd, 8))
+        self.serial += struct.unpack("L", os.read(self.dev.interface.eventfd, 8))[0]
         return self.serial
 
     def _get_packet(self):
@@ -67,20 +77,24 @@ class TapLinuxInterface(object):
         return (b, l)
 
     def _get_key(self):
-        return sys.stdin.read(1)
+        return self._key
 
     def _write_pkt(self, pkt, length):
         os.write(self.tfd, pkt)
 
     def _set_tapdev_status(self, connected):
-       ifr = struct.pack('16sH', self.tap_name, 0)
-       flags = struct.unpack('16sH', fcntl.ioctl(self.tfd, SIOCGIFFLAGS, ifr))[1]
-       
-       if connected:
-           flags |= IFF_UP
-       else:
-           flags &= ~IFF_UP
+        with closing(socket.socket()) as s:
+           ifr = struct.pack('16sH', self.tap_name, 0)
+           r = fcntl.ioctl(s, c.SIOCGIFFLAGS, ifr)
+           flags = struct.unpack('16sH', r)[1]
 
-       ifr = struct.pack('16sH', self.tap_name, flags)
-       fcntl.ioctl(self.tfd, SIOCSIFFLAGS, ifreq)
+           if connected:
+               flags |= c.IFF_UP
+           else:
+               flags &= ~c.IFF_UP
+
+           ifr = struct.pack('16sH', self.tap_name, flags)
+           fcntl.ioctl(s, c.SIOCSIFFLAGS, ifr)
+        self._connected = connected
+    
             
