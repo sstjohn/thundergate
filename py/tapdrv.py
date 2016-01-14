@@ -24,6 +24,7 @@ import select
 import reutils
 import platform
 import functools
+import sys
 from tap_stats import TapStatistics
 
 default_verbosity = 0
@@ -87,6 +88,8 @@ class TapDriver(TDInt):
         self.tx_ring_vaddr, self.tx_ring_len = self.__init_xx_ring(tg.sbd)
         self.tx_ring_paddr = mm.get_paddr(self.tx_ring_vaddr)
         self._tx_pi = 0
+        self._tx_ci = 0
+        self._tx_buffers = [0] * self.tx_ring_len
 
         dev = self.dev
 
@@ -624,8 +627,32 @@ class TapDriver(TDInt):
                     print "[+] moving std rbd pi to %x" % self._std_rbd_pi
                 self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
 
-            if self.verbose:
-                print "[+] sbd ci: %x" % self.status_block.sbdci
+            tx_ci = self.status_block.sbdci
+            if tx_ci != self._tx_ci:
+                if self.verbose:
+                    print "[+] sbd ci: %x" % tx_ci
+
+                if tx_ci < self._tx_ci:
+                    if self.verbose:
+                        if self._tx_ci + 1 == self.tx_ring_len:
+                            print "[.] freeing tx buffer %02x" % self._tx_ci
+                        else:
+                            print "[.] freeing tx buffers %02x-%02x" % (self._tx_ci, self.tx_ring_len - 1)
+                    while self._tx_ci < self.tx_ring_len:
+                        self.mm.free(self._tx_buffers[self._tx_ci])
+                        self._tx_ci += 1
+                if self._tx_ci == self.tx_ring_len:
+                    self._tx_ci = 0
+                if self.verbose:
+                    if tx_ci == self._tx_ci + 1:
+                        print "[.] freeing tx buffer %02x" % self._tx_ci
+                    elif tx_ci > self._tx_ci:
+                        print "[.] freeing tx buffers %02x-%02x" % (self._tx_ci, tx_ci - 1)
+                while tx_ci > self._tx_ci:
+                    self.mm.free(self._tx_buffers[self._tx_ci])
+                    self._tx_ci += 1
+
+
 
         if self.verbose:
             print "[+] interrupt handling concluded"
@@ -647,6 +674,7 @@ class TapDriver(TDInt):
 
     def _send_b(self, buf, buf_sz, flags=None):
         i = self._tx_pi
+        self._tx_buffers[i] = buf
         if self.verbose:
             print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
         paddr = self.mm.get_paddr(buf)
