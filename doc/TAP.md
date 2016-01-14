@@ -25,15 +25,33 @@ $ python py/main.py -d $DEVICE_BDF
 The driver runs in the foreground offers a minimal single-key interface.
 
     ~~~
+...
+[+] produced 128 rx buffers
+[+] enabling transmit mac
+[+] enabling receive mac
+[+] configuring led
+[+] waiting for interrupts...
+[+] detecting link
+[+] full duplex gige link negotated (res: 0000ff3c, txpause: False, rxpause: False)
+
+d - link detect
+h - help
+q - quit
+s - dump statistics
+r - reset statistics
+v - toggle verbosity
     ~~~
 
 ## Notes ##
 
  * The TAP interface created will assume the next available device name
-on the host system, e.g. 'tapX' on Linux, or "TAP-Windows Adapter #X." 
+on the host system, e.g. 'tapX' on Linux, or "TAP-Windows Adapter #X." It
+should only persist for the life of the process, but the cleanup code
+is in `finally` blocks, so crashed processes might leave behind dead
+interfaces requring manual cleanup.
 
- * The TAP device should bring itself up and down based on the state of
-the link, but will likely need IP configuration using host OS tools (such
+ * The TAP device will bring itself up and down based on the state of
+the link, but may need IP configuration using host OS tools (such
 as Linux's `ip` or `ifconfig`,  or Windows's `ipconfig` or `ncpa.cpl`.)
 
  * Link detection and change notifications are hit-and-miss, and may not
@@ -41,8 +59,8 @@ trigger at startup. Press `d` to force link re-negotiation.
 
 ## Performance ##
 
-Performance was measured using iPerf3 over a point-to-point CAT5 cable
-connecting a MacBook Air running Windows 10 and a MacBook Pro running
-Debian 8. These numbers are only meaningful comparatively.
+Performance was measured using iPerf3 over a point-to-point Cat5 cable
+connecting a MacBook Air running Debian 8 and a MacBook Pro running
+Windows 10. These numbers are only meaningful relatively.
 
 (to be continued...)
