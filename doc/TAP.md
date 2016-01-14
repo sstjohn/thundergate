@@ -1,9 +1,9 @@
 # Thundergate TAP Driver #
 
 The Thundergate toolkit includes Python modules inplementing a PCI driver for
-Broadcom 57xx devices, and a TAP interface driver consuming it. Used together,
-they provide a userspace interface between the network hardware and the
-kernel's TCP/IP stack.
+Broadcom 57xx devices, and a TAP interface driver consuming it. Together they
+compose a userspace interface between the network hardware and the kernel's
+TCP/IP stack.
 
 This functionality is available on Windows and Linux.
 
