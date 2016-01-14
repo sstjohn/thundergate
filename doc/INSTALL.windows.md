@@ -108,7 +108,7 @@ an error code.
 
 ## Use ##
 
-    ~~~
+   ~~~
 c:\thundergate>python py\main.py --help
 
  #######                                            #####
@@ -138,4 +138,4 @@ optional arguments:
   -d, --driver          load userspace tap driver
   -i, --install         install thundergate firmware
 
-    ~~~
+   ~~~
