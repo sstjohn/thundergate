@@ -20,36 +20,10 @@ $ sudo easy_install git+http://github.com/sstjohn/python-eficompressor.git
 $ git clone http://github.com/sstjohn/thundergate.git
     ~~~
 
-3. Retrieve, compile and install cross mips-elf binutils:
+3. Build Tigon3 cross-tools following the instructions in [README.firmware.md](doc/README.firmware.md).
 
-    ~~~
-$ curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.25.tar.bz2
-$ tar xfi binutils-2.25.tar.bz2
-$ mkdir binutils-build
-$ pushd binutils-build
-$ ../binutils-2.25/configure --target=mips-elf --with-sysroot --disable-nls
-$ make && sudo make install && popd
-    ~~~
 
-4. Retrieve, patch, compile and install cross mips-elf GCC 5.1:
-
-    ~~~
-$ curl -O http://ftp.gnu.org/gnu/gcc/gcc-5.1.0/gcc-5.1.0.tar.bz2
-$ tar xfi gcc-5.1.0.tar.bz2
-$ pushd gcc-5.1.0
-$ patch -p1 < ../thundergate/misc/gcc-5.1.0-mtigon.patch
-$ popd
-$ mkdir gcc-build
-$ pushd gcc-build
-$ ../gcc-5.1.0/configure --target=mips-elf --program-prefix=mips-elf-        \
-        --disable-nls --enable-languages=c,c++ --without-headers             \
-        --without-llsc --with-tune=r6000 --with-arch=mips2 --disable-biarch  \
-        --disable-multilib --with-float=soft --without-hard-float
-$ make all-gcc && make all-target-libgcc
-$ sudo make install-gcc && sudo make install-target-libgcc && popd
-    ~~~
-
-5. Compile ThunderGate:
+4. Compile ThunderGate:
 
     ~~~
 $ cd thundergate
