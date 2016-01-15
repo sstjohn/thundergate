@@ -23,6 +23,7 @@ class _async(object):
     def __init__(self, handle):
         self.handle = handle
         self.req = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
+        self.reset(False)
 
     def __del__(self):
         CancelIoEx(self.handle, pointer(self.req))
@@ -42,12 +43,12 @@ class _async(object):
 
 class ReadAsync(_async):
     def __init__(self, handle, length, mm):
-        super(ReadAsync, self).__init__(handle)
         self.length = length
         self.mm = mm
-        self._pkt_len = 0
+        super(ReadAsync, self).__init__(handle)
 
     def reset(self, resubmit = True):
+        self._pkt_len = 0
         self.buffer = self.mm.alloc(self.length)
         super(ReadAsync, self).reset(resubmit)
 

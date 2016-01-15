@@ -25,6 +25,7 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="async_win.py" />
     <Compile Include="block_utils.py" />
     <Compile Include="client.py" />
     <Compile Include="cpu.py" />
