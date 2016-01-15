@@ -4,25 +4,33 @@ These instructions assume a Debian 8 host.
 
 ## Build ##
 
-1. Install dependencies:
+1. Install external dependencies:
 
     ~~~
 $ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
             gnu-efi python python-dev python-ctypeslib libgmp-dev libmpfr-dev \
 	    libmpc-dev python-pip ipython
 $ sudo pip install capstone bidict pyelftools
-$ sudo easy_install git+http://github.com/sstjohn/python-eficompressor.git
     ~~~
 
 2. Clone repository:
 
     ~~~
 $ git clone http://github.com/sstjohn/thundergate.git
+$ cd thundergate
+$ git submodule init
+$ git submodule update
     ~~~
 
-3. Build Tigon3 cross-tools following the instructions in (firmware.md).
+3. Install distributed dependencies:
 
-4. Compile ThunderGate:
+    ~~~
+$ pip install ./python-eficompressor
+    ~~~
+
+4. Build Tigon3 cross-tools following the instructions from (firmware.md).
+
+5. Compile ThunderGate:
 
     ~~~
 $ cd thundergate

@@ -5,10 +5,10 @@ These instructions assume a Windows 10 x64.
 ## Dependencies ##
 
 1. Install Python 2.7 x64. Make sure to select the option to add the Python
-binary to your system PATH.
+   binary to your system PATH.
 
 2. Install Visual Studio 2015, the Windows Driver Kit for Windows 10, and
-Python Tools for Visual Studio.
+   Python Tools for Visual Studio.
 
 3. Install Microsoft Visual C++ for Python 2.7.
 
@@ -28,28 +28,27 @@ C:\thundergate>git submodule update
     ~~~
 
 6. Optionally, install CMake, and then Python packages required for firmware
-debugging. From an administrative VS2015 x64 Native Tools Command Crompt (found
-under Start -> All Apps -> Visual Studio 2015, right click, select More -> Run
-as Administrator):
+   debugging. From an administrative VS2015 x64 Native Tools Command Crompt
+   (found under Start -> All Apps -> Visual Studio 2015, right click, select 
+   More -> Run as Administrator):
 
     ~~~
 C:\thundergate>pip install pyelftools capstone
     ~~~
 
 7. Optionally, install the included Python EFI image compression package, which
-is required for firmware development. Again from an administrative VS2015 x64
-Native Tools Command Prompt:
+   is required for firmware development. Again from an administrative VS2015
+   x64 Native Tools Command Prompt:
 
     ~~~
 c:\thundergate>pip install .\python-eficompressor
     ~~~
 
-8. Optionally, install MSYS2, and then follow the instructions in
-[firmware.md] to install a binutils/gcc
-toolchain targeting the Tigon3's MIPS processor.
+8. Optionally, install MSYS2, and then follow the instructions in (firmware.md)
+   to install a binutils/gcc toolchain targeting the Tigon3's MIPS processor.
 
 9. Optionally, install the TAP-Windows6 package from OpenVPN. This package is
-required in order to use the Thundergate TAP adapter functionality.
+   required in order to use the Thundergate TAP adapter functionality.
 
 ## Build ##
 

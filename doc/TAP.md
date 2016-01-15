@@ -40,7 +40,7 @@ v - toggle verbosity
 host system, e.g. 'tapX' on Linux, or "TAP-Windows Adapter #X". It should only
 persist for the life of the process, but the cleanup code is in `finally`
 blocks, so crashed processes might leave behind dead interfaces requring manual
-cleanup.
+removal (especially on Windows).
 
  * The TAP device will bring itself up and down based on the state of the link,
 but may need IP configuration using host OS tools (such as Linux's `ip` or
