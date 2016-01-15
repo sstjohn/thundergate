@@ -28,7 +28,7 @@ $ git submodule update
 $ pip install ./python-eficompressor
     ~~~
 
-4. Build Tigon3 cross-tools following the instructions from (firmware.md).
+4. Build Tigon3 cross-tools following the instructions from [firmware.md].
 
 5. Compile ThunderGate:
 
@@ -42,8 +42,8 @@ $ make
 In order to use the userspace tap driver, the network interface device will
 need to be bound to the ```vfio-pci``` kernel module. This appears to be the
 only standard interface for receiving MSI/MSIX interrupts in userspace on
-Linux; users without an IOMMU are out of luck. (It may be possible to
-UioInterface class to support devices raising legacy interrupts through the
+Linux; users without an IOMMU are out of luck. (It may be possible to extend
+the UioInterface class to support devices raising legacy interrupts through the
 uio-pci-generic kernel module; such functionality is unimplemented at this
 time.)
 
