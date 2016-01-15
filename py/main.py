@@ -20,6 +20,7 @@
 
 import os
 import sys
+import subprocess
 import platform
 
 from device import Device
@@ -43,8 +44,7 @@ import reutils
 
 import argparse
 
-
-if __name__ == "__main__":
+def banner():
     print """
 
  #######                                            #####
@@ -55,16 +55,15 @@ if __name__ == "__main__":
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.9.5
+                                 Version 0.9.6a
                     Copyright (c) 2015-2016 Saul St John
                              http://thundergate.io
 """
 
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     if sys_name == "Linux":
-        parser.add_argument("device", help="BDF of tg3 PCI device")
-        parser.add_argument("-u", "--uio", help="use uio pci generic interface", action="store_true")
-        parser.add_argument("-v", "--vfio", help="use vfio interface", action="store_true")
+        parser.add_argument("--device", help="BDF of tg3 PCI device", default=None)
     parser.add_argument("-p", "--ptvsd", help="enable ptvsd server", action="store_true")
     parser.add_argument("--ptvsdpass", help="ptvsd server password", default=None)
     parser.add_argument("--ptvsdwait", help="wait for ptvsd attachment at startup", action="store_true")
@@ -75,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
 
     args = parser.parse_args()
+    banner()
     
     ima = "inspector"
     try: 
@@ -96,7 +96,10 @@ if __name__ == "__main__":
             print "[+] ptvsd server enabled"
 
     if sys_name == 'Linux':
-        dbdf = args.device
+        if args.device is None:
+            dbdf = subprocess.check_output(["lspci", "-d 14e4:1682", "-n"]).split(" ")[0]
+        else:
+            dbdf = args.device
         if len(dbdf.split(':')) == 2:
             dbdf = "0000:%s" % dbdf
 
@@ -104,18 +107,17 @@ if __name__ == "__main__":
             print "[-] device resources at /sys/bus/pci/devices/%s/ not found; is sysfs mounted?" % dbdf
             sys.exit(1)
 
-        dev_interface = SysfsInterface(dbdf)
-        if args.vfio:
-            odrv = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
-            if odrv != 'vfio-pci':
-                raise Exception("device %s currently bound by %s, bind to vfio-pci instead" % (dbdf, odrv))
+        kmod = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
+        if kmod == 'vfio-pci':
             dev_interface = VfioInterface(dbdf)
+        else:
+            if args.driver:
+                raise Exception("TAP driver only supported with vfio-pci kernel module")
+            if kmod == 'uio_pci_generic':
+                dev_interface = UioInterface(dbdf)
+            else:
+                dev_interface = SysfsInterface(dbdf)
 
-        if args.uio:
-            odrv = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
-            if odrv != 'uio_pci_generic':
-                raise Exception("device %s currently bound by %s, bind to uio_pci_generic instead")
-            dev_interface = UioInterface(dbdf)
     elif sys_name == 'Windows':
         dev_interface = WinInterface()
 

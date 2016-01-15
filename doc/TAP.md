@@ -2,31 +2,22 @@
 
 The Thundergate toolkit includes Python modules inplementing a PCI driver for
 Broadcom 57xx devices, and a TAP interface driver consuming it. Together they
-compose a userspace interface between the network hardware and the kernel's
+comprise a userspace interface between the network hardware and the kernel
 TCP/IP stack.
 
-This functionality is available on Windows and Linux.
+This functionality is available on Windows and Linux subject to the caveats
+described in the platform-specific INSTALL files.
 
 ## Usage ##
 
-Specify `-d` on the command line to start the execution of the driver. Eg:
-
-Windows:
-
-   ~~~
-c:\thundergate\>python py\main.py -d
-   ~~~
-
-Linux:
+Specify `-d` on the command line to start the execution of the driver.  The
+driver runs in the foreground and offers a minimal single-key interface.
 
    ~~~
-$ python py/main.py -d -v $DEVICE_BDF
-   ~~~
-
-The driver runs in the foreground offers a minimal single-key interface.
-
-   ~~~
-...
+# python py/main.py -d
+.
+.
+. 
 [+] produced 128 rx buffers
 [+] enabling transmit mac
 [+] enabling receive mac

@@ -31,8 +31,15 @@ $ make
 
 ## Install ##
 
-In order to launch ThunderGate, you will need to know the BDF
-(Bus-Device-Function) of your Tigon3 device. This information can be
+In order to use the userspace tap driver, the network interface device will
+need to be bound to the ```vfio-pci``` kernel module. This appears to be the
+only standard interface for receiving MSI/MSIX interrupts in userspace on
+Linux; users without an IOMMU are out of luck. (It may be possible to
+UioInterface class to support devices raising legacy interrupts through the
+uio-pci-generic kernel module; such functionality is unimplemented at this
+time.)
+
+First, determine the BDF of your Tigon3 device. This information can be
 obtained from, e.g., ```lspci```:
 
 ~~~
@@ -40,11 +47,10 @@ $ sudo lspci -d14e4: | grep Ethernet
 0a:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57762 Gigabit Ethernet PCIe
 ~~~
 
-As is commonly the case on Apple hardware, the BDF for the Thunderbolt
-Gigabit in this example is '0a:00.0'.
+As is commonly the case on Apple hardware, the BDF for the Thunderbolt NIC in
+this example is '0a:00.0'. Next, unbind the device from the default kernel
+module (likely tg3), and rebind it to vfio-pci as such:
 
-In order to use the userspace tap driver, the network interface device
-will need to be bound to the ```vfio-pci``` kernel module:
 ~~~
 $ sudo modprobe vfio-pci
 $ echo $BDF | sudo tee /sys/bus/pci/devices/$BDF/driver/unbind
@@ -57,17 +63,19 @@ All other functionality is available regardless of the kernel driver in use.
 
 <pre>
 $ py/main.py -h
-usage: main.py [-h] [-v] [-d] [-t] [-s] device
-
-positional arguments:
-  device        BDF of tg3 PCI device
+usage: main.py [-h] [--device DEVICE] [-p] [--ptvsdpass PTVSDPASS]
+               [--ptvsdwait] [-t] [-s] [-b] [-d] [-i]
 
 optional arguments:
-  -h, --help     show this help message and exit
-  -i, --install  install thundergate firmware
-  -u, --uio      use uio pci generic interface
-  -v, --vfio     use vfio interface
-  -d, --driver   load userspace tap driver
-  -t, --tests    run tests
-  -s, --shell    ipython cli
+  -h, --help            show this help message and exit
+  --device DEVICE       BDF of tg3 PCI device
+  -p, --ptvsd           enable ptvsd server
+  --ptvsdpass PTVSDPASS
+                        ptvsd server password
+  --ptvsdwait           wait for ptvsd attachment at startup
+  -t, --tests           run tests
+  -s, --shell           ipython cli
+  -b, --backup          create eeprom backup
+  -d, --driver          load userspace tap driver
+  -i, --install         install thundergate firmware
 </pre>

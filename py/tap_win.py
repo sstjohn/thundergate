@@ -17,6 +17,7 @@
 '''
 
 from winlib import *
+from async_win import ReadAsync, IoctlAsync
 
 class TapWinInterface(object):
     def __init__(self, dev):
@@ -27,7 +28,7 @@ class TapWinInterface(object):
     def __enter__(self):
         self.tfd = create_tap_if()
         self._tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
-        self._tap_evt = ReadAsync(self.tfd, 1518)
+        self._tap_evt = ReadAsync(self.tfd, 0x800, self.mm)
         self._hCon = GetStdHandle(STD_INPUT_HANDLE)
         self._events = (HANDLE * 3)(self._tg_evt.req.hEvent, self._tap_evt.req.hEvent, self._hCon)
         self._tg_evt.submit()
@@ -84,8 +85,7 @@ class TapWinInterface(object):
         if self.verbose:
             print "[+] getting a packet from tap device...",
         pkt_len = self._tap_evt.pkt_len
-        pkt = self.mm.alloc(pkt_len)
-        RtlCopyMemory(pkt, self._tap_evt.buffer, pkt_len)
+        pkt = self._tap_evt.buffer
         self._tap_evt.reset()
         if self.verbose:
             print "read %d bytes" % pkt_len

@@ -7,7 +7,7 @@
    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
 
-                             Version 0.9.5
+                             Version 0.9.6a
                  Copyright (c) 2015-2016 Saul St John
                           http://thundergate.io
 </pre>
