@@ -28,7 +28,7 @@ $ git submodule update
 $ pip install ./python-eficompressor
     ~~~
 
-4. Build Tigon3 cross-tools following the instructions from (firmware.md)[firmware.md].
+4. Build Tigon3 cross-tools following the instructions from [firmware.md](firmware.md).
 
 5. Compile ThunderGate:
 

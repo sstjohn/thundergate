@@ -44,7 +44,7 @@ C:\thundergate>pip install pyelftools capstone
 c:\thundergate>pip install .\python-eficompressor
     ~~~
 
-8. Optionally, install MSYS2, and then follow the instructions in (firmware.md)[firmware.md]
+8. Optionally, install MSYS2, and then follow the instructions in [firmware.md](firmware.md)
    to install a binutils/gcc toolchain targeting the Tigon3's MIPS processor.
 
 9. Optionally, install the TAP-Windows6 package from OpenVPN. This package is
