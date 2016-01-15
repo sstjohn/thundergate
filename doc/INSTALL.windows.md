@@ -1,6 +1,6 @@
 ﻿# Thundergate on Windows #
 
-These instructions assume a Windows 10 x64.
+These instructions assume a Windows 10 x64 host.
 
 ## Dependencies ##
 
