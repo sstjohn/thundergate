@@ -54,7 +54,8 @@ at startup. Press `d` to force link re-negotiation.
 Performance was measured using iPerf3 over a point-to-point Cat5 cable
 connecting a MacBook Air running Debian 8 and a MacBook Pro running Windows 10.
 All compilation was performed without optimization and the standard CPython 2.7
-interpreter was used. These numbers are only meaningful relatively.
+interpreter was used. These (now outdated) numbers are only meaningful 
+relatively (if even).
 
 Server: Windows 10 w/ b57nd60a  
 Client: Debian 8 w/ tg3  

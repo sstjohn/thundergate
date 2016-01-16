@@ -23,24 +23,27 @@ class _async(object):
     def __init__(self, handle):
         self.handle = handle
         self.req = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
+        self.submitted = False
         self.reset(False)
 
     def __del__(self):
-        CancelIoEx(self.handle, pointer(self.req))
+        if self.submitted:
+            CancelIoEx(self.handle, pointer(self.req))
         CloseHandle(self.req.hEvent)
 
     def submit(self):
         raise NotImplementedError()
 
     def reset(self, resubmit = True):
-        CancelIoEx(self.handle, pointer(self.req))
-        ResetEvent(self.req.hEvent)
+        if self.submitted:
+            CancelIoEx(self.handle, pointer(self.req))
+        self.submitted = False        
         self.req.Internal = 0
         self.req.InternalHigh = 0
         self.req.Pointer = None
         if resubmit:
             self.submit()
-
+        
 class ReadAsync(_async):
     def __init__(self, handle, length, mm):
         self.length = length
@@ -55,22 +58,25 @@ class ReadAsync(_async):
     @property
     def pkt_len(self):
         if not self._pkt_len:
-            pkt_len = DWORD(0)
-            if not GetOverlappedResult(self.handle, pointer(self.req), pointer(pkt_len), False):
-                err = WinError()
-                if err.winerror == ERROR_IO_PENDING or err.winerror == ERROR_IO_INCOMPLETE:
-                    return 0
-                raise err
-            self._pkt_len = pkt_len.value
+            #pkt_len = DWORD(0)
+            #if not GetOverlappedResult(self.handle, pointer(self.req), pointer(pkt_len), False):
+            #    err = WinError()
+            #    if err.winerror == ERROR_IO_PENDING or err.winerror == ERROR_IO_INCOMPLETE:
+            #        return 0
+            #    raise err
+            #self._pkt_len = pkt_len.value
+            self.submitted = False
+            return self.req.InternalHigh    
         return self._pkt_len
     
     def submit(self):
         pkt_len = DWORD(0)
         if not ReadFile(self.handle, cast(self.buffer, c_void_p), self.length, pointer(pkt_len), pointer(self.req)):
-            err = WinError()
-            if err.winerror and err.winerror != ERROR_IO_PENDING:
-                raise err
+            err = get_last_error()
+            if err != 0 and err != ERROR_IO_PENDING:
+                raise WinError(err)
             self._pkt_len = 0
+            self.submitted = True
         else:
             if not SetEvent(self.req.hEvent):
                 raise WinError()
@@ -91,9 +97,10 @@ class IoctlAsync(_async):
 
     def submit(self):
         if not DeviceIoControl(self.handle, self.ioctl, byref(self.in_buf), self.in_sz, pointer(self.buffer), self.length, None, pointer(self.req)):
-            err = WinError()
-            if err.winerror and err.winerror != ERROR_IO_PENDING:
-                raise err
+            err = get_last_error()
+            if err != 0 and err != ERROR_IO_PENDING:
+                raise WinError(err)
+            self.submitted = True
         else:
             if not SetEvent(self.req.hEvent):
                 raise WindowsError()

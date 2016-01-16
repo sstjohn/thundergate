@@ -58,12 +58,12 @@ class TapLinuxInterface(object):
             tty.setraw(self.confd)
             self.ready, _, _ = select.select(self.read_fds, [], [])
             if self.dev.interface.eventfd in self.ready:
-                return 0
-            if self.tfd in self.ready:
                 return 1
+            if self.tfd in self.ready:
+                return 2
             if self.confd in self.ready:
                 self._key = sys.stdin.read(1)
-                return 2
+                return 0
         finally:
             termios.tcsetattr(self.confd, termios.TCSADRAIN, old_con_settings)
 

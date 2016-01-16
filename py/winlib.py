@@ -137,12 +137,10 @@ class SP_DEVICE_INTERFACE_DATA(Structure):
                 ('Flags', DWORD),
                 ('Reserved', POINTER(ULONG))]
 
-def SP_DEVICE_INTERFACE_DETAILS_ofsize(sz):
-    class SP_DEVICE_INTERFACE_DETAILS(Structure):
-        _fields_ = [('cbSize', DWORD),
-                    ('DevicePath', ARRAY(c_char, sz))]
+class SP_DEVICE_INTERFACE_DETAILS(Structure):
+    _fields_ = [('_should_be_eight', DWORD),
+                ('DevicePath', c_char * 250)]
 
-    return SP_DEVICE_INTERFACE_DETAILS(8)
         
 
 class __SYSTEM_INFO__u__o(Structure):
@@ -206,7 +204,7 @@ TOKEN_ADJUST_PRIVILEGES = 0x20
 TOKEN_QUERY = 0x8
 SE_PRIVILEGE_ENABLED = 2
 SE_LOCK_MEMORY_NAME = "SeLockMemoryPrivilege"
-INVALID_HANDLE_VALUE = HANDLE(-1).value
+INVALID_HANDLE_VALUE = cast(pointer(c_int64(-1)), POINTER(HANDLE)).contents 
 METHOD_OUT_DIRECT = 2
 METHOD_IN_DIRECT = 1
 METHOD_BUFFERED = 0
@@ -288,7 +286,7 @@ fun_prototypes = [
     (kernel32, "ReadConsoleInputA", [HANDLE, POINTER(INPUT_RECORD), DWORD, POINTER(DWORD)], BOOL),
     (kernel32, "GetNumberOfConsoleInputEvents", [HANDLE, POINTER(DWORD)], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
-    (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), c_void_p, DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
+    (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), POINTER(SP_DEVICE_INTERFACE_DETAILS), DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
     (setupapi, "SetupDiGetClassDevsA", [POINTER(GUID), LPCSTR, HWND, DWORD], HANDLE),
     (setupapi, "SetupDiCreateDeviceInfoList", [POINTER(GUID), HWND], HDEVINFO),

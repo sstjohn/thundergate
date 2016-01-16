@@ -23,19 +23,29 @@ import sys
 import subprocess
 import platform
 
-from device import Device
-from testdrv import TestDriver
-from shelldrv import ShellDriver
-from tginstall import TgInstaller
-from tapdrv import TapDriver
-
 sys_name = platform.system()
+if sys_name == "Windows":
+    print "argv: %s" % sys.argv
+    print "cwd: %s" % os.getcwd()
+    tgdir = sys.argv[0]
+    if tgdir != "":
+        tgdir = os.path.abspath(tgdir)
+        tgdir = "\\".join(tgdir.split("\\")[:-2])
+        cwd = os.getcwd()
+        if tgdir != cwd:
+            print "[!] resetting cwd!"
+            print "  was: %s" % cwd
+            print "  now: %s" % tgdir
+            os.chdir(tgdir)
+
+from device import Device
+
 
 if sys_name == "Linux":
     from sysfsint import SysfsInterface
     from vfioint import VfioInterface
     from uioint import UioInterface
-elif sys_name == "Windows":
+elif sys_name == "Windows" or sys_name == "cli":
     from winint import WinInterface
 else:
     raise NotImplementedError("this version of thundergate only runs on linux and windows")
@@ -66,12 +76,12 @@ if __name__ == "__main__":
         parser.add_argument("--device", help="BDF of tg3 PCI device", default=None)
     parser.add_argument("-p", "--ptvsd", help="enable ptvsd server", action="store_true")
     parser.add_argument("--ptvsdpass", help="ptvsd server password", default=None)
-    parser.add_argument("--ptvsdwait", help="wait for ptvsd attachment at startup", action="store_true")
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
     parser.add_argument("-s", "--shell", help="ipython cli", action="store_true")
     parser.add_argument("-b", "--backup", help="create eeprom backup", action="store_true", default=False)
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
     parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
+    parser.add_argument("--wait", help="wait for debugger attachment at startup", action="store_true")
 
     args = parser.parse_args()
     banner()
@@ -87,13 +97,17 @@ if __name__ == "__main__":
     if args.ptvsd:
         import ptvsd
         ptvsd.enable_attach(secret=args.ptvsdpass)
-        if args.ptvsdwait:
+        if args.wait:
             print "[+] waiting for ptvsd client..."
             ptvsd.wait_for_attach()
             print "[+] ptvsd client attached!"
             ptvsd.break_into_debugger()
         else:
             print "[+] ptvsd server enabled"
+    elif args.wait:
+        print "[.] process id is %d" % os.getpid()
+        print "[!] press 'enter' to continue..."
+        raw_input()
 
     if sys_name == 'Linux':
         if args.device is None:
@@ -118,7 +132,7 @@ if __name__ == "__main__":
             else:
                 dev_interface = SysfsInterface(dbdf)
 
-    elif sys_name == 'Windows':
+    elif sys_name == 'Windows' or sys_name == 'cli':
         dev_interface = WinInterface()
 
     if not args.backup:
@@ -134,14 +148,18 @@ if __name__ == "__main__":
             print "[+] eeprom backup saved as 'eeprom.bak'"
 
         if args.install:
+            from tginstall import TgInstaller
             with TgInstaller(dev) as i:
                 i.run()
         elif args.shell:
+            from shelldrv import ShellDriver
             with ShellDriver(dev) as shell:
                 if args.driver:
+                    from tapdrv import TapDriver
                     with TapDriver(dev) as tap:
                         shell.run(loc=locals())
                 elif args.tests:
+                    from testdrv import TestDriver
                     with TestDriver(dev) as test:
                         test.run()
                         shell.run(loc=locals())
@@ -149,9 +167,11 @@ if __name__ == "__main__":
                     shell.run(loc=locals())
         else:
             if args.driver:
+                from tapdrv import TapDriver
                 with TapDriver(dev) as tap:
                     tap.run()
             elif args.tests:
+                from testdrv import TestDriver
                 with TestDriver(dev) as test:
                     test.run()
     

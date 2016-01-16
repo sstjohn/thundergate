@@ -28,17 +28,19 @@ class TapWinInterface(object):
     def __enter__(self):
         self.tfd = create_tap_if()
         self._tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
-        self._tap_evt = ReadAsync(self.tfd, 0x800, self.mm)
+        self._tap_evts = [ReadAsync(self.tfd, 0x800, self.mm),
+                          ReadAsync(self.tfd, 0x800, self.mm)]
         self._hCon = GetStdHandle(STD_INPUT_HANDLE)
-        self._events = (HANDLE * 3)(self._tg_evt.req.hEvent, self._tap_evt.req.hEvent, self._hCon)
+        self._events = (HANDLE * 4)(self._hCon, self._tg_evt.req.hEvent, self._tap_evts[0].req.hEvent, self._tap_evts[1].req.hEvent)
         self._tg_evt.submit()
         return self
     
     def __exit__(self):
-        self._tap_evt.reset(False)
+        for t in self._tap_evts:
+            t.reset(False)
         self._tg_evt.reset(False)
         del self._events
-        del self._tap_evt
+        del self._tap_evts
         del self._tg_evt
 
         del_tap_if(self.tfd)
@@ -71,11 +73,14 @@ class TapWinInterface(object):
         return ''
 
     def _wait_for_something(self):
-        res = WaitForMultipleObjects(3, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
-        if WAIT_FAILED == res:
-            raise WinError()
-        return res
-
+        res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
+        if res < 2:
+            return res
+        if res < 4:
+            self._tap_idx = res - 2
+            return 2
+        raise WinError()
+        
     def _get_serial(self):
         serial = cast(self._tg_evt.buffer, POINTER(c_uint64)).contents.value
         self._tg_evt.reset()
@@ -84,9 +89,9 @@ class TapWinInterface(object):
     def _get_packet(self):
         if self.verbose:
             print "[+] getting a packet from tap device...",
-        pkt_len = self._tap_evt.pkt_len
-        pkt = self._tap_evt.buffer
-        self._tap_evt.reset()
+        pkt_len = self._tap_evts[self._tap_idx].pkt_len
+        pkt = self._tap_evts[self._tap_idx].buffer
+        self._tap_evts[self._tap_idx].reset()
         if self.verbose:
             print "read %d bytes" % pkt_len
         return (pkt, pkt_len)
@@ -99,9 +104,9 @@ class TapWinInterface(object):
             if self.verbose:
                 print "[!] attempting to write to the tap device...",
             if not WriteFile(self.tfd, pkt, length, None, pointer(o)):
-                err = WinError()
-                if err.winerror != ERROR_IO_PENDING:
-                    raise err
+                err = get_last_error()
+                if err > 0 and err != ERROR_IO_PENDING:
+                    raise WinError(err)
                 if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
                     raise WinError()
             if self.verbose:
@@ -116,18 +121,20 @@ class TapWinInterface(object):
         try:
             val = c_int32(1 if connected else 0)
             if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, pointer(o)):
-                err = WinError()
-                if err.winerror == ERROR_IO_PENDING:
+                err = get_last_error()
+                if err == ERROR_IO_PENDING:
                     if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
                         raise WinError()
-                elif err.winerror == 0:
+                elif err == 0:
                     pass
                 else:
-                    raise err
+                    raise WinError(err)
             if connected:
-                self._tap_evt.submit()
+                for t in self._tap_evts:
+                    t.submit()
             else:
-                self._tap_evt.reset(False)
+                for t in self._tap_evts:
+                    t.reset(False)
             self._connected = connected
         finally:
             CloseHandle(o.hEvent)

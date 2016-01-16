@@ -38,7 +38,7 @@ if sys_name == "Linux":
     from tunlib import *
     from tap_linux import TapLinuxInterface
     TDInt = TapLinuxInterface
-elif sys_name == "Windows":
+elif sys_name == "Windows" or sys_name == "cli":
     from winlib import *
     from tap_win import TapWinInterface
     TDInt = TapWinInterface
@@ -197,8 +197,10 @@ class TapDriver(TDInt):
             dev.pci.misc_host_ctrl.enable_tagged_status_mode = 1
 
         dma_wmm = 0x6
-        if dev.config.caps['pcie'].max_payload_size > 0:
-            dma_wmm += 0x1
+        try:
+            if dev.config.caps['pcie'].max_payload_size > 0:
+                dma_wmm += 0x1
+        except: pass
 
         if dev.pci.dma_rw_ctrl.dma_write_watermark != dma_wmm:
             print "[+] configuring dma write watermark"
@@ -733,9 +735,9 @@ class TapDriver(TDInt):
 
         k_handlers['h'] = ("help", functools.partial(TapDriver._help, self, k_handlers))
 
-        e_handlers = {0: functools.partial(TapDriver._handle_interrupt, self),
-                      1: functools.partial(TapDriver._handle_tap, self),
-                      2: functools.partial(TapDriver._handle_keypress, self, k_handlers)}
+        e_handlers = {0: functools.partial(TapDriver._handle_keypress, self, k_handlers),
+                      1: functools.partial(TapDriver._handle_interrupt, self),
+                      2: functools.partial(TapDriver._handle_tap, self)}
 
         while True:
             e_handlers[self._wait_for_something()]()

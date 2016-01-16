@@ -61,9 +61,12 @@ class _MemMgr(__mm_system_interface):
 
 
     def get_free(self, minsize):
-        self.free_coal()
+        
         candidates = [c for c in self.free_list if c[1] >= minsize]
         if len(candidates) == 0:
+            self.free_coal()
+            candidates = [c for c in self.free_list if c[1] >= minsize]
+        if len(candidates) == 0:    
             return None
 
         choice = min(candidates, key=lambda c: c[1])

@@ -33,19 +33,15 @@ class WinInterface(object):
 
         devIntData = SP_DEVICE_INTERFACE_DATA(sizeof(SP_DEVICE_INTERFACE_DATA))
         devInfoData = SP_DEVINFO_DATA(sizeof(SP_DEVINFO_DATA))
+        devIntDetail = SP_DEVICE_INTERFACE_DETAILS()
+        devIntDetail._should_be_eight = 8L
 
         idx = 0
-        devIntDetail = None
 
         while SetupDiEnumDeviceInterfaces(hInfoSet, None, byref(GUID_DEVINTERFACE_TGWINK),  idx, pointer(devIntData)):
             print "[.] found tgwink device interface #%d" % idx
-            detailSize = DWORD(0)
 
-            SetupDiGetDeviceInterfaceDetail(hInfoSet, byref(devIntData), None, 0, pointer(detailSize), None)
-
-            devIntDetail = SP_DEVICE_INTERFACE_DETAILS_ofsize(detailSize.value)
-
-            if not SetupDiGetDeviceInterfaceDetail(hInfoSet, byref(devIntData), pointer(devIntDetail), detailSize, None, pointer(devInfoData)):
+            if not SetupDiGetDeviceInterfaceDetail(hInfoSet, pointer(devIntData), pointer(devIntDetail), sizeof(devIntDetail), None, None):
                 raise WinError()
 
             idx += 1
@@ -67,7 +63,7 @@ class WinInterface(object):
         if self.cfgfd == INVALID_HANDLE_VALUE:
             raise WinError()
 
-        handshake = c_int32(0)
+        handshake = c_uint32(0)
         if not DeviceIoControl(self.cfgfd, IOCTL_TGWINK_SAY_HELLO, None, 0, pointer(handshake), sizeof(handshake), None, None):
             raise WinError()
         if handshake.value != 0x5a5aa5a5:
