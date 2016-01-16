@@ -167,14 +167,14 @@ class TapDriver(TDInt):
         self.rx_ring_bds = r
         self.rx_ring_buffers = []
         for i in range(self.rx_ring_len):
-            buf = mm.alloc(0x600)
+            buf = mm.alloc(0x800)
             self.rx_ring_buffers += [buf]
 
             pbuf = mm.get_paddr(buf)
             r[i].addr_hi = pbuf >> 32
             r[i].addr_low = pbuf & 0xffffffff
             r[i].index = i
-            r[i].length = 0x600
+            r[i].length = 0x800
             r[i].flags.disabled = 0
 
         print "[+] produced %d rx buffers" % self.rx_ring_len
@@ -594,7 +594,37 @@ class TapDriver(TDInt):
                             print " opaque:    %08x" % rbd.opaque
 
                         buf = ctypes.cast(self.rx_ring_buffers[rbd.index], ctypes.POINTER(ctypes.c_char * rbd.length))[0]
-                       
+                        '''
+                               def _populate_rx_ring(self, count = None):
+                        if count == None:
+                            count = self.rx_ring_len - 1
+                        assert count < self.rx_ring_len
+                        mm = self.mm
+                        r = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
+                        self.rx_ring_bds = r
+                        self.rx_ring_buffers = []
+                        for i in range(self.rx_ring_len):
+                            buf = mm.alloc(0x800)
+                            self.rx_ring_buffers += [buf]
+
+                            pbuf = mm.get_paddr(buf)
+                            r[i].addr_hi = pbuf >> 32
+                            r[i].addr_low = pbuf & 0xffffffff
+                            r[i].index = i
+                            r[i].length = 0x800
+                            r[i].flags.disabled = 0
+
+                        print "[+] produced %d rx buffers" % self.rx_ring_len
+                        self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = count
+                        self._std_rbd_pi = count
+                        self._std_rbd_ci = 0
+                        ''' 
+                        new_buf = self.mm.alloc(0x800)
+                        new_pbuf = mm.get_paddr(new_buf)
+                        self.rx_ring_bds[rbd.index].addr_hi = new_pbuf >> 32
+                        self.rx_ring_bds[rbd.index].addr_low = new_pbuf & 0xffffffff
+                        self.rx_ring_buffers[rbd.index] = new_buf
+
                         self._write_pkt(buf.raw, rbd.length)
                          
                         count -= 1

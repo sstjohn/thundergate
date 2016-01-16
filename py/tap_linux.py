@@ -81,6 +81,7 @@ class TapLinuxInterface(object):
 
     def _write_pkt(self, pkt, length):
         os.write(self.tfd, pkt)
+        self.mm.free(pkt)
 
     def _set_tapdev_status(self, connected):
         with closing(socket.socket()) as s:

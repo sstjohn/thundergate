@@ -24,6 +24,7 @@ class TapWinInterface(object):
         self.dev = dev
         self.mm = dev.interface.mm
         self._connected = False
+        self._wait_q = {}
 
     def __enter__(self):
         self.tfd = create_tap_if()
@@ -72,7 +73,26 @@ class TapWinInterface(object):
             return res
         return ''
 
+    def _work_wait_q(self):
+        keys = self._wait_q.keys()
+        res = 0
+        while WAIT_FAILED != res:
+            cnt = len(self._wait_q)
+            wait_handles = (HANDLE * cnt)(*self._wait_q.keys())
+            res = WaitForMultipleObjects(cnt, cast(pointer(wait_handles), POINTER(c_void_p)), False, 0)
+            if WAIT_FAILED != res:
+                k = self._wait_q[wait_handles[res]]
+                self._wait_q[k]()
+                del self._wait_q[k]
+
     def _wait_for_something(self):
+        res = WAIT_FAILED
+        if len(self._wait_q) > 50:
+            self._work_wait_q()
+        elif len(self._wait_q):
+            res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, 0)
+            if WAIT_FAILED == res:
+                self._work_wait_q()
         res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
         if res < 2:
             return res
@@ -113,6 +133,7 @@ class TapWinInterface(object):
                 print "wrote %d bytes" % o.InternalHigh
         finally:
             CloseHandle(o.hEvent)
+            self.mm.free(pkt)
 
     def _set_tapdev_status(self, connected):
         if self.verbose:

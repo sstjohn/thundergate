@@ -250,6 +250,7 @@ ERROR_IO_PENDING = 997
 ERROR_IO_INCOMPLETE = 996
 STD_INPUT_HANDLE = DWORD(-10)
 KEY_EVENT = 1
+WAIT_TIMEOUT = 0x102
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
