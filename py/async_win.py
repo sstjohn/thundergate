@@ -96,10 +96,7 @@ class IoctlAsync(_async):
         self.buffer = (c_char * length)()
 
     def submit(self):
-        if not DeviceIoControl(self.handle, self.ioctl, byref(self.in_buf), self.in_sz, pointer(self.buffer), self.length, None, pointer(self.req)):
-            err = get_last_error()
-            if err != 0 and err != ERROR_IO_PENDING:
-                raise WinError(err)
+        if 0 == ioctl(self.handle, self.ioctl, self.in_buf, self.buffer, self.req):
             self.submitted = True
         else:
             if not SetEvent(self.req.hEvent):

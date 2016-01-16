@@ -64,14 +64,14 @@ class WinInterface(object):
             raise WinError()
 
         handshake = c_uint32(0)
-        if not DeviceIoControl(self.cfgfd, IOCTL_TGWINK_SAY_HELLO, None, 0, pointer(handshake), sizeof(handshake), None, None):
-            raise WinError()
+        #if not DeviceIoControl(self.cfgfd, IOCTL_TGWINK_SAY_HELLO, None, 0, pointer(handshake), sizeof(handshake), None, None):
+        #    raise WinError()
+        ioctl(self.cfgfd, IOCTL_TGWINK_SAY_HELLO, None, handshake)
         if handshake.value != 0x5a5aa5a5:
             raise Exception("unknown response from ioctl on tgwink interface")
 
         bar_ptr = c_int64()
-        if not DeviceIoControl(self.cfgfd, IOCTL_TGWINK_MAP_BAR_0, None, 0, pointer(bar_ptr), sizeof(bar_ptr), None, None):
-            raise WinError()
+        ioctl(self.cfgfd, IOCTL_TGWINK_MAP_BAR_0, None, bar_ptr)
 
         self.bar0 = bar_ptr.value
 
@@ -112,7 +112,7 @@ class WinInterface(object):
             req = OVERLAPPED(Offset=offset, hEvent = CreateEvent(None, True, False, None))
             bytes_written = DWORD(0)
             val = c_uint32(inval)
-            if not WriteFile(self.cfgfd, byref(val), 4, None, pointer(req)):
+            if not WriteFile(self.cfgfd, pointer(val), 4, None, pointer(req)):
                 err = WinError()
                 if err.winerror == ERROR_IO_PENDING:
                     if WAIT_FAILED == WaitForSingleObject(req.hEvent, INFINITE):

@@ -54,7 +54,7 @@ class WinMemMgr(_MemMgr):
     def get_page(self):
         sz = ULONG_PTR(1)
         ar = ULONG_PTR(0)
-        if not AllocateUserPhysicalPages(-1, pointer(sz), pointer(ar)):
+        if not AllocateUserPhysicalPages(CURRENT_PROCESS_HANDLE, pointer(sz), pointer(ar)):
             raise WinError()
         if sz.value != 1:
             raise MemoryError()

@@ -19,6 +19,8 @@
 from ctypes import *
 from ctypes.wintypes import *
 import sys
+import platform
+sys_name = platform.system()
 
 c_uintptr = eval("c_uint%d" % (sizeof(c_void_p) * 8))
 ULONG_PTR = c_uintptr
@@ -199,12 +201,15 @@ LSA_HANDLE = LPVOID
 ACCESS_MASK = DWORD
 TOKEN_INFORMATION_CLASS = DWORD
 
+_minus_one_handle = cast(pointer(c_int64(-1)), POINTER(HANDLE)).contents 
+
 SID_REVISION = 1
 TOKEN_ADJUST_PRIVILEGES = 0x20
 TOKEN_QUERY = 0x8
 SE_PRIVILEGE_ENABLED = 2
 SE_LOCK_MEMORY_NAME = "SeLockMemoryPrivilege"
-INVALID_HANDLE_VALUE = cast(pointer(c_int64(-1)), POINTER(HANDLE)).contents 
+INVALID_HANDLE_VALUE = _minus_one_handle
+CURRENT_PROCESS_HANDLE = _minus_one_handle
 METHOD_OUT_DIRECT = 2
 METHOD_IN_DIRECT = 1
 METHOD_BUFFERED = 0
@@ -322,6 +327,46 @@ for proto in fun_prototypes:
         name = name[:-1]
     globals()[name] = f
 
+def ioctl(handle, code, in_buffer, out_buffer, overlapped = None):
+    if in_buffer is None:
+        in_sz = DWORD(0)
+        in_ptr = None
+    else:
+        in_sz = DWORD(sizeof(in_buffer))
+        in_ptr = pointer(in_buffer)
+    if out_buffer is None:
+        out_sz = DWORD(0)
+        out_ptr = None
+    else:
+        out_sz = DWORD(sizeof(out_buffer))
+        out_ptr = pointer(out_buffer)
+    if overlapped is None:
+        o_ptr = None
+    else:
+        o_ptr = pointer(overlapped)
+    if sys_name == "cli":
+        fncall = kernel32.DeviceIoControl
+        fncall.restype = BOOL
+        fncall.argtypes = [HANDLE, 
+                           DWORD, 
+                           type(in_ptr) if in_sz.value else c_void_p, 
+                           DWORD, 
+                           type(out_ptr) if out_sz.value else c_void_p, 
+                           DWORD, 
+                           POINTER(DWORD), 
+                           c_void_p if overlapped is None else POINTER(OVERLAPPED)]
+    else:
+        fncall = DeviceIoControl
+    ret = DWORD(0)
+    if DeviceIoControl(handle, code, in_ptr, in_sz, out_ptr, out_sz, pointer(ret), o_ptr):
+        return ret.value
+    else:
+        err = get_last_error()
+        if 0 == err:
+            return ret.value
+        if ERROR_IO_PENDING == err:
+            return 0
+        raise WinError(err)
 
 tap_interfaces = {}
 
@@ -371,8 +416,10 @@ def create_tap_if(name = None):
   
     info = (ULONG * 3)()
     sz = DWORD(0)
-    if not DeviceIoControl(hdev, TAP_WIN_IOCTL_GET_VERSION, pointer(info), sizeof(info), pointer(info), sizeof(info), pointer(sz), None):
-        raise WinError()
+
+    #if not DeviceIoControl(hdev, TAP_WIN_IOCTL_GET_VERSION, pointer(info), sizeof(info), pointer(info), sizeof(info), pointer(sz), None):
+    #    raise WinError()
+    ioctl(hdev, TAP_WIN_IOCTL_GET_VERSION, info, info)
     print "[+] tap-windows v%d.%d%s device %s created" % (info[0], info[1], "d" if info[2] else "", cfg_iid.value)
 
     tap_interfaces[hdev] = (h, devInfoData)
@@ -433,7 +480,7 @@ def add_account_privilege(privilege_name):
 
 def add_process_privilege(privilege_name):
     token = HANDLE()
-    if not OpenProcessToken(-1, TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, pointer(token)):
+    if not OpenProcessToken(INVALID_HANDLE_VALUE, TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, pointer(token)):
         raise WinError()
     info = TOKEN_PRIVILEGES(PrivilegeCount = 1)
     info.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED
