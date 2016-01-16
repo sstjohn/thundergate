@@ -620,12 +620,12 @@ class TapDriver(TDInt):
                         self._std_rbd_ci = 0
                         ''' 
                         new_buf = self.mm.alloc(0x800)
-                        new_pbuf = mm.get_paddr(new_buf)
+                        new_pbuf = self.mm.get_paddr(new_buf)
                         self.rx_ring_bds[rbd.index].addr_hi = new_pbuf >> 32
                         self.rx_ring_bds[rbd.index].addr_low = new_pbuf & 0xffffffff
                         self.rx_ring_buffers[rbd.index] = new_buf
 
-                        self._write_pkt(buf.raw, rbd.length)
+                        self._write_pkt(buf, rbd.length)
                          
                         count -= 1
 
