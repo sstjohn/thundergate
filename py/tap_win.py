@@ -74,7 +74,6 @@ class TapWinInterface(object):
         return ''
 
     def _work_wait_q(self):
-        keys = self._wait_q.keys()
         res = 0
         while WAIT_FAILED != res:
             cnt = len(self._wait_q)
@@ -84,6 +83,7 @@ class TapWinInterface(object):
                 k = self._wait_q[wait_handles[res]]
                 self._wait_q[k]()
                 del self._wait_q[k]
+        self.mm.free_coal()
 
     def _wait_for_something(self):
         res = WAIT_FAILED
@@ -93,7 +93,8 @@ class TapWinInterface(object):
             res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, 0)
             if WAIT_FAILED == res:
                 self._work_wait_q()
-        res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
+        if WAIT_FAILED == res:
+            res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
         if res < 2:
             return res
         if res < 4:
