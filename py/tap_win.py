@@ -93,7 +93,6 @@ class TapWinInterface(object):
                 cnt -= 1
         if self.verbose:
             print "[+] cleaned %d items off the wait queue." % completed
-        self.mm.free_coal()
 
     def _wait_for_something(self):
         res = WAIT_TIMEOUT
