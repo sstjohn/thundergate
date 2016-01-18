@@ -120,17 +120,21 @@ if __name__ == "__main__":
         if not os.path.exists("/sys/bus/pci/devices/%s/" % dbdf):
             print "[-] device resources at /sys/bus/pci/devices/%s/ not found; is sysfs mounted?" % dbdf
             sys.exit(1)
-
-        kmod = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
+        
+        try:
+            kmod = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
+        except:
+            kmod = '' 
         if kmod == 'vfio-pci':
             dev_interface = VfioInterface(dbdf)
+        elif kmod == 'uio_pci_generic':
+            dev_interface = UioInterface(dbdf)
         else:
-            if args.driver:
-                raise Exception("TAP driver only supported with vfio-pci kernel module")
-            if kmod == 'uio_pci_generic':
-                dev_interface = UioInterface(dbdf)
-            else:
-                dev_interface = SysfsInterface(dbdf)
+            dev_interface = SysfsInterface(dbdf)
+
+        if kmod == 'tg3' and args.driver:
+            print "[!] device is currently bound to tg3; this won't work"
+            sys.exit(1)
 
     elif sys_name == 'Windows' or sys_name == 'cli':
         dev_interface = WinInterface()

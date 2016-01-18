@@ -27,6 +27,7 @@ import sys
 import termios
 import socket
 from contextlib import closing
+from ctypes import addressof
 
 class TapLinuxInterface(object):
     def __init__(self, dev):
@@ -41,10 +42,17 @@ class TapLinuxInterface(object):
         ifr = struct.pack('16sH', "", IFF_TAP | IFF_NO_PI)
         self.tap_name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
         print "[+] tap device name: \"%s\"" % self.tap_name
-        self.tfd = fd
-        self.confd = sys.stdin.fileno()
-        self.read_fds = [self.dev.interface.eventfd, self.tfd, self.confd]
-        self.ready = []
+	self.tfd = fd
+	self.confd = sys.stdin.fileno()
+	try:
+	    self.read_fds = [self.dev.interface.eventfd, self.tfd, self.confd]
+	    self.ready = []
+            self._wait_for_something = self.__wait_with_eventfd
+            self._get_serial = self.__get_serial_from_eventfd
+	except:
+            print "[-] no interrupt eventfd exposed by device interface, polling instead."
+            self._wait_for_something = self.__wait_by_polling
+            self._get_serial = self.__get_serial_from_counter
         return self
 
     def __exit__(self):
@@ -52,7 +60,22 @@ class TapLinuxInterface(object):
             self._set_tapdev_status(False)
         os.close(self.tfd)
 
-    def _wait_for_something(self):
+    def __wait_by_polling(self):
+        old_con_settings = termios.tcgetattr(self.confd)
+        try:
+            tty.setraw(self.confd)
+            while True:
+                if self.status_block.updated:
+                    return 1
+                if len(select.select([self.tfd], [], [], 0)[0]) > 0:
+                    return 2
+                if len(select.select([self.confd], [], [], 0)[0]) > 0:
+                    self._key = sys.stdin.read(1)
+                    return 0
+        finally:
+            termios.tcsetattr(self.confd, termios.TCSADRAIN, old_con_settings)
+
+    def __wait_with_eventfd(self):
         old_con_settings = termios.tcgetattr(self.confd)
         try:
             tty.setraw(self.confd)
@@ -67,8 +90,12 @@ class TapLinuxInterface(object):
         finally:
             termios.tcsetattr(self.confd, termios.TCSADRAIN, old_con_settings)
 
-    def _get_serial(self):
+    def __get_serial_from_eventfd(self):
         self.serial += struct.unpack("L", os.read(self.dev.interface.eventfd, 8))[0]
+        return self.serial
+
+    def __get_serial_from_counter(self):
+        self.serial += 1
         return self.serial
 
     def _get_packet(self):
@@ -81,7 +108,7 @@ class TapLinuxInterface(object):
 
     def _write_pkt(self, pkt, length):
         os.write(self.tfd, pkt)
-        self.mm.free(pkt)
+        self.mm.free(addressof(pkt))
 
     def _set_tapdev_status(self, connected):
         with closing(socket.socket()) as s:

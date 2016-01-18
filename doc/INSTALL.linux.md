@@ -39,13 +39,12 @@ $ make
 
 ## Install ##
 
-In order to use the userspace tap driver, the network interface device will
-need to be bound to the ```vfio-pci``` kernel module. This appears to be the
+For maximal userspace tap driver performance, the network interface device
+should be bound to the ```vfio-pci``` kernel module. This appears to be the
 only standard interface for receiving MSI/MSIX interrupts in userspace on
-Linux; users without an IOMMU are out of luck. (It may be possible to extend
-the UioInterface class to support devices raising legacy interrupts through the
-uio-pci-generic kernel module; such functionality is unimplemented at this
-time.)
+Linux; users without an IOMMU are out of luck. Absent that, the driver operates
+by polling on the status block for updates, at the cost of responsiveness and
+energy efficiency.
 
 First, determine the BDF of your Tigon3 device. This information can be
 obtained from, e.g., ```lspci```:
@@ -64,8 +63,6 @@ $ sudo modprobe vfio-pci
 $ echo $BDF | sudo tee /sys/bus/pci/devices/$BDF/driver/unbind
 $ echo $BDF | sudo tee /sys/bus/pci/drivers/vfio-pci/bind
 ~~~
-
-All other functionality is available regardless of the kernel driver in use.
 
 ## Use ##
 

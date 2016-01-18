@@ -2,16 +2,16 @@ from ctypes import *
 
 
 
-def TG3_IMAGE_TYPE(x): return ((x) >> 24) # macro
-def TG3_IMAGE_LEN(x): return (((x) & 0x3fffff) << 2) # macro
 mb_sbd_nic_producer = 112
+mb_sbd_host_producer = 32
 mb_rbd_rr3_consumer = 19
 mb_rbd_rr2_consumer = 18
-mb_sbd_host_producer = 32
 mb_rbd_rr1_consumer = 17
 mb_rbd_rr0_consumer = 16
-mb_rbd_standard_producer = 13
 mb_interrupt = 0
+mb_rbd_standard_producer = 13
+def TG3_IMAGE_TYPE(x): return ((x) >> 24) # macro
+def TG3_IMAGE_LEN(x): return (((x) & 0x3fffff) << 2) # macro
 class dmar_tbl_hdr(Structure):
     pass
 uint32_t = c_uint32
@@ -3868,7 +3868,7 @@ N8pci_regs4DOT_66E._fields_ = [
     ('int_pin', u32, 8),
     ('int_line', u32, 8),
 ]
-pci_regs._anonymous_ = ['_2', '_3', '_4', '_5', '_1', '_0']
+pci_regs._anonymous_ = ['_5', '_2', '_0', '_3', '_4', '_1']
 pci_regs._fields_ = [
     ('_0', N8pci_regs4DOT_61E),
     ('_1', N8pci_regs4DOT_62E),
@@ -5574,7 +5574,7 @@ N12status_block4DOT_81E._fields_ = [
     ('rjpci', u32, 16),
     ('reserved6', u32, 16),
 ]
-status_block._anonymous_ = ['_1', '_0', '_2', '_3', '_4', '_5']
+status_block._anonymous_ = ['_5', '_1', '_0', '_3', '_4', '_2']
 status_block._fields_ = [
     ('_0', N12status_block4DOT_76E),
     ('_1', N12status_block4DOT_77E),
