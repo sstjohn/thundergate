@@ -25,7 +25,7 @@ class TapWinInterface(object):
         self.dev = dev
         self.mm = dev.interface.mm
         self._connected = False
-        self._wait_q = {}
+        self._pending_completions = {}
 
     def __enter__(self):
         self.tfd = create_tap_if()
@@ -74,39 +74,11 @@ class TapWinInterface(object):
             return res
         return ''
 
-    def _work_wait_q(self):
-        if self.verbose:
-            print "[+] processing wait queue..."
-        completed = 0
-        res = 0
-        cnt = len(self._wait_q)
-        while WAIT_TIMEOUT != res and cnt > 0:
-            wait_handles = (HANDLE * cnt)(*self._wait_q.keys())
-            res = WaitForMultipleObjects(cnt, cast(pointer(wait_handles), POINTER(c_void_p)), False, 0)
-            if WAIT_FAILED == res:
-                raise WinError()
-            if res < cnt:
-                k = wait_handles[res]
-                self._wait_q[k]()
-                del self._wait_q[k]
-                completed += 1
-                cnt -= 1
-        if self.verbose:
-            print "[+] cleaned %d items off the wait queue." % completed
-
     def _wait_for_something(self):
-        res = WAIT_TIMEOUT
-        if len(self._wait_q) > 50:
-            self._work_wait_q()
-        elif len(self._wait_q) > 0:
-            res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, 0)
-            if WAIT_TIMEOUT == res:
-                self._work_wait_q()
-        if WAIT_TIMEOUT == res:
-            res = WaitForMultipleObjects(4, cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE)
+        res = WaitForMultipleObjectsEx(len(self._events), cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE, True)
         if res < 2:
             return res
-        if res < 4:
+        if res < len(self._tap_idx) + 2:
             self._tap_idx = res - 2
             return 2
         raise WinError()
@@ -126,12 +98,11 @@ class TapWinInterface(object):
             print "read %d bytes" % pkt_len
         return (pkt, pkt_len)
 
-    def __pkt_buf_free(self, overlapped, pkt):
+    def __tap_write_completion(self, overlapped, pkt, errcode, written, overlapped_ptr):
         if self.verbose:
             print "[.] freeing sent packet at %x" % addressof(pkt)
         self.mm.free(addressof(pkt))
-        CloseHandle(overlapped.hEvent)
-        del overlapped
+        del self.__pending_completions[addressof(pkt)]
 
     def _write_pkt(self, pkt, length):
         if not self._connected:
@@ -139,16 +110,13 @@ class TapWinInterface(object):
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         if self.verbose:
             print "[!] attempting to write to the tap device...",
-        if not WriteFile(self.tfd, pkt, length, None, pointer(o)):
-            err = get_last_error()
-            if err > 0 and err != ERROR_IO_PENDING:
-                raise WinError(err)
-            self._wait_q[o.hEvent] = functools.partial(TapWinInterface.__pkt_buf_free, self, o, pkt)
+        completion = FileIOCompletion(functools.partial(TapWinInterface.__tap_write_completion, self, o, pkt))
+        if not WriteFileEx(self.tfd, pkt, length, pointer(o), completion):
+            raise WinError()
         else:
-            self.mm.free(addressof(pkt))
-            CloseHandle(o.hEvent)
+            self.__pending_completions[addressof(pkt)] = completion
         if self.verbose:
-            print "wrote %d bytes" % o.InternalHigh
+            print "queued %d bytes" % len(pkt)
 
     def _set_tapdev_status(self, connected):
         if self.verbose:

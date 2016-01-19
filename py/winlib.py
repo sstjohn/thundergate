@@ -251,6 +251,9 @@ ERROR_IO_INCOMPLETE = 996
 STD_INPUT_HANDLE = DWORD(-10)
 KEY_EVENT = 1
 WAIT_TIMEOUT = 0x102
+WAIT_IO_COMPLETION = 0xC0
+
+FileIOCompletion = WINFUNCTYPE(None, DWORD, DWORD, POINTER(OVERLAPPED))
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
 
@@ -276,6 +279,7 @@ fun_prototypes = [
     (kernel32, "ReadFile", [HANDLE, LPVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)], BOOL),
     (kernel32, "CreateEventA", [POINTER(SECURITY_ATTRIBUTES), DWORD, DWORD, LPCSTR], HANDLE),    
     (kernel32, "WriteFile", [HANDLE, LPCVOID, DWORD, POINTER(DWORD), POINTER(OVERLAPPED)], BOOL),
+    (kernel32, "WriteFileEx", [HANDLE, LPCVOID, DWORD, POINTER(OVERLAPPED), FileIOCompletion], BOOL),
     (kernel32, "DeviceIoControl", [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, POINTER(DWORD), c_void_p], BOOL),
     (kernel32, "CloseHandle", [HANDLE], BOOL),
     (kernel32, "GetSystemInfo", [POINTER(SYSTEM_INFO)], None),
@@ -283,6 +287,7 @@ fun_prototypes = [
     (kernel32, "MapUserPhysicalPages", [LPVOID, ULONG_PTR, POINTER(ULONG_PTR)], BOOL),
     (kernel32, "WaitForSingleObject", [HANDLE, DWORD], DWORD),
     (kernel32, "WaitForMultipleObjects", [DWORD, POINTER(HANDLE), BOOL, DWORD], DWORD),
+    (kernel32, "WaitForMultipleObjectsEx", [DWORD, POINTER(HANDLE), BOOL, DWORD, BOOL], DWORD),
     (kernel32, "ResetEvent", [HANDLE], BOOL),
     (kernel32, "CancelIoEx", [HANDLE, POINTER(OVERLAPPED)], BOOL),
     (kernel32, "SetEvent", [HANDLE], BOOL),
