@@ -64,6 +64,11 @@ $ echo $BDF | sudo tee /sys/bus/pci/devices/$BDF/driver/unbind
 $ echo $BDF | sudo tee /sys/bus/pci/drivers/vfio-pci/bind
 ~~~
 
+On recent kernels, it may be more convenient to avail oneself of the 
+```driver_override``` file; see 
+[Documentation/ABI/testing/sysfs-bus-pci](https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-bus-pci)
+for details.
+
 ## Use ##
 
 <pre>
