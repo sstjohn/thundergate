@@ -21,13 +21,19 @@ import json
 import sys
 
 class CDPServer(object):
-    def __init__(self, data_in, data_out, log=False):
-        self.data_in = data_in
-        self.data_out = data_out
+    def __init__(self, dev, log=True):
+        self.data_in = sys.stdin
+        self.data_out = sys.stdout
         self.logging = log
         self.__dispatch_setup()
         if log:
             self.__logging_setup()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        pass
 
     def __logging_setup(self):
         f = "CDPServer.%d.txt" % os.getpid()
@@ -146,11 +152,47 @@ class CDPServer(object):
             self._log_write("EXCEPTION!")
         return j
 
-if __name__ == "__main__":
-    c = CDPServer(sys.stdin, sys.stdout, True)
-    try:
+    def run(self):
         while True:
-            j = c.recv()
-            c._dispatch_cmd(j)
-    finally:
-        c.logfile.close()
+            j = self.recv()
+            self._dispatch_cmd(j)
+
+def find_tgmain():
+    pname = path.abspath(sys.argv[0])
+    pdir = path.dirname(pname)
+    mname = ""
+    if path.exists(pdir + os.sep + "main.py"):
+        mname = pdir + os.sep + "main.py"
+    else:
+        try:
+            sname = os.readlink(pname)
+            sdir = path.dirname(sname)
+            if path.exists(sdir + os.sep + "main.py"):
+                mname = sdir + os.sep + "main.py"
+        except: pass
+    if len(sys.argv) > 1:
+        adir = sys.argv[1]
+        if path.exists(adir + os.sep + "py" + os.sep + "main.py"):
+            mname = adir + os.sep + "py" + os.sep + "main.py"
+    if mname == "":
+        try:
+            edir = os.environ["TGDIR"]
+            if path.exists(edir + os.sep + "py" + os.sep + "main.py"):
+                mname = edir + os.sep + "py" + os.sep + "main.py"
+        except: pass
+    if mname == "" and os.exists(pdir + os.sep + "tgdir.conf"):
+        with open(pdir + os.sep + "tgdir.conf", "r") as f:
+            fdir = f.readline().strip()
+        if path.exists(fdir + os.sep + "py" + os.sep + "main.py"):
+            mname = fdir + os.sep + "py" + os.sep + "main.py"
+    if mname == "":
+        raise Exception("couldn't locate thundergate directory")
+    return mname
+
+if __name__ == "__main__":
+    import sys
+    import os
+    from os import path
+    main = find_tgmain()
+    os.chdir(path.dirname(path.dirname(main)))
+    os.execl(main, "py/main.py", "--cdpserver")

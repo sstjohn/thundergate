@@ -82,6 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
     parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
     parser.add_argument("--wait", help="wait for debugger attachment at startup", action="store_true")
+    parser.add_argument("--cdpserver", help="launch VS Code debug protocol server", action="store_true")
 
     args = parser.parse_args()
     banner()
@@ -169,6 +170,10 @@ if __name__ == "__main__":
                         shell.run(loc=locals())
                 else:
                     shell.run(loc=locals())
+        elif args.cdpserver:
+            from cdp import CDPServer
+            with CDPServer(dev) as server:
+                server.run()
         else:
             if args.driver:
                 from tapdrv import TapDriver

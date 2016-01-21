@@ -1,0 +1,61 @@
+{
+	"name": "tgdbg",
+	"displayName": "Thundergate Debug",
+	"version": "0.0.1",
+	"publisher": "sstjohn",
+	"description": "Debugging extension for Thundergate toolkit",
+	"author": {
+		"name": "Saul St John"
+	},
+	"engines": {
+		"vscode": "^0.10.1"
+	},
+	"categories": [
+		"Debuggers"
+	],
+	"private": true,
+	"dependencies": {},
+	"contributes": {
+		"debuggers": [
+			{
+				"type": "tg",
+				"label": "Thundergate Debug",
+				"enableBreakpointsFor": {
+					"languageIds": [
+						"c"
+					]
+				},
+				"program": "./cdp.py",
+				"runtime": "python",
+				"configurationAttributes": {
+					"launch": {
+						"required": [
+							"program"
+						],
+						"properties": {
+							"program": {
+								"type": "string",
+								"description": "Workspace relative path to a MIPS32 ELF file.",
+								"default": "fw/fw.elf"
+							},
+							"stopOnEntry": {
+								"type": "boolean",
+								"description": "Automatically stop after launch.",
+								"default": true
+							}
+						}
+					}
+				},
+				"initialConfigurations": [
+					{
+						"name": "Thundergate-Debug",
+						"type": "tg",
+						"request": "launch",
+						"program": "fw/fw.elf",
+						"stopOnEntry": true
+					}
+				]
+			}
+		]
+	}
+}

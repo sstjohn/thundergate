@@ -82,6 +82,32 @@ class Cpu(rflip.cpu):
         except:
             return self._dev.mem.read(addr, count * 4)
 
+    def image_load(self, addr, blob):
+        if not self.mode.halt:
+            raise Exception("halt cpu first")
+
+        if addr >= 0x08000000 and addr < 0x08010000:
+            raddr = (addr & 0xffff) | 0x30000
+        elif addr >= 0x40000000 and addr < 0x40010000:
+            raddr = (addr & 0xffff) | 0x20000
+        elif addr >= 0xc0000000:
+            raddr = addr & 0xffff
+        else:
+            raise Exception("bad image offset")
+
+        if (raddr % 0x10000) + len(blob) > 0x10000:
+            raise Exception("image too big")
+        
+        if (len(blob) % 4) != 0:
+            raise Exception("bad image length")
+
+        for i in range(0, len(blob), 4):
+            wd = struct.unpack("!I", blob[i:i+4])[0]
+            self._dev.pci.reg_base_addr = raddr + i
+            _ = self._dev.pci.reg_base_addr
+            self._dev.pci.reg_data = wd
+            _ = self._dev.pci.reg_data
+
     if not _no_capstone:
         md_mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
         md = Cs(CS_ARCH_MIPS, md_mode)
