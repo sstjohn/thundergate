@@ -24,22 +24,20 @@ import subprocess
 import platform
 
 sys_name = platform.system()
-if sys_name == "Windows":
-    print "argv: %s" % sys.argv
-    print "cwd: %s" % os.getcwd()
+
+if __name__ == "__main__":
     tgdir = sys.argv[0]
     if tgdir != "":
         tgdir = os.path.abspath(tgdir)
-        tgdir = "\\".join(tgdir.split("\\")[:-2])
+        tgdir = os.sep.join(tgdir.split(os.sep)[:-2])
         cwd = os.getcwd()
         if tgdir != cwd:
-            print "[!] resetting cwd!"
-            print "  was: %s" % cwd
-            print "  now: %s" % tgdir
+            print >> sys.stderr, "[!] resetting cwd!"
+            print >> sys.stderr, "  was: %s" % cwd
+            print >> sys.stderr, "  now: %s" % tgdir
             os.chdir(tgdir)
 
 from device import Device
-
 
 if sys_name == "Linux":
     from sysfsint import SysfsInterface
@@ -85,8 +83,15 @@ if __name__ == "__main__":
     parser.add_argument("--cdpserver", help="launch VS Code debug protocol server", action="store_true")
 
     args = parser.parse_args()
+
+    if args.cdpserver:
+        conout = sys.stdout
+        conin = sys.stdin
+        sys.stdin = open("/dev/null", "r")
+        sys.stdout = open("cdp.%d.log" % os.getpid(), "w")
+        
     banner()
-    
+
     ima = "inspector"
     try: 
         if args.driver: ima = "userspace driver"
@@ -112,7 +117,10 @@ if __name__ == "__main__":
 
     if sys_name == 'Linux':
         if args.device is None:
-            dbdf = subprocess.check_output(["lspci", "-d 14e4:1682", "-n"]).split(" ")[0]
+            dbdf = subprocess.check_output(["lspci", "-d 14e4:1682", "-n"]).split(" ")[0].strip()
+            if '' == dbdf:
+                print "[-] tigon3 device not found"
+                sys.exit(1)
         else:
             dbdf = args.device
         if len(dbdf.split(':')) == 2:
@@ -141,7 +149,7 @@ if __name__ == "__main__":
         dev_interface = WinInterface()
 
     if not args.backup:
-        if not os.path.exists("eeprom.bak"):
+        if not os.path.exists("eeprom.bak") and not args.cdpserver:
             print "[!] you do not currently have a backup eeprom image saved."
             if raw_input("[?] would you like to create a backup image (y/n): ")[0] in "yY":
                 args.backup = True
@@ -172,7 +180,7 @@ if __name__ == "__main__":
                     shell.run(loc=locals())
         elif args.cdpserver:
             from cdp import CDPServer
-            with CDPServer(dev) as server:
+            with CDPServer(dev, conin, conout) as server:
                 server.run()
         else:
             if args.driver:

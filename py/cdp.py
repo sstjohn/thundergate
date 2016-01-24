@@ -21,13 +21,10 @@ import json
 import sys
 
 class CDPServer(object):
-    def __init__(self, dev, log=True):
-        self.data_in = sys.stdin
-        self.data_out = sys.stdout
-        self.logging = log
+    def __init__(self, dev, di, do):
+        self.data_in = di
+        self.data_out = do
         self.__dispatch_setup()
-        if log:
-            self.__logging_setup()
 
     def __enter__(self):
         return self
@@ -35,10 +32,6 @@ class CDPServer(object):
     def __exit__(self):
         pass
 
-    def __logging_setup(self):
-        f = "CDPServer.%d.txt" % os.getpid()
-        self.logfile = open(f, "w", 0)
-    
     def __dispatch_setup(self):
         self.__dispatch_tbl = {}
         for i in self.__class__.__dict__:
@@ -92,8 +85,7 @@ class CDPServer(object):
         self._respond(cmd, False)
 
     def _log_write(self, data):
-        if self.logging:
-            self.logfile.write(data)
+        print data.trim()
 
     def _event(self, event, body = None):
         r = {}
