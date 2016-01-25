@@ -19,6 +19,17 @@
 import os
 import json
 import sys
+
+if __name__ == "__main__":
+    import sys
+    import os
+    from os import path
+    main_file = find_tgmain()
+    os.chdir(path.dirname(path.dirname(main_file)))
+    sys.path += [path.dirname(main_file)]
+    import main
+    sys.exit(main.main([main_file, "--cdpserver"]))
+
 from image import Image
 
 class CDPServer(object):
@@ -208,12 +219,3 @@ def find_tgmain():
         raise Exception("couldn't locate thundergate directory")
     return mname
 
-if __name__ == "__main__":
-    import sys
-    import os
-    from os import path
-    main_file = find_tgmain()
-    os.chdir(path.dirname(path.dirname(main_file)))
-    sys.path += [path.dirname(main_file)]
-    import main
-    sys.exit(main.main([main_file, "--cdpserver"]))
