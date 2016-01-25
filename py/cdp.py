@@ -19,17 +19,19 @@
 import os
 import json
 import sys
+from image import Image
 
 class CDPServer(object):
     def __init__(self, dev, di, do):
         self.data_in = di
         self.data_out = do
+        self.dev = dev
         self.__dispatch_setup()
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, t, v, traceback):
         pass
 
     def __dispatch_setup(self):
@@ -54,15 +56,23 @@ class CDPServer(object):
         self._respond(cmd, True, ex=ex)
 
     def _cmd_launch(self, cmd):
-        self._respond(cmd, True)
         try:
             stop_now = cmd["arguments"]["stopOnEntry"]
         except:
             stop_now = False
+
+        program = cmd["arguments"]["program"]
+        image = Image(program)
+        self.dev.rxcpu.image_load(*image.executable)
+        self._respond(cmd, True)
+
         if stop_now:
             b = {}
             b["reason"] = "launch"
             self._event("stopped", body = b)
+        else:
+            self.dev.rxcpu.resume()
+
         self._event("initialized")
 
     def _cmd_setExceptionBreakpoints(self, cmd):
@@ -80,12 +90,23 @@ class CDPServer(object):
         self._respond(cmd, True)
         sys.exit(0)
 
+    def _cmd_continue(self, cmd):
+        self.dev.rxcpu.resume()
+        self._respond(cmd, True)
+
+    def _cmd_pause(self, cmd):
+        self._respond(cmd, True)
+        self.dev.rxcpu.halt()
+        b = {"reason": "paused"}
+        self._event("stopped", body = b)
+
     def _default_cmd(self, cmd):
         self._log_write("unknown command: %s" % cmd["command"])
         self._respond(cmd, False)
 
     def _log_write(self, data):
-        print data.trim()
+        print data.strip()
+        sys.stdout.flush()
 
     def _event(self, event, body = None):
         r = {}
@@ -147,7 +168,11 @@ class CDPServer(object):
     def run(self):
         while True:
             j = self.recv()
-            self._dispatch_cmd(j)
+            try:
+                self._dispatch_cmd(j)
+            except Exception as e:
+                print e
+                raise e
 
 def find_tgmain():
     pname = path.abspath(sys.argv[0])

@@ -84,7 +84,7 @@ class Cpu(rflip.cpu):
 
     def image_load(self, addr, blob):
         if not self.mode.halt:
-            raise Exception("halt cpu first")
+            self.halt()
 
         if addr >= 0x08000000 and addr < 0x08010000:
             raddr = (addr & 0xffff) | 0x30000
@@ -107,6 +107,8 @@ class Cpu(rflip.cpu):
             _ = self._dev.pci.reg_base_addr
             self._dev.pci.reg_data = wd
             _ = self._dev.pci.reg_data
+
+        self.pc = addr
 
     if not _no_capstone:
         md_mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
