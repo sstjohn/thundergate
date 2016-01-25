@@ -18,6 +18,7 @@
 
 from elftools.elf.elffile import ELFFile
 from StringIO import StringIO
+import bisect
 
 class Image(object):
     def __init__(self, fname):
@@ -56,10 +57,11 @@ class Image(object):
 
     def __tame_dwarf(self):
         dw = self.dwarf
-        self._compilation_units = []
-        self._functions = []
+        self._compile_units = {}
+        self._addresses = {}
         for c in dw.iter_CUs():
-            self._compilation_units += [c]
+            functions = {}    
+
             for d in c.iter_DIEs():
                 if d.tag == 'DW_TAG_subprogram':
                     lpc = d.attributes['DW_AT_low_pc'].value
@@ -67,9 +69,32 @@ class Image(object):
                     if hpc < lpc:
                         hpc += lpc
 
+                    function_name = d.attributes['DW_AT_name'].value
                     f = {}
-                    f["name"] = d.attributes['DW_AT_name'].value
-                    f["DIE"] = d
-                    f["CU"] = c
-                    self._functions += [(lpc, hpc, f)]
+                    f["lpc"] = lpc
+                    f["hpc"] = hpc
 
+                    functions[function_name] = f
+
+            td = c.get_top_DIE()
+            x = {}
+
+            fname = td.attributes['DW_AT_name'].value
+            x["line_program"] = dw.line_program_for_CU(c).get_entries()
+            x["lpc"] = td.attributes['DW_AT_low_pc'].value
+            x["hpc"] = td.attributes['DW_AT_high_pc'].value
+            x["functions"] = functions
+
+            self._compile_units[fname] = x
+
+        for c in self._compile_units:
+            for line in self._compile_units[c]["line_program"]:
+                state = line.state
+                if state is not None:
+                    self._addresses[state.address] = "%s+%d" % (c, state.line)
+
+    def addr2line(self, addr):
+        addr %= 4
+        if addr in self._addresses:
+            return self._addresses[addr]
+        return ''
