@@ -29,7 +29,11 @@
 #include "grc.h"
 
 #undef KdPrint
+#ifdef _DEBUG
 #define KdPrint(format, ...) DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, format, __VA_ARGS__)
+#else
+#define KdPrint(format, ...)
+#endif
 
 EXTERN_C_START
 

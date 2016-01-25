@@ -753,11 +753,15 @@ class TapDriver(TDInt):
         self.verbose = not self.verbose
         print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
 
+    def _stop(self):
+        self._running = False
+        
     def run(self):
         self.dev.unmask_interrupts()
         print "[+] waiting for interrupts..."
-
-        k_handlers = {'q': ("quit", functools.partial(sys.exit, 0)),
+        self._running = True
+        
+        k_handlers = {'q': ("quit", functools.partial(TapDriver._stop, self)),
                       'd': ("link detect", functools.partial(TapDriver._link_detect, self)),
                       'v': ("toggle verbosity", functools.partial(TapDriver.toggle_verbosity, self)),
                       's': ("dump statistics", functools.partial(TapStatistics.display, self.stats)),
@@ -769,5 +773,6 @@ class TapDriver(TDInt):
                       1: functools.partial(TapDriver._handle_interrupt, self),
                       2: functools.partial(TapDriver._handle_tap, self)}
 
-        while True:
+        while self._running:
             e_handlers[self._wait_for_something()]()
+        return 0

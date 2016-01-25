@@ -68,7 +68,7 @@ def banner():
                              http://thundergate.io
 """
 
-if __name__ == "__main__":
+def main(args):
     parser = argparse.ArgumentParser()
     if sys_name == "Linux":
         parser.add_argument("--device", help="BDF of tg3 PCI device", default=None)
@@ -82,12 +82,12 @@ if __name__ == "__main__":
     parser.add_argument("--wait", help="wait for debugger attachment at startup", action="store_true")
     parser.add_argument("--cdpserver", help="launch VS Code debug protocol server", action="store_true")
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=args[1:])
 
     if args.cdpserver:
         conout = sys.stdout
         conin = sys.stdin
-        sys.stdin = open("/dev/null", "r")
+        sys.stdin = open(os.devnull, "r")
         sys.stdout = open("cdp.%d.log" % os.getpid(), "w")
         
     banner()
@@ -120,7 +120,7 @@ if __name__ == "__main__":
             dbdf = subprocess.check_output(["lspci", "-d 14e4:1682", "-n"]).split(" ")[0].strip()
             if '' == dbdf:
                 print "[-] tigon3 device not found"
-                sys.exit(1)
+                return 1
         else:
             dbdf = args.device
         if len(dbdf.split(':')) == 2:
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
         if not os.path.exists("/sys/bus/pci/devices/%s/" % dbdf):
             print "[-] device resources at /sys/bus/pci/devices/%s/ not found; is sysfs mounted?" % dbdf
-            sys.exit(1)
+            return 1
         
         try:
             kmod = os.readlink("/sys/bus/pci/devices/%s/driver" % dbdf).split('/')[-1]
@@ -143,11 +143,13 @@ if __name__ == "__main__":
 
         if kmod == 'tg3' and args.driver:
             print "[!] device is currently bound to tg3; this won't work"
-            sys.exit(1)
+            return 1
 
     elif sys_name == 'Windows' or sys_name == 'cli':
-        dev_interface = WinInterface()
-
+        try:
+            dev_interface = WinInterface()
+        except:
+            dev_interface = None
     if not args.backup:
         if not os.path.exists("eeprom.bak") and not args.cdpserver:
             print "[!] you do not currently have a backup eeprom image saved."
@@ -163,36 +165,34 @@ if __name__ == "__main__":
         if args.install:
             from tginstall import TgInstaller
             with TgInstaller(dev) as i:
-                i.run()
+                return i.run()
         elif args.shell:
             from shelldrv import ShellDriver
             with ShellDriver(dev) as shell:
                 if args.driver:
                     from tapdrv import TapDriver
                     with TapDriver(dev) as tap:
-                        shell.run(loc=locals())
+                        return shell.run(loc=locals())
                 elif args.tests:
                     from testdrv import TestDriver
                     with TestDriver(dev) as test:
                         test.run()
-                        shell.run(loc=locals())
+                        return shell.run(loc=locals())
                 else:
-                    shell.run(loc=locals())
+                    return shell.run(loc=locals())
         elif args.cdpserver:
             from cdp import CDPServer
             with CDPServer(dev, conin, conout) as server:
-                server.run()
+                return server.run()
         else:
             if args.driver:
                 from tapdrv import TapDriver
                 with TapDriver(dev) as tap:
-                    tap.run()
+                    return tap.run()
             elif args.tests:
                 from testdrv import TestDriver
                 with TestDriver(dev) as test:
-                    test.run()
+                    return test.run()
     
-    print "[+] tg3 %s terminated" % ima
-
-def initialize(argv):
-    pass
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

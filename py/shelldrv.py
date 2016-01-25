@@ -60,3 +60,4 @@ class ShellDriver(object):
                       config=cfg, 
                       banner1="[+] launching interactive shell", 
                       exit_msg="[+] interactive shell terminating")
+        return 0

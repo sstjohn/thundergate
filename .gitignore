@@ -2,6 +2,8 @@ core
 *.swp
 *.swo
 *.o
+*.log
+*.pyperf
 .depend
 py/clib.*
 py/*.pyc

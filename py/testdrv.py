@@ -59,6 +59,7 @@ class TestDriver(object):
         #self.pxediff()
         #self.pxeidiff()
         #self.read_oprom()
+        return 0
 
     def gate_send(self):
         dev = self.dev

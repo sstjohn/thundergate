@@ -415,6 +415,7 @@ class Nvram(rflip.nvram):
         start += self.write_dir_image(0, oprom, nv_ofs=bclen)
 
         self._dev.reset()
+        return 0
     
     def dump_eeprom(self, fname):
         with open(fname, "wb") as f:

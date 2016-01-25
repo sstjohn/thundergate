@@ -87,8 +87,8 @@ class CDPServer(object):
         self._respond(cmd, True, body = b)
 
     def _cmd_disconnect(self, cmd):
+        self._running = False
         self._respond(cmd, True)
-        sys.exit(0)
 
     def _cmd_continue(self, cmd):
         self.dev.rxcpu.resume()
@@ -166,14 +166,16 @@ class CDPServer(object):
         return j
 
     def run(self):
-        while True:
+        self._running = True
+        while self._running:
             j = self.recv()
             try:
                 self._dispatch_cmd(j)
             except Exception as e:
                 print e
                 raise e
-
+        return 0
+        
 def find_tgmain():
     pname = path.abspath(sys.argv[0])
     pdir = path.dirname(pname)
@@ -197,7 +199,7 @@ def find_tgmain():
             if path.exists(edir + os.sep + "py" + os.sep + "main.py"):
                 mname = edir + os.sep + "py" + os.sep + "main.py"
         except: pass
-    if mname == "" and os.exists(pdir + os.sep + "tgdir.conf"):
+    if mname == "" and path.exists(pdir + os.sep + "tgdir.conf"):
         with open(pdir + os.sep + "tgdir.conf", "r") as f:
             fdir = f.readline().strip()
         if path.exists(fdir + os.sep + "py" + os.sep + "main.py"):
@@ -210,6 +212,8 @@ if __name__ == "__main__":
     import sys
     import os
     from os import path
-    main = find_tgmain()
-    os.chdir(path.dirname(path.dirname(main)))
-    os.execl(main, "py/main.py", "--cdpserver")
+    main_file = find_tgmain()
+    os.chdir(path.dirname(path.dirname(main_file)))
+    sys.path += [path.dirname(main_file)]
+    import main
+    sys.exit(main.main([main_file, "--cdpserver"])

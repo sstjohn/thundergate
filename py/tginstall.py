@@ -29,4 +29,4 @@ class TgInstaller(object):
         pass
 
     def run(self, loc = None):
-        self.dev.nvram.install_thundergate()
+        return self.dev.nvram.install_thundergate()

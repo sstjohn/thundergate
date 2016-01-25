@@ -126,7 +126,24 @@ OVERLAPPED._fields_ = [("Internal", ULONG_PTR),
                        ("InternalHigh", ULONG_PTR),
                        ("u", __OVERLAPPED__u),
                        ("hEvent", HANDLE)]
-
+                       
+class SHELLEXECUTEINFO(Structure):
+    _fields_ = [('cbSize', DWORD),
+                ('fMask', ULONG),
+                ('hwnd', HWND),
+                ('lpVerb', LPCSTR),
+                ('lpFile', LPCSTR),
+                ('lpParameters', LPCSTR),
+                ('lpDirectory', LPCSTR),
+                ('nShow', c_int),
+                ('hInstApp', HANDLE),
+                ('lpIDList', LPVOID),
+                ('lpClass', LPCSTR),
+                ('hkeyClass', HKEY),
+                ('dwHotKey', DWORD),
+                ('hIconOrMonitor', HANDLE),
+                ('hProcess', HANDLE)]
+                  
 class SP_DEVINFO_DATA(Structure):
     _fields_ = [('cbSize', DWORD),
                 ('ClassGuid', GUID),
@@ -252,7 +269,8 @@ STD_INPUT_HANDLE = DWORD(-10)
 KEY_EVENT = 1
 WAIT_TIMEOUT = 0x102
 WAIT_IO_COMPLETION = 0xC0
-
+SEE_MASK_NOCLOSEPROCESS = 0x40
+SEE_MASK_NO_CONSOLE = 0x8000
 FileIOCompletion = WINFUNCTYPE(None, DWORD, DWORD, POINTER(OVERLAPPED))
 
 CTL_CODE = lambda d,f,m,a: ((d << 16) | (a << 14) | (f << 2) | m)
@@ -270,6 +288,7 @@ GUID_DEVINTERFACE_TGWINK = GUID(0x77dce17a,0x78bd,0x4b27,(0x84,0x09,0x8f,0x5d,0x
 newdev = windll.newdev
 advapi32 = windll.advapi32
 setupapi = windll.setupapi
+shell32 = windll.shell32
 kernel32 = windll.kernel32
 ntdll = windll.ntdll
 
@@ -296,6 +315,7 @@ fun_prototypes = [
     (kernel32, "GetStdHandle", [DWORD], HANDLE),
     (kernel32, "ReadConsoleInputA", [HANDLE, POINTER(INPUT_RECORD), DWORD, POINTER(DWORD)], BOOL),
     (kernel32, "GetNumberOfConsoleInputEvents", [HANDLE, POINTER(DWORD)], BOOL),
+    (kernel32, "GetExitCodeProcess", [HANDLE, POINTER(DWORD)], BOOL),
     (ntdll, "NtUnmapViewOfSection", [HANDLE, LPVOID], ULONG),
     (setupapi, "SetupDiGetDeviceInterfaceDetailA", [HANDLE, POINTER(SP_DEVICE_INTERFACE_DATA), POINTER(SP_DEVICE_INTERFACE_DETAILS), DWORD, POINTER(DWORD), POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiEnumDeviceInterfaces", [HANDLE, POINTER(SP_DEVINFO_DATA), POINTER(GUID), DWORD, POINTER(SP_DEVICE_INTERFACE_DATA)], BOOL),
@@ -309,6 +329,8 @@ fun_prototypes = [
     (setupapi, "SetupDiDestroyDeviceInfoList", [HDEVINFO], BOOL),
     (setupapi, "SetupDiRemoveDevice", [HDEVINFO, POINTER(SP_DEVINFO_DATA)], BOOL),
     (setupapi, "SetupDiDeleteDeviceInfo", [HDEVINFO, POINTER(SP_DEVINFO_DATA)], BOOL),
+    (shell32, "IsUserAnAdmin", [], BOOL),
+    (shell32, "ShellExecuteExA", [POINTER(SHELLEXECUTEINFO)], BOOL),
     (newdev, "DiInstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), LPVOID, DWORD, POINTER(BOOL)], BOOL),
     (newdev, "DiUninstallDevice", [HWND, HDEVINFO, POINTER(SP_DEVINFO_DATA), DWORD, POINTER(BOOL)], BOOL),
     (advapi32, "RegQueryValueExA", [HKEY, LPCSTR, POINTER(DWORD), POINTER(DWORD), POINTER(BYTE), POINTER(DWORD)], LONG),
@@ -501,3 +523,29 @@ def add_process_privilege(privilege_name):
         sys.exit(1)
     CloseHandle(token)
 
+def elevate():
+    see = SHELLEXECUTEINFO()
+    see.cbSize = sizeof(SHELLEXECUTEINFO)
+    see.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE
+    see.lpVerb = LPCSTR("runas")
+    see.lpFile = LPCSTR(sys.executable)
+    see.lpParameters = sys.argv[0]
+    print "sys.argv[0] is %s" % sys.argv[0]
+    see.nShow = 1
+    if ShellExecuteEx(pointer(see)):
+        WaitForSingleObject(see.hProcess, INFINITE)
+        rc = DWORD()
+        if not GetExitCodeProcess(see.hProcess, pointer(rc)):
+            raise WinError()
+        return rc.value
+    else:
+        raise WinError()
+        
+if __name__ == "__main__":
+    if IsUserAnAdmin():
+        print "i'm an admin!"
+        sys.exit(0)
+    else:
+        print "not yet an admin"
+        rc = elevate()
+        sys.exit(rc)
