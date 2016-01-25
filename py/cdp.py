@@ -216,4 +216,4 @@ if __name__ == "__main__":
     os.chdir(path.dirname(path.dirname(main_file)))
     sys.path += [path.dirname(main_file)]
     import main
-    sys.exit(main.main([main_file, "--cdpserver"])
+    sys.exit(main.main([main_file, "--cdpserver"]))
