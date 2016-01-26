@@ -19,6 +19,8 @@
 import os
 import json
 import sys
+import platform
+import traceback
 
 def find_tgmain():
     pname = os.path.abspath(sys.argv[0])
@@ -58,6 +60,12 @@ if __name__ == "__main__":
     sys.path += [os.path.dirname(main_file)]
     import main
     sys.exit(main.main([main_file, "--cdpserver"]))
+
+p = platform.system()
+if "Windows" == p:
+	LINE_SEP = "\n"
+else:
+	LINE_SEP = "\r\n"
 
 from image import Image
 
@@ -199,7 +207,7 @@ class CDPServer(object):
     def send(self, resp):
         r = json.dumps(resp, separators=(",",":"))
         cl = len(r)
-        txt = "Content-Length: %d\r\n\r\n%s" % (cl, r)
+        txt = "Content-Length: %d%s%s" % (cl, LINE_SEP + LINE_SEP, r)
         
         self._log_write("out:\n%s\n" % txt)
         self.data_out.write(txt)
@@ -207,12 +215,12 @@ class CDPServer(object):
             
     def recv(self):
         h = self.data_in.readline()
-        self._log_write("in:\n%s" % h)
+        self._log_write("in:\n%s" % repr(h))
         content_length = int(h.split(" ")[1])
         d = self.data_in.readline()
-        self._log_write("%s" % d)
+        self._log_write("%s" % repr(d))
         d = self.data_in.read(content_length)
-        self._log_write("%s\n" % d)
+        self._log_write("%s\n" % repr(d))
         self._log_write("len(d): %d\n" % len(d))
         try:
             j = json.loads(d)
@@ -227,7 +235,7 @@ class CDPServer(object):
             try:
                 self._dispatch_cmd(j)
             except Exception as e:
-                print e
+                traceback.print_exc(file=sys.stdout)
                 raise e
         return 0
         
