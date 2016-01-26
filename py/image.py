@@ -19,13 +19,17 @@
 from elftools.elf.elffile import ELFFile
 from StringIO import StringIO
 import bisect
+import platform
 
 class Image(object):
     def __init__(self, fname):
-        with open(fname, "r") as f:
-            self.elf_data = StringIO(f.read())
-    
-        self.elf = ELFFile(self.elf_data)
+        if platform.system() == "Windows":
+            elf_data = open(fname, "r")
+        else:     
+            with open(fname, "r") as f:
+                elf_data = StringIO(f.read())
+        
+        self.elf = ELFFile(elf_data)
         if self.elf.has_dwarf_info():
             self.dwarf = self.elf.get_dwarf_info()
             self.__tame_dwarf()

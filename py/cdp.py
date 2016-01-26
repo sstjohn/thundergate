@@ -66,6 +66,7 @@ if "Windows" == p:
 	LINE_SEP = "\n"
 else:
 	LINE_SEP = "\r\n"
+del p
 
 from image import Image
 
