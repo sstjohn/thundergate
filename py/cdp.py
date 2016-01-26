@@ -102,13 +102,14 @@ class CDPServer(object):
             stop_now = False
 
         program = cmd["arguments"]["program"]
-        image = Image(program)
-        self.dev.rxcpu.image_load(*image.executable)
+        self._image = Image(program)
+        self.dev.rxcpu.image_load(*self._image.executable)
         self._respond(cmd, True)
 
         if stop_now:
             b = {}
             b["reason"] = "launch"
+            b["threadId"] = 1
             self._event("stopped", body = b)
         else:
             self.dev.rxcpu.resume()
@@ -137,8 +138,22 @@ class CDPServer(object):
     def _cmd_pause(self, cmd):
         self._respond(cmd, True)
         self.dev.rxcpu.halt()
-        b = {"reason": "pause"}
+        b = {"reason": "pause", "threadId": 1}
         self._event("stopped", body = b)
+
+    def _cmd_stackTrace(self, cmd):
+        frame_name, source_name, source_line, source_dir = self._image.top_frame_at(self.dev.rxcpu.pc)
+        source_path = source_dir + os.sep + source_name
+        source_name = "fw" + os.sep + source_name
+        s = {"name": source_name, "path": source_path, "sourceReference": 0, "origin": "", "adapterData": None}
+        f = {"id": 1, "name": frame_name, "line": source_line, "column": 0, "source": s}
+
+        b = {"stackFrames": [f]}
+        self._respond(cmd, True, body = b)
+
+    def _cmd_scopes(self, cmd):
+        b = {"scopes": []}
+        self._respond(cmd, True, body = b)
 
     def _default_cmd(self, cmd):
         self._log_write("unknown command: %s" % cmd["command"])

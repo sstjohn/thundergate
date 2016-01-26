@@ -59,6 +59,7 @@ class Image(object):
         dw = self.dwarf
         self._compile_units = {}
         self._addresses = {}
+        self._lowest_known_address = None
         for c in dw.iter_CUs():
             functions = {}    
 
@@ -83,9 +84,13 @@ class Image(object):
             x["line_program"] = dw.line_program_for_CU(c).get_entries()
             x["lpc"] = td.attributes['DW_AT_low_pc'].value
             x["hpc"] = td.attributes['DW_AT_high_pc'].value
+            x["comp_dir"] = td.attributes['DW_AT_comp_dir'].value
             x["functions"] = functions
 
             self._compile_units[fname] = x
+            if ((self._lowest_known_address is None) or
+                    (self._lowest_known_address > x["lpc"])):
+                self._lowest_known_address = x["lpc"]
 
         for c in self._compile_units:
             for line in self._compile_units[c]["line_program"]:
@@ -94,7 +99,25 @@ class Image(object):
                     self._addresses[state.address] = "%s+%d" % (c, state.line)
 
     def addr2line(self, addr):
-        addr %= 4
         if addr in self._addresses:
             return self._addresses[addr]
         return ''
+
+    def top_frame_at(self, addr):
+        line = self.addr2line(addr)
+        while '' == line and addr >= self._lowest_known_address:
+            addr -= 4
+            line = self.addr2line(addr)
+        if '' == line:
+            return ("unknown", "", 0, "")
+
+        cuname, culine = line.split("+")
+        fname = ""
+        c = self._compile_units[cuname]
+        for f in c["functions"]:
+            if ((c["functions"][f]["lpc"] <= addr) and
+                    (c["functions"][f]["hpc"] >= addr)):
+                fname = f
+                break
+        return (fname, cuname, culine, c["comp_dir"])
+
