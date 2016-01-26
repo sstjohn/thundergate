@@ -20,13 +20,42 @@ import os
 import json
 import sys
 
+def find_tgmain():
+    pname = os.path.abspath(sys.argv[0])
+    pdir = os.path.dirname(pname)
+    mname = ""
+    if os.path.exists(pdir + os.sep + "main.py"):
+        mname = pdir + os.sep + "main.py"
+    else:
+        try:
+            sname = os.readlink(pname)
+            sdir = os.path.dirname(sname)
+            if os.path.exists(sdir + os.sep + "main.py"):
+                mname = sdir + os.sep + "main.py"
+        except: pass
+    if len(sys.argv) > 1:
+        adir = sys.argv[1]
+        if os.path.exists(adir + os.sep + "py" + os.sep + "main.py"):
+            mname = adir + os.sep + "py" + os.sep + "main.py"
+    if mname == "":
+        try:
+            edir = os.environ["TGDIR"]
+            if os.path.exists(edir + os.sep + "py" + os.sep + "main.py"):
+                mname = edir + os.sep + "py" + os.sep + "main.py"
+        except: pass
+    if mname == "" and os.path.exists(pdir + os.sep + "tgdir.conf"):
+        with open(pdir + os.sep + "tgdir.conf", "r") as f:
+            fdir = f.readline().strip()
+        if os.path.exists(fdir + os.sep + "py" + os.sep + "main.py"):
+            mname = fdir + os.sep + "py" + os.sep + "main.py"
+    if mname == "":
+        raise Exception("couldn't locate thundergate directory")
+    return mname
+
 if __name__ == "__main__":
-    import sys
-    import os
-    from os import path
     main_file = find_tgmain()
-    os.chdir(path.dirname(path.dirname(main_file)))
-    sys.path += [path.dirname(main_file)]
+    os.chdir(os.path.dirname(os.path.dirname(main_file)))
+    sys.path += [os.path.dirname(main_file)]
     import main
     sys.exit(main.main([main_file, "--cdpserver"]))
 
@@ -108,7 +137,7 @@ class CDPServer(object):
     def _cmd_pause(self, cmd):
         self._respond(cmd, True)
         self.dev.rxcpu.halt()
-        b = {"reason": "paused"}
+        b = {"reason": "pause"}
         self._event("stopped", body = b)
 
     def _default_cmd(self, cmd):
@@ -187,35 +216,4 @@ class CDPServer(object):
                 raise e
         return 0
         
-def find_tgmain():
-    pname = path.abspath(sys.argv[0])
-    pdir = path.dirname(pname)
-    mname = ""
-    if path.exists(pdir + os.sep + "main.py"):
-        mname = pdir + os.sep + "main.py"
-    else:
-        try:
-            sname = os.readlink(pname)
-            sdir = path.dirname(sname)
-            if path.exists(sdir + os.sep + "main.py"):
-                mname = sdir + os.sep + "main.py"
-        except: pass
-    if len(sys.argv) > 1:
-        adir = sys.argv[1]
-        if path.exists(adir + os.sep + "py" + os.sep + "main.py"):
-            mname = adir + os.sep + "py" + os.sep + "main.py"
-    if mname == "":
-        try:
-            edir = os.environ["TGDIR"]
-            if path.exists(edir + os.sep + "py" + os.sep + "main.py"):
-                mname = edir + os.sep + "py" + os.sep + "main.py"
-        except: pass
-    if mname == "" and path.exists(pdir + os.sep + "tgdir.conf"):
-        with open(pdir + os.sep + "tgdir.conf", "r") as f:
-            fdir = f.readline().strip()
-        if path.exists(fdir + os.sep + "py" + os.sep + "main.py"):
-            mname = fdir + os.sep + "py" + os.sep + "main.py"
-    if mname == "":
-        raise Exception("couldn't locate thundergate directory")
-    return mname
 
