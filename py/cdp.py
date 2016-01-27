@@ -154,8 +154,8 @@ class CDPServer(object):
         frame_name, source_name, source_line, source_dir = self._image.top_frame_at(self.dev.rxcpu.pc)
         source_path = source_dir + os.sep + source_name
         source_name = "fw" + os.sep + source_name
-        s = {"name": source_name, "path": source_path, "sourceReference": 0, "origin": "", "adapterData": None}
-        f = {"id": 1, "name": frame_name, "line": source_line, "column": 0, "source": s}
+        s = {"name": source_name, "path": source_path}
+        f = {"id": 1, "name": frame_name, "line": int(source_line), "column": 1, "source": s}
 
         b = {"stackFrames": [f]}
         self._respond(cmd, True, body = b)
