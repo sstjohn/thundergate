@@ -18,8 +18,13 @@
 
 #include "fw.h"
 
+char test_global;
+
 void main() 
 {
+    int test_variable;
+    void *another_test_variable;
+
     while (1) {
 	if (grc.rxcpu_event.emac) {
 		check_link();

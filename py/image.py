@@ -65,9 +65,10 @@ class Image(object):
         self._addresses = {}
         self._lowest_known_address = None
         for c in dw.iter_CUs():
-            functions = {}    
+            functions = {}  
+            variables = []
 
-            for d in c.iter_DIEs():
+            for d in c.get_top_DIE().iter_children():
                 if d.tag == 'DW_TAG_subprogram':
                     lpc = d.attributes['DW_AT_low_pc'].value
                     hpc = d.attributes['DW_AT_high_pc'].value
@@ -78,8 +79,18 @@ class Image(object):
                     f = {}
                     f["lpc"] = lpc
                     f["hpc"] = hpc
+                    f["args"] = []
+                    f["vars"] = []
+                    for child in d.iter_children():
+                        if child.tag == "DW_TAG_formal_parameter":
+                            f["args"] += [child.attributes['DW_AT_name'].value]
+                        if child.tag == "DW_TAG_variable":
+                            f["vars"] += [child.attributes['DW_AT_name'].value]
 
                     functions[function_name] = f
+                elif d.tag == 'DW_TAG_variable':
+                    if d.attributes['DW_AT_decl_file'].value == 1:
+                        variables += [d.attributes['DW_AT_name'].value]
 
             td = c.get_top_DIE()
             x = {}
@@ -90,6 +101,7 @@ class Image(object):
             x["hpc"] = td.attributes['DW_AT_high_pc'].value
             x["comp_dir"] = td.attributes['DW_AT_comp_dir'].value
             x["functions"] = functions
+            x["variables"] = variables
 
             self._compile_units[fname] = x
             if ((self._lowest_known_address is None) or

@@ -5,7 +5,7 @@ OBJCOPY=mips-elf-objcopy
 include ../Make.common
 
 INCLUDE=-I$(PROJ_ROOT)/include
-CFLAGS=-mtune=r6000 -mips2 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared -mno-abicalls -mno-llsc -s -O0 -mno-split-addresses -mtigon -msoft-float -ggdb -std=gnu11 -Wall -Wno-main
+CFLAGS=-mtune=r6000 -mips2 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared -mno-abicalls -mno-llsc -s -O0 -mno-split-addresses -mtigon -msoft-float -ggdb -std=gnu11 -Wall -Wno-main -feliminate-dwarf2-dups -fvar-tracking -gstrict-dwarf -gdwarf-2
 LDFLAGS=-nostdlib --build-id=none -Timage.x -static -Rfixed.sym
 LIBGCC=$(shell $(CC) -print-libgcc-file-name)
 

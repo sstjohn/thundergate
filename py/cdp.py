@@ -151,7 +151,8 @@ class CDPServer(object):
         self._event("stopped", body = b)
 
     def _cmd_stackTrace(self, cmd):
-        frame_name, source_name, source_line, source_dir = self._image.top_frame_at(self.dev.rxcpu.pc)
+        self._top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
+        frame_name, source_name, source_line, source_dir = self._top_of_stack
         source_path = source_dir + os.sep + source_name
         source_name = "fw" + os.sep + source_name
         s = {"name": source_name, "path": source_path}
@@ -161,9 +162,35 @@ class CDPServer(object):
         self._respond(cmd, True, body = b)
 
     def _cmd_scopes(self, cmd):
-        b = {"scopes": []}
+        scopes = []
+        func, fname, _, _ = self._top_of_stack
+        if len(self._image._compile_units[fname]["variables"]) > 0:
+            scopes += [{"name": "Globals", "variablesReference": 1, "expensive": True}]
+
+        if "" != func:
+            if len(self._image._compile_units[fname]["functions"][func]["args"]) > 0:
+                scopes += [{"name": "Arguments", "variablesReference": 2, "expensive": True}]
+            if len(self._image._compile_units[fname]["functions"][func]["vars"]) > 0:
+                scopes += [{"name": "Locals", "variablesReference": 3, "expensive": True}]
+        b = {"scopes": scopes}
         self._respond(cmd, True, body = b)
 
+    def _cmd_variables(self, cmd):
+        func, fname, _, _ = self._top_of_stack
+        ref = cmd["arguments"]["variablesReference"]
+        b = {}
+        if ref == 1:
+            variables = self._image._compile_units[fname]["variables"]
+        elif ref == 2:
+            variables = self._image._compile_units[fname]["functions"][func]["args"]
+        elif ref == 3:
+            variables = self._image._compile_units[fname]["functions"][func]["vars"]
+        else:
+            variables = []
+
+        b["variables"] = [{"name": v, "value": "0", "variablesReference": 0} for v in variables]
+        self._respond(cmd, True, body = b)
+            
     def _default_cmd(self, cmd):
         self._log_write("unknown command: %s" % cmd["command"])
         self._respond(cmd, False)
