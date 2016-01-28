@@ -18,14 +18,22 @@
 
 #include "fw.h"
 
-char test_global;
+unsigned test_glob = 0;
+char unused_glob;
 
 void main() 
 {
-    int test_variable;
-    void *another_test_variable;
+    unsigned test_var = 0;
 
     while (1) {
+	if (test_glob == 0xffffffff)
+		test_glob = 0;
+	if (test_var == 0xffffffff) {
+		test_glob += 1;
+		test_var = 0;
+	} else {
+		test_var += 0x11111111;
+	}
 	if (grc.rxcpu_event.emac) {
 		check_link();
 	}

@@ -4,6 +4,7 @@ core
 *.o
 *.log
 *.pyperf
+*.bin
 .depend
 py/clib.*
 py/*.pyc
@@ -13,8 +14,8 @@ py/efilib.xml
 py/tglib.xml
 py/tunlibgen
 trace/*
-fw/fw.elf
-fw/fw.img
+fw/*.elf
+fw/*.img
 fw/fixed.sym
 efi/*.efi
 efi/*.so
@@ -33,3 +34,5 @@ win/**/*.sdf
 win/**/*.VC.opendb
 **/build/
 .vscode/
+**/__pycache__/
+env/
