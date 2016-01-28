@@ -21,6 +21,7 @@ import json
 import sys
 import platform
 import traceback
+import functools
 
 def find_tgmain():
     pname = os.path.abspath(sys.argv[0])
@@ -69,12 +70,14 @@ else:
 del p
 
 from image import Image
+from monitor import ExecutionMonitor
 
 class CDPServer(object):
     def __init__(self, dev, di, do):
         self.data_in = di
         self.data_out = do
         self.dev = dev
+        self._monitor = ExecutionMonitor(dev)
         self.__dispatch_setup()
 
     def __enter__(self):
@@ -141,14 +144,14 @@ class CDPServer(object):
         self._respond(cmd, True)
 
     def _cmd_continue(self, cmd):
+        callback = functools.partial(CDPServer._evt_stopped, self)
         self.dev.rxcpu.resume()
+        self._monitor.watch(callback)
         self._respond(cmd, True)
 
     def _cmd_pause(self, cmd):
         self._respond(cmd, True)
         self.dev.rxcpu.halt()
-        b = {"reason": "pause", "threadId": 1}
-        self._event("stopped", body = b)
 
     def _cmd_stackTrace(self, cmd):
         self._top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
@@ -180,15 +183,25 @@ class CDPServer(object):
         ref = cmd["arguments"]["variablesReference"]
         b = {}
         if ref == 1:
-            variables = self._image._compile_units[fname]["variables"].keys()
+            variables = self._image._compile_units[fname]["variables"]
         elif ref == 2:
-            variables = self._image._compile_units[fname]["functions"][func]["args"].keys()
+            variables = self._image._compile_units[fname]["functions"][func]["args"]
         elif ref == 3:
-            variables = self._image._compile_units[fname]["functions"][func]["vars"].keys()
+            variables = self._image._compile_units[fname]["functions"][func]["vars"]
         else:
             variables = []
 
-        b["variables"] = [{"name": v, "value": "0", "variablesReference": 0} for v in variables]
+        b["variables"] = []
+        for v in variables:
+            o = {}
+            o["name"] = v
+            try:
+                o["value"] = "%x" % self._image.expr_evaluator.process_expr(self._dev, variables[v]["location"])
+            except:
+                o["value"] = "(unknown)"
+            o["variablesReference"] = 0
+            b["variables"] += [o]
+
         self._respond(cmd, True, body = b)
             
     def _default_cmd(self, cmd):
@@ -198,6 +211,10 @@ class CDPServer(object):
     def _log_write(self, data):
         print data.strip()
         sys.stdout.flush()
+
+    def _evt_stopped(self):
+        b = {"reason": "pause", "threadId": 1}
+        self._event("stopped", body = b)
 
     def _event(self, event, body = None):
         r = {}

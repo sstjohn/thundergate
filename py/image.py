@@ -22,13 +22,39 @@ from elftools.dwarf.dwarf_expr import GenericExprVisitor
 from StringIO import StringIO
 import bisect
 import platform
+import struct
 
 class ExprLiveEval(GenericExprVisitor):
     def __init__(self, structs):
         super(ExprLiveEval, self).__init__(structs)
+    
+    def process_expr(self, dev, expr):
+        self._val = 0
+        self._dev = dev
+        super(ExprLiveEval, self).process_expr(expr)
+
+    @property
+    def value(self):
+        return self._val
 
     def _after_visit(self, opcode, opcode_name, args):
         print "opcode: %s, args: %s" % (opcode_name, args)
+        if 0x3 == opcode:
+            v = self._dev.rxcpu.tr_read(args[0], 1)
+            self._val = struct.unpack("I", v)[0]
+        elif 0x30 <= opcode and opcode < 0x50:
+            self._val = opcode - 0x30
+        elif 0x50 <= opcode and opcode < 0x70:
+            self._val = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x50))
+        elif 0x70 <= opcode and opcode < 0x90:
+            b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
+            if len(args) > 0:
+                b += args[0]
+            v = self._dev.rxcpu.tr_read(b, 1)
+            self._val = struct.unpack("I", v)[0]
+        else:
+            raise Exception("unable to handle opcode %x" % opcode)
+        print "val is now %x" % self._val
 
 class Image(object):
     def __init__(self, fname):

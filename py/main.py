@@ -72,6 +72,7 @@ def main(args):
     parser = argparse.ArgumentParser()
     if sys_name == "Linux":
         parser.add_argument("--device", help="BDF of tg3 PCI device", default=None)
+        parser.add_argument("--devid", help="id of tg3 PCI device", default=None)
     parser.add_argument("-p", "--ptvsd", help="enable ptvsd server", action="store_true")
     parser.add_argument("--ptvsdpass", help="ptvsd server password", default=None)
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
@@ -117,7 +118,10 @@ def main(args):
 
     if sys_name == 'Linux':
         if args.device is None:
-            dbdf = subprocess.check_output(["lspci", "-d 14e4:1682", "-n"]).split(" ")[0].strip()
+            devid = args.devid
+            if devid is None:
+                devid = "14e4:1682"
+            dbdf = subprocess.check_output(["lspci", "-d %s" % devid, "-n"]).split(" ")[0].strip()
             if '' == dbdf:
                 print "[-] tigon3 device not found"
                 return 1
