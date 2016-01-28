@@ -17,9 +17,18 @@
 '''
 
 from elftools.elf.elffile import ELFFile
+from elftools.dwarf.descriptions import set_global_machine_arch
+from elftools.dwarf.dwarf_expr import GenericExprVisitor
 from StringIO import StringIO
 import bisect
 import platform
+
+class ExprLiveEval(GenericExprVisitor):
+    def __init__(self, structs):
+        super(ExprLiveEval, self).__init__(structs)
+
+    def _after_visit(self, opcode, opcode_name, args):
+        print "opcode: %s, args: %s" % (opcode_name, args)
 
 class Image(object):
     def __init__(self, fname):
@@ -32,7 +41,9 @@ class Image(object):
         self.elf = ELFFile(elf_data)
         if self.elf.has_dwarf_info():
             self.dwarf = self.elf.get_dwarf_info()
+            set_global_machine_arch(self.elf.get_machine_arch())
             self.__tame_dwarf()
+            self.expr_evaluator = ExprLiveEval(self.dwarf.structs)
 
     @property
     def executable(self):
@@ -66,7 +77,7 @@ class Image(object):
         self._lowest_known_address = None
         for c in dw.iter_CUs():
             functions = {}  
-            variables = []
+            variables = {}
 
             for d in c.get_top_DIE().iter_children():
                 if d.tag == 'DW_TAG_subprogram':
@@ -79,18 +90,36 @@ class Image(object):
                     f = {}
                     f["lpc"] = lpc
                     f["hpc"] = hpc
-                    f["args"] = []
-                    f["vars"] = []
+                    f["args"] = {}
+                    f["vars"] = {}
                     for child in d.iter_children():
                         if child.tag == "DW_TAG_formal_parameter":
-                            f["args"] += [child.attributes['DW_AT_name'].value]
+                            name = child.attributes['DW_AT_name'].value
+                            v = {}
+                            try:
+                                v["location"] = child.attributes['DW_AT_location'].value
+                            except:
+                                v["location"] = []
+                            f["args"][name] = v
                         if child.tag == "DW_TAG_variable":
-                            f["vars"] += [child.attributes['DW_AT_name'].value]
+                            name = child.attributes['DW_AT_name'].value
+                            v = {}
+                            try:
+                                v["location"] = child.attributes['DW_AT_location'].value
+                            except:
+                                v["location"] = []
+                            f["vars"][name] = v
 
                     functions[function_name] = f
                 elif d.tag == 'DW_TAG_variable':
                     if d.attributes['DW_AT_decl_file'].value == 1:
-                        variables += [d.attributes['DW_AT_name'].value]
+                        name = d.attributes['DW_AT_name'].value
+                        v = {}
+                        try:
+                            v["location"] = d.attributes['DW_AT_location'].value
+                        except:
+                            v["location"] = []
+                        variables[name] = v
 
             td = c.get_top_DIE()
             x = {}
@@ -137,3 +166,5 @@ class Image(object):
                 break
         return (fname, cuname, culine, c["comp_dir"])
 
+if __name__ == "__main__":
+    i = Image("../fw/fw.elf")

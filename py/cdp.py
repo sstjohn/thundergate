@@ -180,11 +180,11 @@ class CDPServer(object):
         ref = cmd["arguments"]["variablesReference"]
         b = {}
         if ref == 1:
-            variables = self._image._compile_units[fname]["variables"]
+            variables = self._image._compile_units[fname]["variables"].keys()
         elif ref == 2:
-            variables = self._image._compile_units[fname]["functions"][func]["args"]
+            variables = self._image._compile_units[fname]["functions"][func]["args"].keys()
         elif ref == 3:
-            variables = self._image._compile_units[fname]["functions"][func]["vars"]
+            variables = self._image._compile_units[fname]["functions"][func]["vars"].keys()
         else:
             variables = []
 
