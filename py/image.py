@@ -164,10 +164,12 @@ class Image(object):
                 self._lowest_known_address = x["lpc"]
 
         for c in self._compile_units:
-            for line in self._compile_units[c]["line_program"]:
+            c["lines"] = {}
+	    for line in self._compile_units[c]["line_program"]:
                 state = line.state
                 if state is not None:
                     self._addresses[state.address] = "%s+%d" % (c, state.line)
+		    c["lines"][state.line] = state.address
 
     def addr2line(self, addr):
         if addr in self._addresses:
@@ -192,5 +194,5 @@ class Image(object):
                 break
         return (fname, cuname, culine, c["comp_dir"])
 
-if __name__ == "__main__":
-    i = Image("../fw/fw.elf")
+    def line2addr(self, fname, line):
+	return self._compile_units[fname]["lines"][line]	

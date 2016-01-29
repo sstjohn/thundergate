@@ -42,7 +42,8 @@ class ExecutionMonitor(object):
         callback()
 
     def _watch(self, callback):
-        while not self._dev.rxcpu.status.halted:
+        while ((not self._dev.rxcpu.status.halted) and 
+	       (not self._dev.rxcpu.status.invalid_instruction)):
             yield_quantum()
         callback()
 
