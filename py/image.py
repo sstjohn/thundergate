@@ -32,6 +32,7 @@ class ExprLiveEval(GenericExprVisitor):
         self._val = 0
         self._dev = dev
         super(ExprLiveEval, self).process_expr(expr)
+        return self.value
 
     @property
     def value(self):
@@ -164,12 +165,12 @@ class Image(object):
                 self._lowest_known_address = x["lpc"]
 
         for c in self._compile_units:
-            c["lines"] = {}
+            self._compile_units[c]["lines"] = {}
 	    for line in self._compile_units[c]["line_program"]:
                 state = line.state
                 if state is not None:
                     self._addresses[state.address] = "%s+%d" % (c, state.line)
-		    c["lines"][state.line] = state.address
+		    self._compile_units[c]["lines"][state.line] = state.address
 
     def addr2line(self, addr):
         if addr in self._addresses:

@@ -115,6 +115,7 @@ class CDPServer(object):
 
         program = cmd["arguments"]["program"]
         self._image = Image(program)
+        self.dev.rxcpu.reset()
         self.dev.rxcpu.image_load(*self._image.executable)
         self._respond(cmd, True)
 
@@ -137,7 +138,7 @@ class CDPServer(object):
 	breakpoints_set = []
 	if "lines" in cmd["arguments"]:
 	    for line in cmd["arguments"]["lines"]:
-		success = self._set_breakpoint(source, line)
+		success = self._setup_breakpoint(source, line)
 		b = {"verified": success, "line": line}
 		breakpoints_set += [b]
 	if "breakpoints" in cmd["arguments"]:
@@ -146,7 +147,7 @@ class CDPServer(object):
 		if "condition" in bp:
 		    success = False
 		else:
-		    success = self._set_breakpoint(source, line)
+		    success = self._setup_breakpoint(source, line)
 		b = {"verified": success, "line": line}
 		breakpoints_set += [b]
 	self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
@@ -165,7 +166,10 @@ class CDPServer(object):
 
     def _cmd_continue(self, cmd):
         callback = functools.partial(CDPServer._evt_stopped, self)
-        self.dev.rxcpu.resume()
+        if self.dev.rxcpu.status.invalid_instruction:
+            self.dev.rxcpu.resume_from_breakpoint()
+        else:
+            self.dev.rxcpu.resume()
         self._monitor.watch(callback)
         self._respond(cmd, True)
 
@@ -215,9 +219,9 @@ class CDPServer(object):
         for v in variables:
             o = {}
             o["name"] = v
-            try:
-                o["value"] = "%x" % self._image.expr_evaluator.process_expr(self._dev, variables[v]["location"])
-            except:
+            if 1:
+                o["value"] = "%x" % self._image.expr_evaluator.process_expr(self.dev, variables[v]["location"])
+            else:
                 o["value"] = "(unknown)"
             o["variablesReference"] = 0
             b["variables"] += [o]
@@ -233,9 +237,10 @@ class CDPServer(object):
         sys.stdout.flush()
 
     def _evt_stopped(self):
+        print "!!!!! stopped !!!!!!"
 	if self.dev.rxcpu.status.halted:
 	    reason = "pause"
-	elif self.dev.rxcpu.status.illegal_instuction:
+	elif self.dev.rxcpu.status.invalid_instruction:
 	    if self.dev.rxcpu.pc in self.dev.rxcpu._breakpoints:
 		reason = "breakpoint"
 	    else:
@@ -243,6 +248,7 @@ class CDPServer(object):
 	else:
 		reason = "unknown"
         b = {"reason": reason, "threadId": 1}
+        print "!!!! sending event !!!!!"
         self._event("stopped", body = b)
 
     def _event(self, event, body = None):

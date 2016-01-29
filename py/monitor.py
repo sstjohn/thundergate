@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import traceback
 import threading
 import functools
 from time import sleep
@@ -31,19 +32,19 @@ class ExecutionMonitor(object):
         if self._watching:
             raise Exception("monitor already running")
 
-        wrapped_callback = functools.partial(ExecutionMonitor._stopped, self, callback)
-        t = threading.Thread(target = self._watch, args = (wrapped_callback,))
+        t = threading.Thread(target = self._watch, args = (callback,))
         t.daemon = True
         self._watching = True
         t.start()
 
-    def _stopped(self, callback):
-        self._watching = False
-        callback()
-
     def _watch(self, callback):
-        while ((not self._dev.rxcpu.status.halted) and 
-	       (not self._dev.rxcpu.status.invalid_instruction)):
+        while not (self._dev.rxcpu.status.halted or 
+	           self._dev.rxcpu.status.invalid_instruction):
             yield_quantum()
-        callback()
-
+        self._watching = False
+        print "stopped watching at pc = %x" % self._dev.rxcpu.pc
+        try:
+            callback()
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            raise e
