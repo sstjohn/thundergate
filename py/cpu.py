@@ -62,13 +62,19 @@ def to_x(v):
     
 
 class Cpu(rflip.cpu):
-    def tr_read(self, addr, count):
+    def _tr_addr(self, addr):
         if addr >= 0x08000000 and addr < 0x08010000:
             raddr = (addr & 0xffff) | 0x30000
         elif addr >= 0x40000000 and addr < 0x40010000:
             raddr = (addr & 0xffff) | 0x20000
         elif addr >= 0xc0000000:
             raddr = addr & 0xffff
+        else:
+            raise Exception("unable to translate address %x" % addr)
+        return raddr
+
+    def tr_read(self, addr, count):
+        raddr = self._tr_addr(addr)
         
         try:
             tmp = []
@@ -82,18 +88,17 @@ class Cpu(rflip.cpu):
         except:
             return self._dev.mem.read(addr, count * 4)
 
+    def tr_write_dword(self, addr, dw):
+        raddr = self._tr_addr(addr)
+        self._dev.pci.reg_base_addr = raddr
+        _ = self._dev.pci.reg_base_addr
+        self._dev.pci.reg_data = dw
+
     def image_load(self, addr, blob):
         if not self.mode.halt:
             self.halt()
 
-        if addr >= 0x08000000 and addr < 0x08010000:
-            raddr = (addr & 0xffff) | 0x30000
-        elif addr >= 0x40000000 and addr < 0x40010000:
-            raddr = (addr & 0xffff) | 0x20000
-        elif addr >= 0xc0000000:
-            raddr = addr & 0xffff
-        else:
-            raise Exception("bad image offset")
+        raddr = self._tr_addr(addr)
 
         if (raddr % 0x10000) + len(blob) > 0x10000:
             raise Exception("image too big")
@@ -109,6 +114,29 @@ class Cpu(rflip.cpu):
             _ = self._dev.pci.reg_data
 
         self.pc = addr
+
+    def set_breakpoint(self, addr):
+        original_insn = struct.unpack("I", self.tr_read(addr, 1))[0]
+        self.tr_write_dword(addr, 0xd)
+        try:
+            self._breakpoints[addr] = original_insn
+        except:
+            self._breakpoints = {addr: original_insn}
+
+    def resume_from_breakpoint(self):
+        if not self.status.invalid_instruction:
+            raise Exception("not halted at breakpoint")
+        try:
+            original_instruction = self._breakpoints[self.pc]
+        except:
+            raise Exception("not halted at known breakpoint")
+        self.ir = original_instruction
+        self.resume()
+
+    def clear_breakpoint(self, addr):
+        original_insn = self._breakpoints[addr]
+        self.tr_write_dword(addr, original_insn)
+        del self._breakpoints[addr]
 
     if not _no_capstone:
         md_mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
@@ -196,14 +224,14 @@ class Cpu(rflip.cpu):
                                      % (c, int(j.mem.disp)))
                                  addr += j.mem.disp
 
-    def set_breakpoint(self, addr, enable = True, reset = False):
+    def set_hw_breakpoint(self, addr, enable = True, reset = False):
         if not self.breakpoint.disabled and not reset:
             raise Exception("breakpoint already set")
         self.breakpoint.address = addr & 0xfffffffc
         if not enable: 
             self.breakpoint.disabled = 1
 
-    def clear_breakpoint(self):
+    def clear_hw_breakpoint(self):
         self.breakpoint.disabled = 1
 
     def reset(self):
