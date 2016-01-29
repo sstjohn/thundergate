@@ -1,8 +1,8 @@
 [submodule "gnu-efi"]
-	path = gnu-efi
+	path = ext/gnu-efi
 	url = git://git.code.sf.net/p/gnu-efi/code
 	ignore = dirty
 [submodule "python-eficompressor"]
-	path = python-eficompressor
+	path = ext/python-eficompressor
 	url = http://github.com/sstjohn/python-eficompressor.git
 	ignore = dirty

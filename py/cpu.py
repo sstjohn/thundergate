@@ -116,7 +116,7 @@ class Cpu(rflip.cpu):
         self.pc = addr
 
     def set_breakpoint(self, addr):
-        original_insn = struct.unpack("I", self.tr_read(addr, 1))[0]
+        original_insn = struct.unpack("!I", self.tr_read(addr, 1))[0]
         self.tr_write_dword(addr, 0xd)
         try:
             self._breakpoints[addr] = original_insn
