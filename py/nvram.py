@@ -29,7 +29,7 @@ from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 from socket import htonl, ntohl
 
-class Nvram(rflip.nvram):
+class nvram(rflip.nvram):
     _locked = False
 
     def init(self, wr=0, lh=1):

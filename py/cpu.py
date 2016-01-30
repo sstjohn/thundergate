@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016 Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ def to_x(v):
     return " ".join(["%02x" % ord(c) for c in r])
     
 
-class Cpu(rflip.cpu):
+class cpu(rflip.cpu):
     def _tr_addr(self, addr):
         if addr >= 0x08000000 and addr < 0x08010000:
             raddr = (addr & 0xffff) | 0x30000

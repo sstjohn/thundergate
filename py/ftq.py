@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015  Saul St. John
+    Copyright (C) 2015-2016 Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 import tglib as tg
 import rflip
 
-class Ftq(rflip.ftq):
+class ftq(rflip.ftq):
     def block_reset(self):
         self.reset.word = 0xffffffff
         self.reset.word = 0
