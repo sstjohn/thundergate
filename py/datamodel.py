@@ -60,11 +60,13 @@ def _model_bf(o):
 
 def _model_parray(o):
     model = GenericModel()
+    counter = 0
     for i in o:
-        sm = GenericModel(name = "[%d]")
         sm = _model(i)
+        sm.name = "[%d]" % counter 
         sm.parent = model
         model.children.append(sm)
+        counter += 1
     return model
 
 def _model(o):
