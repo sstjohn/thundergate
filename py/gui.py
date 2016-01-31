@@ -17,46 +17,68 @@
 '''
 
 import wx
+import wx.dataview
 import threading
+from datamodel import model_device, DeviceModel
 
-class BFDisplay(wx.ListCtrl):
-    def __init__(self, parent, block):
-        super(BFDisplay, self).__init__(parent, -1, style = wx.LC_REPORT)
-        self.block = block
-        self.InsertColumn(0, 'Field')
-        self.InsertColumn(1, 'Value')
-        self.InsertStringItem(1, 'test1')
-        self.InsertStringItem(2, 'test2')
+class DevDVM(wx.dataview.PyDataViewModel):
+    def __init__(self, dev, model):
+        super(DevDVM, self).__init__()
+        self.model = model
+        self.dev = dev
 
-class WordPicker(wx.ListCtrl):
-    def __init__(self, parent, details, block):
-        super(WordPicker, self).__init__(parent, -1, style = wx.LC_REPORT | wx.LC_NO_HEADER)
-        self.block = block
-        self.details = details
-        self.InsertColumn(0, 'Word')
-        self.InsertStringItem(1, "status")
-        self.InsertStringItem(2, "mode")
-        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.onItemSelected)
-    
-    def onItemSelected(self, event):
-        idx = event.m_itemIndex
-        if idx == 1:
-            lbl = "status"
+    def GetColumnCount(self):
+        return 3
+
+    def GetColumnType(self, col):
+        return 'string'
+
+    def GetChildren(self, parent, children):
+        if not parent:
+            source = self.model
         else:
-            lbl = "mode"
-        self.details.DeleteAllItems()
+            source = self.ItemToObject(parent)
+        
+        child_objs = getattr(source, "children", [])
+        for child in child_objs:
+            item = self.ObjectToItem(child)
+            children.append(item)
+        
+        return len(child_objs)
 
-class BlockPage(wx.Panel):
-    def __init__(self, parent, block):
-        super(BlockPage, self).__init__(parent)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        right_panel = wx.Panel(self)
-        reg_view = BFDisplay(right_panel, block)
-        left_panel = wx.Panel(self)
-        reg_picker = WordPicker(left_panel, reg_view, block)
-        sizer.Add(left_panel, 1, wx.EXPAND)
-        sizer.Add(right_panel, 1, wx.EXPAND)
-        self.SetSizerAndFit(sizer)
+    def IsContainer(self, item):
+        if not item:
+            return True
+
+        o = self.ItemToObject(item)
+        c = getattr(o, "children", [])
+        return len(c) > 0
+
+    def GetParent(self, item):
+        if item:
+            o = self.ItemToObject(item)
+            if o.parent is not self.model:
+                return self.ObjectToItem(o.parent)
+        return wx.dataview.NullDataViewItem
+
+    def GetValue(self, item, col):
+        o = self.ItemToObject(item)
+        if col == 0:
+            return o.name
+        if col == 1:
+            return getattr(o, "value", "")
+        if col == 2:
+            return getattr(o, "val_type", "")
+
+class DevTree(wx.dataview.DataViewCtrl):
+    def __init__(self, parent, dev):
+        super(DevTree, self).__init__(parent)
+        model = model_device(dev)
+        dvm = DevDVM(dev, model)
+        self.AssociateModel(dvm)
+        self.AppendTextColumn("name", 0)
+        self.AppendTextColumn("value", 1)
+        self.AppendTextColumn("type", 2)
 
 def _show_main_frame(dev):
     frame = wx.Frame(None, -1, 'thundergate')
@@ -64,11 +86,9 @@ def _show_main_frame(dev):
     frame.CreateStatusBar()
     
     nb = wx.Notebook(frame)
-    for block_name in ['rxcpu']:
-        block = getattr(dev, block_name)
-        page = BlockPage(nb, block)
-        nb.AddPage(page, text = block_name)
-
+    page = DevTree(nb, dev)
+    nb.AddPage(page, text="dev")
+    
     frame.Show()
 
 def _run(dev):

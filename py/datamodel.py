@@ -19,7 +19,10 @@
 from ctypes import Structure, Union
 
 class DeviceModel(object):
-    pass
+    def __init__(self, name = None, parent = None):
+        self.parent = parent
+        self.name = name
+        self.children = []
 
 is_struct = lambda c: Structure in c.__bases__
 is_union = lambda c: Union in c.__bases__
@@ -27,20 +30,24 @@ is_bf = lambda o: len(o._fields_[0]) == 3
 
 def _collapse_anon(o, anon):
     if anon is not None:
-        keys = o.__dict__.keys()
-        for k in keys:
-            if k in anon:
-                ao = getattr(o, k)
-                for sk in ao.__dict__:
-                    so = getattr(ao, sk)
-                    setattr(o, sk, so)
-                delattr(o, k)
+        to_remove = []
+        for child in o.children:
+            if child.name in anon:
+                to_remove.append(child)
+                for sc in child.children:
+                    sc.parent = o
+                    o.children.append(sc)
+
+        for ac in to_remove:
+            o.children.remove(ac)
     return o
             
 def _model_bf(o):
     model = DeviceModel()
     for name, cl, bitlen in o._fields_:
-        setattr(model, name, cl)
+        sm = DeviceModel(name = name, parent = model)
+        sm.val_type = cl.__name__
+        model.children.append(sm)
     return model
 
 def _model(o):
@@ -53,14 +60,19 @@ def _model(o):
         if is_struct(cl) or is_union(cl):
             so = getattr(o, name)
             sm = _model(so)
+            sm.name = name
+            sm.parent = model
             am = getattr(o, "_anonymous_", None)
-            setattr(model, name, _collapse_anon(sm, am))
+            model.children.append(_collapse_anon(sm, am))
         else:
-            setattr(model, name, cl)
+            sm = DeviceModel(name = name, parent = model)
+            sm.val_type = cl.__name__
+            model.children.append(sm)
+
     return model
 
 def model_device(device):
-    model = DeviceModel()
+    model = DeviceModel(name = "device")
     for block in device.blocks:
         block_name = block.__class__.__name__
         anonymous_members = getattr(block, "_anonymous_", None)
@@ -69,5 +81,7 @@ def model_device(device):
         if block_name[-5:] == "_regs":
             block_name = block_name[:-5]
         block_model = _collapse_anon(_model(block), anonymous_members)
-        setattr(model, block_name, block_model)
+        block_model.name = block_name
+        block_model.parent = model
+        model.children.append(block_model)
     return model
