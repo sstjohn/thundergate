@@ -16,8 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from ctypes import Structure, Union, Array, addressof, sizeof, POINTER, cast
+from ctypes import Structure, Union, Array, addressof, sizeof, POINTER, \
+        cast, _SimpleCData
+
 from device import tg3_blocks, tg3_mem
+from copy import copy
 
 def get_data_value(o, mroot, droot):
     if o == mroot:
@@ -49,6 +52,7 @@ class RegisterModel(GenericModel):
 is_struct = lambda c: Structure in c.__bases__
 is_union = lambda c: Union in c.__bases__
 is_cobj = lambda c: hasattr(c, "_fields_")
+is_csimp = lambda o: _SimpleCData in o.__class__.__bases__
 is_pobj = lambda o: hasattr(o, "__dict__")
 is_carray = lambda o: isinstance(o, Array)
 is_parray = lambda o: hasattr(o, "__iter__")
@@ -78,11 +82,14 @@ def _model_bf(o):
 
 def _model_parray(o):
     model = GenericModel()
-    counter = 0
-    for i in o:
-        sm = _model(i)
+    smm = _model(o[0])
+    smm.name = "[0]"
+    smm.parent = model
+    model.children.append(smm)
+    counter = 1
+    for i in o[1:]:
+        sm = copy(smm)
         sm.name = "[%d]" % counter 
-        sm.parent = model
         model.children.append(sm)
         counter += 1
     return model
@@ -90,10 +97,13 @@ def _model_parray(o):
 def _model_carray(o):
     model = GenericModel()
     counter = 0
-    for i in range(len(o)):
-        sm = _model(_get_carray_cobj(o, i))
+    smm = _model(_get_carray_cobj(o, 0))
+    smm.name = "[0]"
+    smm.parent = model
+    model.children.append(smm)
+    for i in range(1, o._length_):
+        sm = copy(smm)
         sm.name = "[%d]" % i
-        sm.parent = model
         model.children.append(sm)
     return model
 
@@ -108,23 +118,19 @@ def _model(o):
     model = GenericModel()
     if is_cobj(o):
         fields = getattr(o, "_fields_")
-    elif is_pobj(o):
-        fields = [(n, type(getattr(o, n))) for n in filter(lambda x: x[0] != "_", o.__dict__)]
+    elif not is_csimp(o) and is_pobj(o):
+        fields = [(n, type(getattr(o, n))) for n in filter(lambda x: x[0] != "_", dir(o))]
     else:
-        raise Exception("unknown type")
+        model.val_type = type(o).__name__
+        return model
 
     for name, cl in fields:
-        if is_struct(cl) or is_union(cl):
-            so = getattr(o, name)
-            sm = _model(so)
-            sm.name = name
-            sm.parent = model
-            am = getattr(o, "_anonymous_", None)
-            model.children.append(_collapse_anon(sm, am))
-        else:
-            sm = GenericModel(name = name, parent = model)
-            sm.val_type = cl.__name__
-            model.children.append(sm)
+        so = getattr(o, name)
+        sm = _model(so)
+        sm.name = name
+        sm.parent = model
+        am = getattr(o, "_anonymous_", None)
+        model.children.append(_collapse_anon(sm, am))
 
     return model
 

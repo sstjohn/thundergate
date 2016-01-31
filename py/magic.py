@@ -67,7 +67,11 @@ class DeviceMagic(Magics):
 	self.dev.nvram.init(wr=1)
 	self.dev.nvram.install_thundergate()
 	self.dev.reset()
-
+    
+    @line_magic
+    def gui(self, arg):
+        import gui
+        return gui.run(self.dev)
 def _register_device_magic(dev):
     ip = get_ipython()
     ip.register_magics(DeviceMagic(ip, dev))

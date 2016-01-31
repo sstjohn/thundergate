@@ -113,3 +113,4 @@ def run(dev):
     t = threading.Thread(target = _run, args = (dev,))
     t.daemon = True
     t.start()
+    return t
