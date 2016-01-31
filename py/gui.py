@@ -19,13 +19,14 @@
 import wx
 import wx.dataview
 import threading
-from datamodel import model_device
+from datamodel import model_registers, model_memory
 
-class DevDVM(wx.dataview.PyDataViewModel):
-    def __init__(self, dev):
-        super(DevDVM, self).__init__()
-        self.dev = dev
-        self.model = model_device(dev)
+
+class GenDVM(wx.dataview.PyDataViewModel):
+    def __init__(self, root, model):
+        super(GenDVM, self).__init__()
+        self.root = root
+        self.model = model
 
     def GetColumnCount(self):
         return 3
@@ -77,14 +78,22 @@ class DevDVM(wx.dataview.PyDataViewModel):
 
     def _get_data_value(self, o):
         if o.parent == self.model:
-            return self.dev
+            return self.root
         parent_data = self._get_data_value(o.parent)
         return getattr(parent_data, o.name)
 
-class DevTree(wx.dataview.DataViewCtrl):
-    def __init__(self, parent, dev):
-        super(DevTree, self).__init__(parent)
-        dvm = DevDVM(dev)
+class RegDVM(GenDVM):
+    def __init__(self, dev):
+        super(RegDVM, self).__init__(dev, model_registers(dev))
+
+class MemDVM(GenDVM):
+    def __init__(self, dev):
+        super(MemDVM, self).__init__(dev.mem, model_memory(dev))
+
+class GenTree(wx.dataview.DataViewCtrl):
+    def __init__(self, parent, root, dvm):
+        super(GenTree, self).__init__(parent)
+        dvm = dvm(root)
         self.AssociateModel(dvm)
         self.AppendTextColumn("name", 0)
         self.AppendTextColumn("value", 1)
@@ -96,8 +105,10 @@ def _show_main_frame(dev):
     frame.CreateStatusBar()
     
     nb = wx.Notebook(frame)
-    page = DevTree(nb, dev)
+    page = GenTree(nb, dev, RegDVM)
     nb.AddPage(page, text="registers")
+    page = GenTree(nb, dev, MemDVM)
+    nb.AddPage(page, text="memory")
     
     frame.Show()
 
