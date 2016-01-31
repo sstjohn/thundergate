@@ -19,7 +19,7 @@
 import wx
 import wx.dataview
 import threading
-from datamodel import model_registers, model_memory
+from datamodel import model_registers, model_memory, get_data_value
 
 
 class GenDVM(wx.dataview.PyDataViewModel):
@@ -67,20 +67,12 @@ class GenDVM(wx.dataview.PyDataViewModel):
         if col == 0:
             return str(o.name)
         if col == 1:
-            if hasattr(o, "val_type"):
-                try:
-                    data = self._get_data_value(o)
-                    return str(data)
-                except: pass
+            if len(o.children) == 0:
+                data = get_data_value(o, self.model, self.root)
+                return str(data)
             return ""
         if col == 2:
             return str(getattr(o, "val_type", ""))
-
-    def _get_data_value(self, o):
-        if o.parent == self.model:
-            return self.root
-        parent_data = self._get_data_value(o.parent)
-        return getattr(parent_data, o.name)
 
 class RegDVM(GenDVM):
     def __init__(self, dev):

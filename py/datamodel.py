@@ -16,8 +16,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from ctypes import Structure, Union
+from ctypes import Structure, Union, Array, addressof, sizeof, POINTER, cast
 from device import tg3_blocks, tg3_mem
+
+def get_data_value(o, mroot, droot):
+    if o == mroot:
+        return droot
+    parent_data = get_data_value(o.parent, mroot, droot)
+    if o.name[0] == "[":
+        return parent_data[int(o.name[1:-1])]
+    return getattr(parent_data, o.name)
+
+def _get_carray_cobj(array, index):
+    if index >= array._length_:
+        raise IndexError()
+    addr = addressof(array)
+    addr += (index * sizeof(array._type_))
+    return cast(addr, POINTER(array._type_)).contents
 
 class GenericModel(object):
     def __init__(self, name = None, parent = None):
@@ -33,6 +48,9 @@ class RegisterModel(GenericModel):
 
 is_struct = lambda c: Structure in c.__bases__
 is_union = lambda c: Union in c.__bases__
+is_cobj = lambda c: hasattr(c, "_fields_")
+is_pobj = lambda o: hasattr(o, "__dict__")
+is_carray = lambda o: isinstance(o, Array)
 is_parray = lambda o: hasattr(o, "__iter__")
 is_bf = lambda o: hasattr(o, "_fields_") and (len(o._fields_[0]) == 3)
 
@@ -69,16 +87,32 @@ def _model_parray(o):
         counter += 1
     return model
 
+def _model_carray(o):
+    model = GenericModel()
+    counter = 0
+    for i in range(len(o)):
+        sm = _model(_get_carray_cobj(o, i))
+        sm.name = "[%d]" % i
+        sm.parent = model
+        model.children.append(sm)
+    return model
+
 def _model(o):
     if is_parray(o):
         return _model_parray(o)
+    if is_carray(o):
+        return _model_carray(o)
     if is_bf(o):
         return _model_bf(o)
 
     model = GenericModel()
-    fields = getattr(o, "_fields_", None)
-    if fields is None:
+    if is_cobj(o):
+        fields = getattr(o, "_fields_")
+    elif is_pobj(o):
         fields = [(n, type(getattr(o, n))) for n in filter(lambda x: x[0] != "_", o.__dict__)]
+    else:
+        raise Exception("unknown type")
+
     for name, cl in fields:
         if is_struct(cl) or is_union(cl):
             so = getattr(o, name)
