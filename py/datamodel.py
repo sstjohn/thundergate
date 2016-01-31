@@ -17,6 +17,7 @@
 '''
 
 from ctypes import Structure, Union
+from device import tg3_blocks
 
 class DeviceModel(object):
     def __init__(self, name = None, parent = None):
@@ -73,13 +74,9 @@ def _model(o):
 
 def model_device(device):
     model = DeviceModel(name = "device")
-    for block in device.blocks:
-        block_name = block.__class__.__name__
+    for block_name, _, block_type in tg3_blocks:
+        block = getattr(device, block_name)
         anonymous_members = getattr(block, "_anonymous_", None)
-        if block_name[-2:] == "_x":
-            block_name = block_name[:-2]
-        if block_name[-5:] == "_regs":
-            block_name = block_name[:-5]
         block_model = _collapse_anon(_model(block), anonymous_members)
         block_model.name = block_name
         block_model.parent = model

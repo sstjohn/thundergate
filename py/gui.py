@@ -19,13 +19,13 @@
 import wx
 import wx.dataview
 import threading
-from datamodel import model_device, DeviceModel
+from datamodel import model_device
 
 class DevDVM(wx.dataview.PyDataViewModel):
-    def __init__(self, dev, model):
+    def __init__(self, dev):
         super(DevDVM, self).__init__()
-        self.model = model
         self.dev = dev
+        self.model = model_device(dev)
 
     def GetColumnCount(self):
         return 3
@@ -64,17 +64,27 @@ class DevDVM(wx.dataview.PyDataViewModel):
     def GetValue(self, item, col):
         o = self.ItemToObject(item)
         if col == 0:
-            return o.name
+            return str(o.name)
         if col == 1:
-            return getattr(o, "value", "")
+            if hasattr(o, "val_type"):
+                try:
+                    data = self._get_data_value(o)
+                    return str(data)
+                except: pass
+            return ""
         if col == 2:
-            return getattr(o, "val_type", "")
+            return str(getattr(o, "val_type", ""))
+
+    def _get_data_value(self, o):
+        if o.parent == self.model:
+            return self.dev
+        parent_data = self._get_data_value(o.parent)
+        return getattr(parent_data, o.name)
 
 class DevTree(wx.dataview.DataViewCtrl):
     def __init__(self, parent, dev):
         super(DevTree, self).__init__(parent)
-        model = model_device(dev)
-        dvm = DevDVM(dev, model)
+        dvm = DevDVM(dev)
         self.AssociateModel(dvm)
         self.AppendTextColumn("name", 0)
         self.AppendTextColumn("value", 1)
@@ -87,7 +97,7 @@ def _show_main_frame(dev):
     
     nb = wx.Notebook(frame)
     page = DevTree(nb, dev)
-    nb.AddPage(page, text="dev")
+    nb.AddPage(page, text="registers")
     
     frame.Show()
 
@@ -98,4 +108,5 @@ def _run(dev):
 
 def run(dev):
     t = threading.Thread(target = _run, args = (dev,))
+    t.daemon = True
     t.start()
