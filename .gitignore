@@ -7,7 +7,7 @@ core
 *.bin
 .depend
 py/clib.*
-py/*.pyc
+py/**/*.pyc
 py/tunlib.py
 py/efilib.py
 py/efilib.xml

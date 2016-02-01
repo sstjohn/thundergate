@@ -40,11 +40,11 @@ if __name__ == "__main__":
 from device import Device
 
 if sys_name == "Linux":
-    from sysfsint import SysfsInterface
-    from vfioint import VfioInterface
-    from uioint import UioInterface
+    from interfaces.sysfs import SysfsInterface
+    from interfaces.vfio import VfioInterface
+    from interfaces.uio import UioInterface
 elif sys_name == "Windows" or sys_name == "cli":
-    from winint import WinInterface
+    from interfaces.win import WinInterface
 else:
     raise NotImplementedError("this version of thundergate only runs on linux and windows")
 

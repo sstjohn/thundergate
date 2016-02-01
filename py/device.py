@@ -32,10 +32,7 @@ from pciephy import PCIePhy
 from smi import Smi
 from top import TopLevel
 
-import cpu
-import nvram
-import ftq
-
+import blocks
 import block_utils
 import pci
 
@@ -67,15 +64,15 @@ tg3_blocks = [
     ("nrdma", 0x4900, rflip.nrdma),
     ("rtrdma", 0x4a00, rflip.rdma),
 	("wdma", 0x4c00, rflip.wdma),
-	("rxcpu", 0x5000, cpu.cpu),
+	("rxcpu", 0x5000, blocks.cpu),
 	("lpmb", 0x5800, rflip.lpmb),
-	("ftq", 0x5c00, ftq.ftq),
+	("ftq", 0x5c00, blocks.ftq),
 	("msi", 0x6000, rflip.msi),
         ("cr_port", 0x6100, rflip.cr_port),
 	("cfg_port", 0x6400, rflip.cfg_port),
 	("grc", 0x6800, rflip.grc),
 	("asf", 0x6c00, rflip.asf),
-	("nvram", 0x7000, nvram.nvram),
+	("nvram", 0x7000, blocks.nvram),
 	("otp", 0x7500, rflip.otp),
 	("pcie_alt", 0x7c00, rflip.pcie_alt),
 	("pcie_tl", 0x7c00, rflip.pcie_tl),

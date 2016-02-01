@@ -20,7 +20,7 @@ import clib as c
 import os
 import ctypes
 import struct
-from mm_linux import LinuxMemMgr
+from linux import LinuxMemMgr
 
 class IOMemMgr(LinuxMemMgr):
     def __init__(self, container):

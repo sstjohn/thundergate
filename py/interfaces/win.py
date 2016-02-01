@@ -23,7 +23,7 @@ import struct
 import uuid
 
 from winlib import *
-from mm_win import WinMemMgr
+from mm.win import WinMemMgr
 
 class WinInterface(object):
     def __init__(self):

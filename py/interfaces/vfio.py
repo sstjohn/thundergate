@@ -20,7 +20,7 @@ import os
 from fcntl import ioctl
 import clib as c
 import struct
-import iomem
+from mm.linux_io import IOMemMgr
 
 class VfioInterface(object):
     def __init__(self, bdf):
@@ -68,7 +68,7 @@ class VfioInterface(object):
 
         self.container = container
 
-        self.mm = iomem.IOMemMgr(container)
+        self.mm = IOMemMgr(container)
         self._dev_open()
 
     def _dev_open(self):

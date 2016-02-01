@@ -19,7 +19,7 @@
 import os
 import struct
 import clib as c
-from mm_linux import LinuxMemMgr
+from mm.linux import LinuxMemMgr
 
 class SysfsInterface(object):
     def __init__(self, bdf):

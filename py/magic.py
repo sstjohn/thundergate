@@ -21,7 +21,7 @@ from IPython.core.magic import (Magics, magics_class, line_magic,
 from elftools.elf.elffile import ELFFile
 from StringIO import StringIO
 
-from cpu import mips_regs
+from blocks.cpu import mips_regs
 import reutils
 from struct import pack, unpack
 

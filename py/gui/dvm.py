@@ -18,9 +18,7 @@
 
 import wx
 import wx.dataview
-import threading
 from datamodel import model_registers, model_memory, get_data_value
-
 
 class GenDVM(wx.dataview.PyDataViewModel):
     def __init__(self, root, model):
@@ -81,36 +79,3 @@ class RegDVM(GenDVM):
 class MemDVM(GenDVM):
     def __init__(self, dev):
         super(MemDVM, self).__init__(dev.mem, model_memory(dev))
-
-class GenTree(wx.dataview.DataViewCtrl):
-    def __init__(self, parent, root, dvm):
-        super(GenTree, self).__init__(parent)
-        dvm = dvm(root)
-        self.AssociateModel(dvm)
-        self.AppendTextColumn("name", 0)
-        self.AppendTextColumn("value", 1)
-        self.AppendTextColumn("type", 2)
-
-def _show_main_frame(dev):
-    frame = wx.Frame(None, -1, 'thundergate')
-    
-    frame.CreateStatusBar()
-    
-    nb = wx.Notebook(frame)
-    page = GenTree(nb, dev, RegDVM)
-    nb.AddPage(page, text="registers")
-    page = GenTree(nb, dev, MemDVM)
-    nb.AddPage(page, text="memory")
-    
-    frame.Show()
-
-def _run(dev):
-    app = wx.App()
-    _show_main_frame(dev)
-    app.MainLoop()
-
-def run(dev):
-    t = threading.Thread(target = _run, args = (dev,))
-    t.daemon = True
-    t.start()
-    return t
