@@ -21,26 +21,39 @@ import threading
 from tree import GenTree
 from dvm import RegDVM, MemDVM
 
-def _show_main_frame(dev):
-    frame = wx.Frame(None, -1, 'thundergate')
-    
-    frame.CreateStatusBar()
-    
-    nb = wx.Notebook(frame)
-    page = GenTree(nb, dev, RegDVM)
-    nb.AddPage(page, text="registers")
-    page = GenTree(nb, dev, MemDVM)
-    nb.AddPage(page, text="memory")
-    
-    frame.Show()
+class App(wx.App):
+    def __init__(self, dev):
+        self.dev = dev
+        super(App, self).__init__()
+
+    def OnInit(self):
+        self.toplevel = wx.Frame(None, -1)
+        self.ShowMain()
+        return True
+
+    def ShowMain(self):
+        frame = wx.Frame(self.toplevel, -1, 'thundergate')
+        
+        frame.CreateStatusBar()
+        
+        nb = wx.Notebook(frame)
+        page = GenTree(nb, self.dev, RegDVM)
+        nb.AddPage(page, text="registers")
+        page = GenTree(nb, self.dev, MemDVM)
+        nb.AddPage(page, text="memory")
+        
+        frame.Show()
 
 def _run(dev):
-    app = wx.App()
-    _show_main_frame(dev)
-    app.MainLoop()
+    _run.app = App(dev)
+    _run.app.MainLoop()
+    _run.app.Destroy()
+    del _run.app
 
 def run(dev):
-    t = threading.Thread(target = _run, args = (dev,))
-    t.daemon = True
-    t.start()
-    return t
+    if hasattr(_run, "app"):
+        wx.CallAfter(_run.app.ShowMain)
+    else:
+        t = threading.Thread(target = _run, args = (dev,))
+        t.daemon = True
+        t.start()
