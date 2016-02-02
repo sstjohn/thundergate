@@ -39,7 +39,6 @@ class nvram(rflip.nvram):
 
         self.acquire_lock()
         self.access_enable()
-        self.eeprom_len = self._get_eeprom_len()
 
         if wr: self.write_enable()
         if lh: self.load_eeprom_header()
@@ -111,12 +110,12 @@ class nvram(rflip.nvram):
         self._locked = 1
 
     def relinquish_lock(self):
-	if self.sw_arb.req_set1:
+        if not self._locked:
+            return
+	if self.sw_arb.req1:
 		print "[-] clearing nvram arbitration request 1"
 		self.sw_arb.req_clr1 = 1
-	if self.sw_arb.req1:
-		print "[-] relinquishing nvram lock"
-		self.sw_arb.req1 = 1
+        self._locked = 0
 
     def access_enable(self):
         if not self._dev.grc.misc_local_control.auto_seeprom:
@@ -180,7 +179,8 @@ class nvram(rflip.nvram):
 
         return self.read_data
 
-    def _get_eeprom_len(self): 
+    @property
+    def eeprom_len(self): 
 	sz = 0
         if self.read_dword(0) == tg.TG3_MAGIC:
             sz = ((self.read_dword(0xf0) & 0xffff) >> 8) * 1024
@@ -277,9 +277,13 @@ class nvram(rflip.nvram):
 
         return ret
 
-    def show_directory(self):
-        try: self.eeprom_hdr
-        except: self.load_eeprom_header()
+    def get_directory(self, force_reload = False):
+        directory = []
+        if not force_reload:
+            try: self.eeprom_hdr
+            except: self.load_eeprom_header()
+        else:
+            self.load_eeprom_header()
         for index in range(len(self.eeprom_hdr.directory)):
             dentry = self.eeprom_hdr.directory[index]
             nv_ofs = dentry.nvram_start
@@ -291,6 +295,13 @@ class nvram(rflip.nvram):
 
             if nv_ofs > 0:
                 d = (index, nv_type, nv_ofs, sram_ofs, nv_len)
+                directory += [d]
+
+        return directory
+
+    def show_directory(self):
+        directory = self.get_directory()
+        for index, nv_type, nv_ofs, sram_ofs, nv_len in directory:
                 print "nvram image #%d. attrs: type %02x, nv_ofs %x, sram_ofs: %x, len %x," % d,
                 if nv_xa:
                     print "xa",
@@ -299,7 +310,6 @@ class nvram(rflip.nvram):
                 if not nv_xa and not nv_xb:
                     print "nx",
                 print
-
 
     def get_dir_image(self, index):
         dentry = self.eeprom_hdr.directory[index]

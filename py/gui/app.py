@@ -20,6 +20,7 @@ import wx
 import threading
 from tree import GenTree
 from dvm import RegDVM, MemDVM
+from nved import NvramEditor
 
 class App(wx.App):
     def __init__(self, dev):
@@ -31,6 +32,11 @@ class App(wx.App):
         self.ShowMain()
         return True
 
+    def ShowTest(self):
+        frame = wx.Frame(self.toplevel, -1, 'test!')
+        editor = NvramEditor(frame, self.dev)
+        frame.Show()
+
     def ShowMain(self):
         frame = wx.Frame(self.toplevel, -1, 'thundergate')
         
@@ -41,19 +47,11 @@ class App(wx.App):
         nb.AddPage(page, text="registers")
         page = GenTree(nb, self.dev, MemDVM)
         nb.AddPage(page, text="memory")
+        page = NvramEditor(nb, self.dev)
+        nb.AddPage(page, text="nvram")
         
         frame.Show()
 
-def _run(dev):
-    _run.app = App(dev)
-    _run.app.MainLoop()
-    _run.app.Destroy()
-    del _run.app
+    def Invoke(self, fun):
+        wx.CallAfter(fun)
 
-def run(dev):
-    if hasattr(_run, "app"):
-        wx.CallAfter(_run.app.ShowMain)
-    else:
-        t = threading.Thread(target = _run, args = (dev,))
-        t.daemon = True
-        t.start()
