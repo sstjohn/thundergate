@@ -82,6 +82,7 @@ def main(args):
     parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
     parser.add_argument("--wait", help="wait for debugger attachment at startup", action="store_true")
     parser.add_argument("--cdpserver", help="launch VS Code debug protocol server", action="store_true")
+    parser.add_argument("-g", "--gui", help="launch wxpython gui", action="store_true")
 
     args = parser.parse_args(args=args[1:])
 
@@ -188,6 +189,9 @@ def main(args):
             from cdp import CDPServer
             with CDPServer(dev, conin, conout) as server:
                 return server.run()
+        elif args.gui:
+            import gui
+            gui._run(dev)
         else:
             if args.driver:
                 from tapdrv import TapDriver

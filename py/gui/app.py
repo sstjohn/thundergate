@@ -18,40 +18,96 @@
 
 import wx
 import threading
+import functools
 from tree import GenTree
-from dvm import RegDVM, MemDVM
 from nved import NvramEditor
+from datamodel import model_registers, model_memory
+
+class ThunderSplash(wx.SplashScreen):
+    def __init__(self, parent):
+        img = wx.Image("misc/thunderlogo.png", wx.BITMAP_TYPE_PNG)
+        bitmap = img.ConvertToBitmap()
+        super(ThunderSplash, self).__init__(
+                bitmap = bitmap,
+                milliseconds = 0,
+                splashStyle = wx.SPLASH_CENTER_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
+                parent = parent)
+        self.GetSplashWindow().SetBitmap(bitmap)
 
 class App(wx.App):
-    def __init__(self, dev):
+    def __init__(self, dev, nosplash = False, daemon = False):
         self.dev = dev
+        self.nosplash = nosplash
+        self.daemon = daemon
         super(App, self).__init__()
 
     def OnInit(self):
-        self.toplevel = wx.Frame(None, -1)
-        self.ShowMain()
+        if self.daemon:
+            self.toplevel = wx.Frame(None, -1)
+        else:
+            self.toplevel = None
+        if self.nosplash:
+            self.PrepareMain()
+        else:
+            self.ShowSplash()
         return True
 
-    def ShowTest(self):
-        frame = wx.Frame(self.toplevel, -1, 'test!')
-        editor = NvramEditor(frame, self.dev)
-        frame.Show()
+    def ShowSplash(self):
+        img = wx.Image('misc/thunderlogo.png', wx.BITMAP_TYPE_PNG)
+        self.splash = ThunderSplash(self.toplevel)
+        self.splash.Refresh()
+        wx.Yield()
+        wx.CallLater(1, self.PrepareMain)
 
-    def ShowMain(self):
-        frame = wx.Frame(self.toplevel, -1, 'thundergate')
-        
-        frame.CreateStatusBar()
-        
-        nb = wx.Notebook(frame)
-        page = GenTree(nb, self.dev, RegDVM)
-        nb.AddPage(page, text="registers")
-        page = GenTree(nb, self.dev, MemDVM)
-        nb.AddPage(page, text="memory")
-        page = NvramEditor(nb, self.dev)
-        nb.AddPage(page, text="nvram")
-        
-        frame.Show()
+    def PrepareMain(self):
+        self.main_frame = wx.Frame(self.toplevel, -1, 'thundergate')
+        self.nb = wx.Notebook(self.main_frame)
+        self.bgthreads = []
+        t = threading.Thread(
+                target = self._collect_model,
+                args = ("register", model_registers))
+        wx.CallAfter(t.start)
+        self.bgthreads += [t]
+        t = threading.Thread(
+                target = self._collect_model,
+                args = ("memory", model_memory))
+        wx.CallAfter(t.start)
+        self.bgthreads += [t]
+        t = threading.Thread(target = self._wait_for_models)
+        wx.CallAfter(t.start)
+
+    def _tl_closed(self, evt):
+        print "tl closed"
+        if not self.daemon:
+            self.Exit()
 
     def Invoke(self, fun):
         wx.CallAfter(fun)
 
+    def _collect_model(self, name, modeler):
+        print "collecting model %s" % name
+        res = modeler(self.dev)
+        setattr(self, "%s_model" % name, res)
+        notify = functools.partial(self._add_regtree, name)
+        wx.CallAfter(notify)
+
+    def _add_regtree(self, name):
+        print "adding regtree %s" % name
+        model = getattr(self, "%s_model" % name)
+        page = GenTree(self.nb, self.dev, model)
+        self.nb.AddPage(page, text=name)
+
+    def _wait_for_models(self):
+        for t in self.bgthreads:
+            t.join()
+        wx.CallAfter(self._bgwork_done)
+
+    def _bgwork_done(self):
+        print "bgwork done"
+        page = NvramEditor(self.nb, self.dev)
+        self.nb.AddPage(page, text="nvram")
+        self.main_frame.Show()
+        self.Bind(wx.EVT_CLOSE, self._tl_closed, self.main_frame)
+
+        if not self.nosplash:
+            self.splash.Destroy()

@@ -20,7 +20,7 @@ import os
 import struct
 import clib as c
 import mm
-from sysfsint import SysfsInterface
+from interfaces.sysfs import SysfsInterface
 
 class UioInterface(SysfsInterface):
     def __init__(self, bdf):

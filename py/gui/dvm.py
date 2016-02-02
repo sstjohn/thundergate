@@ -18,7 +18,7 @@
 
 import wx
 import wx.dataview
-from datamodel import model_registers, model_memory, get_data_value
+from datamodel import get_data_value
 
 class GenDVM(wx.dataview.PyDataViewModel):
     def __init__(self, root, model):
@@ -71,11 +71,3 @@ class GenDVM(wx.dataview.PyDataViewModel):
             return ""
         if col == 2:
             return str(getattr(o, "val_type", ""))
-
-class RegDVM(GenDVM):
-    def __init__(self, dev):
-        super(RegDVM, self).__init__(dev, model_registers(dev))
-
-class MemDVM(GenDVM):
-    def __init__(self, dev):
-        super(MemDVM, self).__init__(dev.mem, model_memory(dev))

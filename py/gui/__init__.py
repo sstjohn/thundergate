@@ -3,12 +3,10 @@ import threading
 
 def _run(dev):
     _run.app = App(dev)
+    print "begining main app loop"
     _run.app.MainLoop()
     _run.app.Destroy()
     del _run.app
-
-def test():
-    _run.app.Invoke(_run.app.ShowTest)
 
 def run(dev):
     if hasattr(_run, "app"):
