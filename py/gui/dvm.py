@@ -21,9 +21,8 @@ import wx.dataview
 from datamodel import get_data_value
 
 class GenDVM(wx.dataview.PyDataViewModel):
-    def __init__(self, root, model):
+    def __init__(self, model):
         super(GenDVM, self).__init__()
-        self.root = root
         self.model = model
 
     def GetColumnCount(self):
@@ -66,7 +65,7 @@ class GenDVM(wx.dataview.PyDataViewModel):
             return str(o.name)
         if col == 1:
             if len(o.children) == 0:
-                data = get_data_value(o, self.model, self.root)
+                data = get_data_value(o, self.model)
                 return str(data)
             return ""
         if col == 2:

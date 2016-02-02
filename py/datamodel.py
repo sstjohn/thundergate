@@ -22,10 +22,10 @@ from ctypes import Structure, Union, Array, addressof, sizeof, POINTER, \
 from device import tg3_blocks, tg3_mem
 from copy import copy
 
-def get_data_value(o, mroot, droot):
+def get_data_value(o, mroot):
     if o == mroot:
-        return droot
-    parent_data = get_data_value(o.parent, mroot, droot)
+        return o.droot
+    parent_data = get_data_value(o.parent, mroot)
     if o.name[0] == "[":
         return parent_data[int(o.name[1:-1])]
     return getattr(parent_data, o.name)
@@ -38,9 +38,11 @@ def _get_carray_cobj(array, index):
     return cast(addr, POINTER(array._type_)).contents
 
 class GenericModel(object):
-    def __init__(self, name = None, parent = None):
+    def __init__(self, name = None, parent = None, root = None):
         self.parent = parent
         self.name = name
+	if not root is None:
+	    self.droot = root
         self.children = []
 
 class MemoryModel(GenericModel):
@@ -135,7 +137,7 @@ def _model(o):
     return model
 
 def model_registers(device):
-    model = RegisterModel(name = "registers")
+    model = RegisterModel(name = "registers", root = device)
     for block_name, _, block_type in tg3_blocks:
         block = getattr(device, block_name)
         anonymous_members = getattr(block, "_anonymous_", None)
@@ -146,7 +148,7 @@ def model_registers(device):
     return model
 
 def model_memory(device):
-    model = MemoryModel(name = "memory")
+    model = MemoryModel(name = "memory", root = device.mem)
     for seg_name, seg_type, _, count in tg3_mem:
         seg = getattr(device.mem, seg_name)
         anonymous_members = getattr(seg, "_anonymous_", None)

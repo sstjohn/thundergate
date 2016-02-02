@@ -91,7 +91,7 @@ class App(wx.App):
 
     def _add_regtree(self, name):
         model = getattr(self, "%s_model" % name)
-        page = GenTree(self.nb, self.dev, model)
+        page = GenTree(self.nb, model)
         self.nb.AddPage(page, text=name)
 
     def _wait_for_models(self):

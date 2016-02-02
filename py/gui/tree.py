@@ -21,9 +21,9 @@ import wx.dataview
 from dvm import GenDVM
 
 class GenTree(wx.dataview.DataViewCtrl):
-    def __init__(self, parent, root, model):
+    def __init__(self, parent, model):
         super(GenTree, self).__init__(parent)
-        self.AssociateModel(GenDVM(root, model))
+        self.AssociateModel(GenDVM(model))
         self.AppendTextColumn("name", 0)
         self.AppendTextColumn("value", 1)
         self.AppendTextColumn("type", 2)
