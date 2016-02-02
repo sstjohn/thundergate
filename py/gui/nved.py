@@ -1,7 +1,25 @@
 
-
+import os
 import wx
 import wx.dataview
+import threading
+
+class NvFwProgress(wx.Dialog):
+    def __init__(self, parent, total, title = "progress"):
+        super(NvFwProgress, self).__init__(parent, title = title)
+        self.total = total
+        self.progress = wx.Gauge(self, range = total)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.progress, 0, wx.EXPAND)
+        self.SetSizer(sizer)
+
+    def updateProgress(self, val):
+        wx.CallAfter(self._updateProgress, val)
+
+    def _updateProgress(self, val):
+        self.progress.SetValue(val)
+        if val == self.total:
+            self.EndModal(0)
 
 class NvDirectoryListCtrl(wx.dataview.DataViewListCtrl):
     def __init__(self, parent, dev, *args, **kargs):
@@ -25,9 +43,15 @@ class NvDirectoryListCtrl(wx.dataview.DataViewListCtrl):
         for i in directory:
             self.AppendItem(map(hexify, i))
 
+def _nvsave(dev, path, updater):
+        dev.nvram.acquire_lock()
+        dev.nvram.dump_eeprom(path, updater=updater)
+        dev.nvram.relinquish_lock()
+
 class NvramEditor(wx.Panel):
     def __init__(self, parent, dev, *args, **kwargs):
         self.dev = dev
+        self.dev.nvram.access_enable()
         super(NvramEditor, self).__init__(parent, *args, **kwargs)
         outer = wx.BoxSizer(wx.VERTICAL)
         image_sl_buttons = wx.BoxSizer(wx.HORIZONTAL)
@@ -69,10 +93,19 @@ class NvramEditor(wx.Panel):
 
         if saveFileDialog.ShowModal() == wx.ID_CANCEL:
             return
-
+        
+        path = saveFileDialog.GetPath()
         self.dev.nvram.acquire_lock()
-        self.dev.nvram.dump_eeprom(saveFileDialog.GetPath())
+        progress = NvFwProgress(
+                self, 
+                self.dev.nvram.eeprom_len, 
+                title = "reading nvram")
         self.dev.nvram.relinquish_lock()
+        t = threading.Thread(
+                target=_nvsave, 
+                args=(self.dev, path, progress.updateProgress))
+        t.start()
+        progress.ShowModal()
 
     def OnNvLoad(self, event):
         openFileDialog = wx.FileDialog(
@@ -82,9 +115,21 @@ class NvramEditor(wx.Panel):
         if openFileDialog.ShowModal() == wx.ID_CANCEL:
             return
 
-        self.dev.nvram.acquire_lock()
-        self.dev.nvram.write_enable()
-        self.dev.nvram.write_eeprom(openFileDialog.GetPath())
-        self.dev.nvram.write_disable()
-        self.dev.nvram.relinquish_lock()
+        path = openFileDialog.GetPath()
+        size = os.path.getsize(path)
+        progress = NvFwProgress(self, size, title = "writing nvram")
+        t = threading.Thread(
+                target=_nvload,
+                args = (self.dev, path, progress.updateProgress))
+        t.start()
+        progress.ShowWindowModal()
         self.nved._populate()
+
+
+
+def _nvload(dev, path, updater):
+        dev.nvram.acquire_lock()
+        dev.nvram.write_enable()
+        dev.nvram.write_eeprom(path, updater=updater)
+        dev.nvram.write_disable()
+        dev.nvram.relinquish_lock()

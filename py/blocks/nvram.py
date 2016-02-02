@@ -30,8 +30,6 @@ usleep = lambda x: sleep(x / 1000000.0)
 from socket import htonl, ntohl
 
 class nvram(rflip.nvram):
-    _locked = False
-
     def init(self, wr=0, lh=1):
         self.acquire_lock()
         self.access_enable()
@@ -39,6 +37,7 @@ class nvram(rflip.nvram):
 
         self.acquire_lock()
         self.access_enable()
+        self._locked = 0
 
         if wr: self.write_enable()
         if lh: self.load_eeprom_header()
@@ -255,26 +254,51 @@ class nvram(rflip.nvram):
             usleep(100)
         self.command.dome = 1
 
-    def write_block(self, offset, data):
+    def write_block(self, offset, data, updater = None):
         assert len(data) >= 4 and 0 == (len(data) % 4)
-
-        print "[+] writing block length %x at offset %x..." % (len(data), offset),
-        sys.stdout.flush()
+        
+        if updater is not None:
+            updater(0)
+        else:
+            print "[+] writing block length %x at offset %x..." % (len(data), offset),
+            sys.stdout.flush()
 
         for i in range(0, len(data), 4):
             if 0 == (i % 0x400):
-                sys.stdout.write(".")
-                sys.stdout.flush()
+                if updater is not None:
+                    updater(i)
+                else:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
             self.write_dword(offset + i, struct.unpack("!I", data[i:i+4])[0])
-        print
+        if updater is not None:
+            updater(len(data))
+        else:
+            print
 
-    def read_block(self, offset, length):
+    def read_block(self, offset, length, updater = None):
         assert length >=4 and 0 == (length % 4)
+
+        if updater is not None:
+            updater(0)
+        else:
+            print "[+] reading block length %x at offset %x..." % (length, offset),
+            sys.stdout.flush()
+
 
         ret = ""
         for i in range(0, length, 4):
+            if 0 == (i % 0x400):
+                if updater is not None:
+                    updater(i)
+                else:
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
             ret += struct.pack("!I", self.read_dword(offset + i))
-
+        if updater is not None:
+            updater(length)
+        else:
+            print
         return ret
 
     def get_directory(self, force_reload = False):
@@ -427,11 +451,11 @@ class nvram(rflip.nvram):
         self._dev.reset()
         return 0
     
-    def dump_eeprom(self, fname):
+    def dump_eeprom(self, fname, updater = None):
         with open(fname, "wb") as f:
-            f.write(self.read_block(0, self.eeprom_len))
+            f.write(self.read_block(0, self.eeprom_len, updater))
 
-    def write_eeprom(self, fname):
+    def write_eeprom(self, fname, updater=None):
         data = ''
         with open(fname, "rb") as f:
             data = f.read()
@@ -439,7 +463,7 @@ class nvram(rflip.nvram):
         if len(data) == 0 or len(data) < self.eeprom_len:
             raise Exception("bad image length")
 
-        self.write_block(0, data)
+        self.write_block(0, data, updater=updater)
 
     def getasf(self):
         return tg.TG3_FEAT_ASF == (self.eeprom_hdr.mfg.feat_cfg & tg.TG3_FEAT_ASF)
