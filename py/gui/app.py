@@ -17,6 +17,7 @@
 '''
 
 import wx
+import wx.py
 import threading
 import functools
 from tree import GenTree
@@ -57,15 +58,18 @@ class App(wx.App):
         self.splash = ThunderSplash(self.toplevel)
         self.splash.Refresh()
         wx.Yield()
-        wx.CallLater(1, self.PrepareMain)
+	wx.CallAfter(self.PrepareMain)
 
     def PrepareMain(self):
         self.main_frame = wx.Frame(self.toplevel, -1, 'thundergate')
         self.nb = wx.Notebook(self.main_frame)
+	page = wx.NotebookPage(self.nb)
+	wx.py.shell.Shell(page, locals = {"dev": self.dev})
+	self.nb.AddPage(page, text = "console")
         self.bgthreads = []
         t = threading.Thread(
                 target = self._collect_model,
-                args = ("register", model_registers))
+                args = ("registers", model_registers))
         wx.CallAfter(t.start)
         self.bgthreads += [t]
         t = threading.Thread(
@@ -76,23 +80,16 @@ class App(wx.App):
         t = threading.Thread(target = self._wait_for_models)
         wx.CallAfter(t.start)
 
-    def _tl_closed(self, evt):
-        print "tl closed"
-        if not self.daemon:
-            self.Exit()
-
     def Invoke(self, fun):
         wx.CallAfter(fun)
 
     def _collect_model(self, name, modeler):
-        print "collecting model %s" % name
         res = modeler(self.dev)
         setattr(self, "%s_model" % name, res)
         notify = functools.partial(self._add_regtree, name)
         wx.CallAfter(notify)
 
     def _add_regtree(self, name):
-        print "adding regtree %s" % name
         model = getattr(self, "%s_model" % name)
         page = GenTree(self.nb, self.dev, model)
         self.nb.AddPage(page, text=name)
@@ -103,11 +100,9 @@ class App(wx.App):
         wx.CallAfter(self._bgwork_done)
 
     def _bgwork_done(self):
-        print "bgwork done"
         page = NvramEditor(self.nb, self.dev)
         self.nb.AddPage(page, text="nvram")
         self.main_frame.Show()
-        self.Bind(wx.EVT_CLOSE, self._tl_closed, self.main_frame)
 
         if not self.nosplash:
             self.splash.Destroy()
