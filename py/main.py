@@ -191,6 +191,7 @@ def main(args):
                 return server.run()
         elif args.gui:
             import gui
+            dev.reset(cold = True)
             gui._run(dev)
         else:
             if args.driver:

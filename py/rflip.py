@@ -22,51 +22,51 @@ import sys
 import tglib as tg
 
 def rflip(c):
-        fields = []
+    fields = []
 
-        d = type(c.__name__ + "_x", c.__bases__, {})
+    d = type(c.__name__ + "_x", c.__bases__, {})
 
-        is_struct = ctypes.Structure in c.__bases__
-        is_bf = is_struct
-        mem_sz = 0 if is_struct else -1
+    is_struct = ctypes.Structure in c.__bases__
+    is_bf = is_struct
+    mem_sz = 0 if is_struct else -1
 
-        for f in c._fields_:
-                fname = f[0]
+    for f in c._fields_:
+            fname = f[0]
 
-                try:
-                        fields += [(fname, rflip(f[1]))]
-                except:
-                        fields += [(fname, f[1])]
+            try:
+                    fields += [(fname, rflip(f[1]))]
+            except:
+                    fields += [(fname, f[1])]
 
-                if not is_struct:
-                        continue
+            if not is_struct:
+                    continue
 
-                if len(f) < 3:
-                        is_bf = False
+            if len(f) < 3:
+                    is_bf = False
 
-                if mem_sz == 0:
-                        mem_sz = ctypes.sizeof(f[1])
-                elif mem_sz != ctypes.sizeof(f[1]):
-                        mem_sz = -1
+            if mem_sz == 0:
+                    mem_sz = ctypes.sizeof(f[1])
+            elif mem_sz != ctypes.sizeof(f[1]):
+                    mem_sz = -1
 
-        if is_bf:
-                fields = []
-                for f in c._fields_[::-1]:
-                        fields += [(f[0], f[1], f[2])]
-        elif (ctypes.sizeof(c) == 2 or ctypes.sizeof(c) == 4) and mem_sz > 0:
-                fields = fields[::-1]
+    if is_bf:
+            fields = []
+            for f in c._fields_[::-1]:
+                    fields += [(f[0], f[1], f[2])]
+    elif (ctypes.sizeof(c) == 2 or ctypes.sizeof(c) == 4) and mem_sz > 0:
+            fields = fields[::-1]
 
-        try:
-                d._anonymous_ = c._anonymous_
-        except:
-                pass
+    try:
+            d._anonymous_ = c._anonymous_
+    except:
+            pass
 
-        d._fields_ = fields
+    d._fields_ = fields
 
-	if ctypes.sizeof(c) != ctypes.sizeof(d):
-		raise Exception("sizeof flipped struct %s (%d) != sizeof struct %s (%d)" % (d, ctypes.sizeof(d), c, ctypes.sizeof(c)))
+    if ctypes.sizeof(c) != ctypes.sizeof(d):
+        raise Exception("sizeof flipped struct %s (%d) != sizeof struct %s (%d)" % (d, ctypes.sizeof(d), c, ctypes.sizeof(c)))
 
-        return d
+    return d
 
 for tname in tg.__dict__:
     if tname[-5:] == "_regs":
