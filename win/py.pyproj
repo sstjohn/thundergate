@@ -26,23 +26,39 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="async_win.py" />
+    <Compile Include="blocks\cpu.py" />
+    <Compile Include="blocks\ftq.py" />
+    <Compile Include="blocks\nvram.py" />
+    <Compile Include="blocks\__init__.py" />
     <Compile Include="block_utils.py" />
+    <Compile Include="cdp.py" />
     <Compile Include="client.py" />
-    <Compile Include="cpu.py" />
+    <Compile Include="datamodel.py" />
     <Compile Include="device.py" />
     <Compile Include="efirom.py" />
-    <Compile Include="ftq.py" />
     <Compile Include="fw.py" />
     <Compile Include="gphy.py" />
-    <Compile Include="iomem.py" />
+    <Compile Include="gui\app.py" />
+    <Compile Include="gui\dvm.py" />
+    <Compile Include="gui\nved.py" />
+    <Compile Include="gui\tree.py" />
+    <Compile Include="gui\__init__.py" />
+    <Compile Include="image.py" />
+    <Compile Include="interfaces\sysfs.py" />
+    <Compile Include="interfaces\uio.py" />
+    <Compile Include="interfaces\vfio.py" />
+    <Compile Include="interfaces\win.py" />
+    <Compile Include="interfaces\__init__.py" />
     <Compile Include="magic.py" />
     <Compile Include="main.py" />
     <Compile Include="memory.py" />
-    <Compile Include="mm.py" />
-    <Compile Include="mm_win.py" />
-    <Compile Include="mm_linux.py" />
+    <Compile Include="mm\linux.py" />
+    <Compile Include="mm\linux_io.py" />
+    <Compile Include="mm\mm.py" />
+    <Compile Include="mm\win.py" />
+    <Compile Include="mm\__init__.py" />
+    <Compile Include="monitor.py" />
     <Compile Include="msix.py" />
-    <Compile Include="nvram.py" />
     <Compile Include="pci.py" />
     <Compile Include="pciephy.py" />
     <Compile Include="reutils.py" />
@@ -50,15 +66,20 @@
     <Compile Include="shelldrv.py" />
     <Compile Include="smi.py" />
     <Compile Include="symgen.py" />
-    <Compile Include="sysfsint.py" />
-    <Compile Include="tapdrv.py" />
-    <Compile Include="tap_linux.py">
+    <Compile Include="tap\dev_fns.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="tap_stats.py">
+    <Compile Include="tap\driver.py" />
+    <Compile Include="tap\link.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="tap_win.py">
+    <Compile Include="tap\linux.py" />
+    <Compile Include="tap\ring.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tap\stats.py" />
+    <Compile Include="tap\win.py" />
+    <Compile Include="tap\__init__.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="testdrv.py" />
@@ -66,16 +87,18 @@
     <Compile Include="tglib.py" />
     <Compile Include="top.py" />
     <Compile Include="traceinterp.py" />
-    <Compile Include="uioint.py" />
-    <Compile Include="vfioint.py" />
-    <Compile Include="winint.py" />
-    <Compile Include="winlib.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="winlib.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />
     <InterpreterReference Include="{fcc291aa-427c-498c-a4d7-4502d6449b8c}\2.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="blocks\" />
+    <Folder Include="gui\" />
+    <Folder Include="interfaces\" />
+    <Folder Include="mm\" />
+    <Folder Include="tap\" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />

@@ -194,7 +194,7 @@ def main(args):
             gui._run(dev)
         else:
             if args.driver:
-                from tapdrv import TapDriver
+                from tap import TapDriver
                 with TapDriver(dev) as tap:
                     return tap.run()
             elif args.tests:
