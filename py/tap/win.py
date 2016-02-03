@@ -30,19 +30,17 @@ class TapWinInterface(object):
     def __enter__(self):
         self.tfd = create_tap_if()
         self._tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
-        self._tap_evts = [ReadAsync(self.tfd, 0x800, self.mm),
-                          ReadAsync(self.tfd, 0x800, self.mm)]
+        self._tap_evt = ReadAsync(self.tfd, 0x800, self.mm)
         self._hCon = GetStdHandle(STD_INPUT_HANDLE)
-        self._events = (HANDLE * 4)(self._hCon, self._tg_evt.req.hEvent, self._tap_evts[0].req.hEvent, self._tap_evts[1].req.hEvent)
+        self._events = (HANDLE * 3)(self._hCon, self._tg_evt.req.hEvent, self._tap_evt.req.hEvent)
         self._tg_evt.submit()
         return self
     
     def __exit__(self):
-        for t in self._tap_evts:
-            t.reset(False)
+        self._tap_evt.reset(False)
         self._tg_evt.reset(False)
         del self._events
-        del self._tap_evts
+        del self._tap_evt
         del self._tg_evt
 
         del_tap_if(self.tfd)
@@ -75,13 +73,12 @@ class TapWinInterface(object):
         return ''
 
     def _wait_for_something(self):
-        res = WaitForMultipleObjectsEx(len(self._events), cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE, True)
-        if res < 2:
-            return res
-        if res < len(self._tap_idx) + 2:
-            self._tap_idx = res - 2
-            return 2
-        raise WinError()
+        while self._running:        
+            res = WaitForMultipleObjectsEx(len(self._events), cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE, True)
+            if res < 3:
+                return res
+            if res == WAIT_FAILED:
+                raise WinError()
         
     def _get_serial(self):
         serial = cast(self._tg_evt.buffer, POINTER(c_uint64)).contents.value
@@ -91,18 +88,18 @@ class TapWinInterface(object):
     def _get_packet(self):
         if self.verbose:
             print "[+] getting a packet from tap device...",
-        pkt_len = self._tap_evts[self._tap_idx].pkt_len
-        pkt = self._tap_evts[self._tap_idx].buffer
-        self._tap_evts[self._tap_idx].reset()
+        pkt_len = self._tap_evt.pkt_len
+        pkt = self._tap_evt.buffer
+        self._tap_evt.reset()
         if self.verbose:
             print "read %d bytes" % pkt_len
         return (pkt, pkt_len)
 
-    def __tap_write_completion(self, overlapped, pkt, errcode, written, overlapped_ptr):
+    def _tap_write_completion(self, overlapped, pkt, errcode, written, overlapped_ptr):
         if self.verbose:
             print "[.] freeing sent packet at %x" % addressof(pkt)
         self.mm.free(addressof(pkt))
-        del self.__pending_completions[addressof(pkt)]
+        del self._pending_completions[addressof(pkt)]
 
     def _write_pkt(self, pkt, length):
         if not self._connected:
@@ -110,11 +107,11 @@ class TapWinInterface(object):
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         if self.verbose:
             print "[!] attempting to write to the tap device...",
-        completion = FileIOCompletion(functools.partial(TapWinInterface.__tap_write_completion, self, o, pkt))
+        completion = FileIOCompletion(functools.partial(TapWinInterface._tap_write_completion, self, o, pkt))
         if not WriteFileEx(self.tfd, pkt, length, pointer(o), completion):
             raise WinError()
         else:
-            self.__pending_completions[addressof(pkt)] = completion
+            self._pending_completions[addressof(pkt)] = completion
         if self.verbose:
             print "queued %d bytes" % len(pkt)
 
@@ -134,11 +131,9 @@ class TapWinInterface(object):
                 else:
                     raise WinError(err)
             if connected:
-                for t in self._tap_evts:
-                    t.submit()
+                self._tap_evt.submit()
             else:
-                for t in self._tap_evts:
-                    t.reset(False)
+                self._tap_evt.reset(False)
             self._connected = connected
         finally:
             CloseHandle(o.hEvent)

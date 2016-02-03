@@ -14,7 +14,7 @@
     <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
     <InterpreterVersion>2.7</InterpreterVersion>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <CommandLineArguments>-g</CommandLineArguments>
+    <CommandLineArguments>-d</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Name>py</Name>
   </PropertyGroup>
@@ -70,6 +70,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tap\driver.py" />
+    <Compile Include="tap\interrupt.py" />
     <Compile Include="tap\link.py">
       <SubType>Code</SubType>
     </Compile>

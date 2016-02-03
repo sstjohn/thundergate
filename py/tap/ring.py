@@ -18,7 +18,6 @@
 
 import tglib as tg
 import ctypes
-import threading
 
 def _init_xx_ring(self, bdtype):
     mm = self.mm
@@ -40,7 +39,6 @@ def init_tx_rings(self):
     self.tx_ring_paddr = mm.get_paddr(self.tx_ring_vaddr)
     self._tx_pi = 0
     self._tx_ci = 0
-    self._tx_idx_lock = threading.Lock()
 
     self._tx_buffers = [0] * self.tx_ring_len
 
@@ -96,7 +94,6 @@ def init_rr_rings(self):
         print "[+] receive return ring %d of size %d allocated at %x" % (i, tmp, ring_vaddr)
 
     self.rr_rings_ci = [0] * len(dev.mem.rxrcb)
-    self.rr_rings_locks = [threading.Lock() * len(dev.mem.rxrcb)]
     self.rr_rings_paddr = []
     for i in range(0, len(dev.mem.rxrcb)):
         ring_vaddr = self.rr_rings_vaddr[i]
@@ -133,4 +130,3 @@ def populate_rx_ring(self, count = None):
     self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = count
     self._std_rbd_pi = count
     self._std_rbd_ci = 0
-    self._std_rbd_lock = threading.Lock()

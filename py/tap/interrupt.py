@@ -17,6 +17,7 @@
 '''
 
 from ctypes import cast, POINTER, c_char
+import tglib as tg
 
 def handle_rr(self, i):
     pi = getattr(self.status_block, "rr%d_pi" % i)
@@ -57,7 +58,7 @@ def handle_rr(self, i):
             count -= 1
 
         mb = getattr(tg, "mb_rbd_rr%d_consumer" % i)
-        dev.hpmb.box[mb].low = ci
+        self.dev.hpmb.box[mb].low = ci
         self.rr_rings_ci[i] = ci
 
 def handle_interrupt(self):
@@ -149,7 +150,7 @@ def free_sent_bds(self):
             self.mm.free(self._tx_buffers[self._tx_ci])
             self._tx_ci += 1
 
-def dump_bd(self, ci, rbd)
+def dump_bd(self, ci, rbd):
     print "consuming bd 0x%x" % ci
     print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
     print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))
