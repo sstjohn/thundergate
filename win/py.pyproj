@@ -83,6 +83,15 @@
     <Compile Include="tap\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tap_async\dev_fns.py" />
+    <Compile Include="tap_async\driver.py" />
+    <Compile Include="tap_async\interrupt.py" />
+    <Compile Include="tap_async\link.py" />
+    <Compile Include="tap_async\linux.py" />
+    <Compile Include="tap_async\ring.py" />
+    <Compile Include="tap_async\stats.py" />
+    <Compile Include="tap_async\win.py" />
+    <Compile Include="tap_async\__init__.py" />
     <Compile Include="testdrv.py" />
     <Compile Include="tginstall.py" />
     <Compile Include="top.py" />
@@ -99,6 +108,7 @@
     <Folder Include="interfaces\" />
     <Folder Include="mm\" />
     <Folder Include="tap\" />
+    <Folder Include="tap_async\" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
