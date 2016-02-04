@@ -16,12 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from time import sleep
-
-usleep = lambda x: sleep(x / 1000000.0)
-
 class GPhy(object):
     def __init__(self, bus, port):
+	self.msleep = bus.msleep
         self._smi_bus = bus
         self._smi_port = port
 
@@ -37,7 +34,7 @@ class GPhy(object):
         while self.read_reg(0) & 0x8000:
             if cnt > 5000:
                 raise Exception("phy reset timed out")
-            usleep(500)
+            self.msleep(.5)
             cnt += 1
 
     def loopback(self):
@@ -46,7 +43,7 @@ class GPhy(object):
         while self.read_reg(1) & (1 << 4):
             if cnt > 5000:
                 raise Exception("link failed to drop")
-            usleep(500)
+            self.msleep(.5)
             cnt += 1
 
     def auto_mdix(self):
@@ -76,7 +73,7 @@ class GPhy(object):
         while res & (1 << 5) == 0:
             if cnt > 5000:
                 break
-            usleep(1000)
+            self.msleep(1)
             res = self.read_reg(1)
             cnt += 1
         return self.read_reg(0x19)

@@ -21,7 +21,6 @@ import ctypes
 import trollius as asyncio
 from trollius import From, Return
 
-@asyncio.coroutine
 def _init_xx_ring(self, bdtype):
     mm = self.mm
     ring_len = mm.page_sz / ctypes.sizeof(bdtype)
@@ -36,7 +35,6 @@ def _init_xx_ring(self, bdtype):
     vaddr = mm.alloc(ring_len * ctypes.sizeof(bdtype))
     raise Return(vaddr, ring_len)
 
-@asyncio.coroutine
 def init_tx_rings(self):
     mm = self.mm
     self.tx_ring_vaddr, self.tx_ring_len = _init_xx_ring(self, tg.sbd)
@@ -60,7 +58,6 @@ def init_tx_rings(self):
         dev.mem.txrcb[i + 1].flags.disabled = 1
         print "[+] send ring %d disabled" % (i + 1)
 
-@asyncio.coroutine
 def init_rx_rings(self):
     dev = self.dev
     mm = self.mm
@@ -83,7 +80,6 @@ def init_rx_rings(self):
     dev.rdi.jumbo_rcb.disable_ring = 1
     print "[+] jumbo receive producer ring disabled"
 
-@asyncio.coroutine
 def init_rr_rings(self):
     dev = self.dev
     mm = self.mm
@@ -113,7 +109,6 @@ def init_rr_rings(self):
         dev.mem.rxrcb[i].max_len = self.rr_rings_len
         dev.mem.rxrcb[i].flags.disabled = 0
 
-@asyncio.coroutine
 def populate_rx_ring(self, count = None):
     if count == None:
         count = self.rx_ring_len - 1

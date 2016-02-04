@@ -25,6 +25,8 @@ import reutils
 import platform
 import functools
 import sys
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 import trollius as asyncio
 from trollius import From, Return
@@ -63,6 +65,9 @@ from ring import init_tx_rings, init_rx_rings, init_rr_rings, populate_rx_ring
 from link import link_detect
 from interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
 
+def async_msleep(self, t):
+    yield From(asyncio.sleep(t / 1000))
+
 class TapDriver(TDInt):
     def __init__(self, dev):
         self.verbose = default_verbosity
@@ -74,7 +79,8 @@ class TapDriver(TDInt):
     def __enter__(self):
         print "[+] tap driver initializing"
         super(TapDriver, self).__enter__()
-        asyncio.ensure_future(self._device_setup)
+        self.dev.msleep = async_msleep.__get__(self.dev)
+        asyncio.ensure_future(self._device_setup())
         return self
 
     def __exit__(self, t, v, traceback):
@@ -138,51 +144,46 @@ class TapDriver(TDInt):
         pkt, sz = self._get_packet()
         self._send_b(pkt, sz)
 
-    keypress_handlers = {}
 
     @asyncio.coroutine
     def help_handler(self):
         print 
-        for k in keypress_handlers:
-            print "%s - %s" % (k, keypress_handlers[k][0])
+        for k in self.keypress_handlers:
+            print "%s - %s" % (k, self.keypress_handlers[k])
         print
-    keypress_handlers['h'] = help_handler
 
     @asyncio.coroutine
     def verbosity_handler(self):
         self.verbose = not self.verbose
         print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
-    keypress_handlers['v'] = verbosity_handler
 
     @asyncio.coroutine
     def quit_handler(self):
         print "goodbye!"
         self.running = False
         self.loop.stop()
-    keypress_handlers['q'] = quit_handler
 
     @asyncio.coroutine
-    def unknown_keypress_handler(k):
+    def unknown_keypress_handler(self, k):
         print "read unknown keypress '%s'" % k
 
     @asyncio.coroutine
-    def wait_for_keypress(self):
-        worker = self.loop.run_in_executor(self._get_key_blocking)
-        asyncio.ensure_future(worker)
-        worker.add_done_callback(self.handle_keypress, worker)
-
-    @asyncio.coroutine
     def keypress_dispatch(self):
-        r = yield From(self.loop.run_in_executor(None, _wait_for_keypress))
-        asyncio.ensure_future(keypress_dispatch())
-        if r in keypress_handlers:
-            asyncio.ensure_future(keypress_handlers[r]())
+        r = yield From(self.loop.run_in_executor(None, self._wait_for_keypress))
+        if r in self.keypress_handlers:
+            asyncio.ensure_future(self.keypress_handlers[r]())
         else:
-            asyncio.ensure_future(unknown_keypress_handler(r))
+            asyncio.ensure_future(self.unknown_keypress_handler(r))
+        asyncio.ensure_future(self.keypress_dispatch())
 
     def run(self):
         self.running = True
+        self.keypress_handlers = {'h': self.help_handler,
+                                  'q': self.quit_handler,
+                                  'v': self.verbosity_handler,}
+
         self.loop = asyncio.get_event_loop()
-        asyncio.ensure_future(keypress_dispatch())
+        asyncio.ensure_future(self.keypress_dispatch())
+        print "hello!!!!!!!!!!!!!"
         self.loop.run_forever()
         asyncio.executor.get_default_executor().shutdown(True) 

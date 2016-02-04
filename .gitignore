@@ -33,6 +33,7 @@ win/**/*.vspscc
 win/**/*.sdf
 win/**/*.VC.opendb
 **/build/
+**/*~
 .vscode/
 **/__pycache__/
 env/

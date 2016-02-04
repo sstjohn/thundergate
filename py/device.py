@@ -22,8 +22,9 @@ from ctypes import *
 import os
 import hashlib
 import msix
+
 from time import sleep
-usleep = lambda x: sleep(x / 1000000.0)
+msleep = lambda x: sleep(x / 1000.0)
 
 import rflip
 from memory import Memory
@@ -96,6 +97,7 @@ class Device(object):
         self.interface = interface
         self.blocks = []
         self.mem = None
+	self.msleep = msleep
 
     def __enter__(self):
         self.interface.__enter__()
@@ -279,7 +281,7 @@ class Device(object):
             self.init()
             return
 
-        usleep(1000)
+        self.msleep(1)
 
         self.init()	
         
@@ -289,7 +291,7 @@ class Device(object):
             cntr += 1
             if cntr > 50000:
                 raise Exception("timed out waiting for bootcode completion")
-            usleep(100)
+            self.msleep(.1)
         if cntr == 0:
             print "complete."
         else:

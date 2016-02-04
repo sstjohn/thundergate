@@ -16,12 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from time import sleep
-
-usleep = lambda x: sleep(x / 1000000.0)
-
 class Smi(object):
     def __init__(self, dev):
+	self.msleep = dev.msleep
         self.emac = dev.emac
 
     def read_reg(self, port, addr):
@@ -34,7 +31,7 @@ class Smi(object):
         while self.emac.mii_communication.start_busy:
             if cnt > 5000:
                 raise Exception("mii communication timed out")
-            usleep(500)
+            self.msleep(.5)
             cnt += 1
 
         if self.emac.mii_communication.read_failed:
@@ -54,7 +51,7 @@ class Smi(object):
         while self.emac.mii_communication.start_busy:
             if cnt > 5000:
                 raise Exception("mii communication timed out")
-            usleep(500)
+            self.msleep(.5)
             cnt += 1
 
     def read_shd18(self, port, shadow):

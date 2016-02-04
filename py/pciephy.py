@@ -16,10 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from time import sleep
-
-usleep = lambda x: sleep(x / 1000000.0)
-
 blocks = [('IEEE0', 0),
           ('IEEE1', 1),
           ('BLK0', 0x800),

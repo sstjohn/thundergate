@@ -22,7 +22,6 @@ import os
 import clib as c
 import fcntl
 from tunlib import *
-import tty
 import sys
 import termios
 import socket
@@ -42,14 +41,14 @@ class TapLinuxInterface(object):
         ifr = struct.pack('16sH', "", IFF_TAP | IFF_NO_PI)
         self.tap_name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
         print "[+] tap device name: \"%s\"" % self.tap_name
-	self.tfd = fd
-	self.confd = sys.stdin.fileno()
-	try:
-	    self.read_fds = [self.dev.interface.eventfd, self.tfd, self.confd]
-	    self.ready = []
+        self.tfd = fd
+        self.confd = sys.stdin.fileno()
+        try:
+            self.read_fds = [self.dev.interface.eventfd, self.tfd, self.confd]
+            self.ready = []
             self._wait_for_something = self.__wait_with_eventfd
             self._get_serial = self.__get_serial_from_eventfd
-	except:
+        except:
             print "[-] no interrupt eventfd exposed by device interface, polling instead."
             self._wait_for_something = self.__wait_by_polling
             self._get_serial = self.__get_serial_from_counter
@@ -125,4 +124,15 @@ class TapLinuxInterface(object):
            fcntl.ioctl(s, c.SIOCSIFFLAGS, ifr)
         self._connected = connected
     
-            
+    def _wait_for_keypress(self):
+        if not self.running:
+            return
+        orig_term = termios.tcgetattr(self.confd)
+        new_term = orig_term[:]
+        new_term[3] &= ~(termios.ICANON | termios.ECHO)
+        termios.tcsetattr(self.confd, termios.TCSANOW, new_term)
+        try:
+            return sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(self.confd, termios.TCSANOW, orig_term)
+                        

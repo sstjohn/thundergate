@@ -49,7 +49,7 @@ class TapWinInterface(object):
         ir = INPUT_RECORD()
         rr = DWORD(0)
         while self.running and (ir.EventType != 1 or not ir.Event.KeyEvent.bKeyDown):
-            if not ReadConsoleInput(hStdIn, pointer(ir), 1, pointer(rr)):
+            if not ReadConsoleInput(self._hCon, pointer(ir), 1, pointer(rr)):
                 raise WinError()
         return ir.Event.KeyEvent.uChar.AsciiChar
 

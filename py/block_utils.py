@@ -19,9 +19,6 @@
 import ctypes
 import tglib as tg
 
-from time import sleep
-usleep = lambda x: sleep(x / 1000000.0)
-
 def disp(b, ilvl=0):
     for f in b._fields_:
         name = f[0]
@@ -94,7 +91,7 @@ def _disable(self, quiet=0):
         while self.mode.enable:
             if slept >= 50000:
                 raise Exception("%s failed to stop" % bn)
-            usleep(100)
+            self._dev.msleep(.1)
             slept += 1
             self.mode.enable = 0
         if slept and not quiet:
@@ -117,7 +114,7 @@ def _reset(self, quiet=0):
     cntr = 0
     while self.mode.reset and cntr < 1000:
         cntr += 1
-        usleep(10)
+        self._dev.msleep(.01)
         if self.mode.reset:
             raise Exception("timed out waiting for %s reset to complete" % bn)
     if tmp:
