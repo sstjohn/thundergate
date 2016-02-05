@@ -184,6 +184,5 @@ class TapDriver(TDInt):
 
         self.loop = asyncio.get_event_loop()
         asyncio.ensure_future(self.keypress_dispatch())
-        print "hello!!!!!!!!!!!!!"
         self.loop.run_forever()
         asyncio.executor.get_default_executor().shutdown(True) 

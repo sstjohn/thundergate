@@ -23,6 +23,7 @@ import tglib as tg
 
 @asyncio.coroutine
 def device_setup(self):
+    print "!!!!!!!!in device setup!!!!!!!!!!!!!"
     dev = self.dev
     mm = self.mm
     dev.drv = self
@@ -283,7 +284,7 @@ def device_setup(self):
     #dev.emac.tx_mac_mode.enable_flow_control = 1
     dev.emac.tx_mac_mode.enable = 1
     
-    yield From(asyncio.wait(.1)) 
+    yield From(asyncio.sleep(.1)) 
 
     print "[+] enabling receive mac"
     #dev.emac.mac_hash_0 = 0xffffffff
@@ -300,7 +301,7 @@ def device_setup(self):
     #dev.emac.rx_mac_mode.rss_tcpipv6_hash_enable = 1
     dev.emac.rx_mac_mode.enable = 1
 
-    yield From(asyncio.wait(.1))
+    yield From(asyncio.sleep(.1))
 
     print "[+] configuring led"
     dev.emac.led_control.word = 0x800
