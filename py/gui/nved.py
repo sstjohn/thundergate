@@ -60,10 +60,6 @@ class NvDirectoryListCtrl(wx.dataview.DataViewListCtrl):
         for i in directory:
             self.AppendItem(map(hexify, i))
 
-def _nvsave(dev, path, updater):
-        dev.nvram.acquire_lock()
-        dev.nvram.dump_eeprom(path, updater=updater)
-        dev.nvram.relinquish_lock()
 
 class NvramEditor(wx.Panel):
     def __init__(self, parent, dev, *args, **kwargs):
@@ -83,12 +79,13 @@ class NvramEditor(wx.Panel):
                 proportion = 0, 
                 flag = wx.ALIGN_TOP | wx.ALIGN_CENTER | wx.BOTTOM, 
                 border=5)
-        self.nved = NvDirectoryListCtrl(self, dev)
+        self.nvdir = NvDirectoryListCtrl(self, dev)
         outer.Add(
-                item = self.nved, 
+                item = self.nvdir, 
                 proportion = 1, 
                 flag = wx.ALIGN_CENTER | wx.EXPAND)
         esave = wx.Button(self, label = "save entry")
+        self.Bind(wx.EVT_BUTTON, self.OnISave, esave)
         eload = wx.Button(self, label = "load entry")
         erase = wx.Button(self, label = "erase entry")
         entry_sld_buttons = wx.BoxSizer(wx.HORIZONTAL)
@@ -102,27 +99,53 @@ class NvramEditor(wx.Panel):
                 border = 5)
         self.SetSizer(outer)
 
+    def OnISave(self, event):
+        idx = self.nvdir.GetSelectedRow()
+        if wx.NOT_FOUND == idx:
+            return
+        self._do_save(idx)
+
     def OnNvSave(self, event):
+        self._do_save(-1)
+
+    def _do_save(self, idx):
+        entire = (idx == -1)
+        
+        ftype = "bin" if entire else "img"
         saveFileDialog = wx.FileDialog(
-                self, "Save BIN file", "", "",
-                "BIN files (*.bin)|*.bin", 
+                self, "Save %s file" % ftype.ucase(), 
+                "", "",
+                "%s files (*.%s)|*.%s" % (ftype.ucase(), ftype, ftype), 
                 wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
         if saveFileDialog.ShowModal() == wx.ID_CANCEL:
             return
         
         path = saveFileDialog.GetPath()
-        self.dev.nvram.acquire_lock()
+
+        progress_title = "reading %s" % ("nvram" if entire else "image")
         progress = NvFwProgress(
                 self, 
-                self.dev.nvram.eeprom_len, 
-                title = "reading nvram")
+                total, 
+                title = progress_title)
+        
+        self.dev.nvram.acquire_lock()
+        if entire:
+            total = self.dev.nvram.eeprom_len
+            tgt = _nvsave
+            args = (self.dev, path, progress.updateProgress)
+        else:
+            total = self.dev.nvram.directory[idx].nv_len
+            tgt = _isave
+            args = (self.dev, idx, path, progress.updateProgress)
         self.dev.nvram.relinquish_lock()
+
         t = threading.Thread(
-                target=_nvsave, 
-                args=(self.dev, path, progress.updateProgress))
+                target=tgt, 
+                args=args)
         t.start()
         progress.ShowModal()
+        t.join()
 
     def OnNvLoad(self, event):
         openFileDialog = wx.FileDialog(
@@ -140,13 +163,22 @@ class NvramEditor(wx.Panel):
                 args = (self.dev, path, progress.updateProgress))
         t.start()
         progress.ShowWindowModal()
-        self.nved._populate()
+        self.nvdir._populate()
+        t.join()
 
+def _nvsave(dev, path, updater):
+    dev.nvram.acquire_lock()
+    dev.nvram.dump_eeprom(path, updater=updater)
+    dev.nvram.relinquish_lock()
 
+def _isave(dev, idx, path, updater):
+    dev.nvram.acquire_lock()
+    dev.nvram.dump_dir_image(idx, path, updater=updater)
+    dev.nvram.relinquish_lock()
 
 def _nvload(dev, path, updater):
-        dev.nvram.acquire_lock()
-        dev.nvram.write_enable()
-        dev.nvram.write_eeprom(path, updater=updater)
-        dev.nvram.write_disable()
-        dev.nvram.relinquish_lock()
+    dev.nvram.acquire_lock()
+    dev.nvram.write_enable()
+    dev.nvram.write_eeprom(path, updater=updater)
+    dev.nvram.write_disable()
+    dev.nvram.relinquish_lock()

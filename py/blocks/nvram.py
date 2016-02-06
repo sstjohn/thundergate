@@ -335,7 +335,7 @@ class nvram(rflip.nvram):
                     print "nx",
                 print
 
-    def get_dir_image(self, index):
+    def get_dir_image(self, index, updater = None):
         dentry = self.eeprom_hdr.directory[index]
         nv_ofs = dentry.nvram_start
         nv_len = (dentry.typelen & 0x3fffff) << 2
@@ -343,11 +343,11 @@ class nvram(rflip.nvram):
         nv_xa = 0 != (dentry.typelen & 0x00800000)
         nv_xb = 0 != (dentry.typelen & 0x00400000)
 
-        return self.read_block(nv_ofs, nv_len)
+        return self.read_block(nv_ofs, nv_len, updater)
 
-    def dump_dir_image(self, index, fname):
+    def dump_dir_image(self, index, fname, updater = None):
         f = open(fname, "wb")
-        f.write(self.get_dir_image(index))
+        f.write(self.get_dir_image(index, updater))
         f.close()
 
     def _set_dir_entry(self, index, nv_ofs, ilen, itype=0, sram_ofs=0x10000, xa=False, xb=False):
