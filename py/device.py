@@ -16,69 +16,71 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import tglib as tg
-import struct
-from ctypes import *
-import os
+from ctypes import cast, POINTER, c_uint32, sizeof
 import hashlib
-import msix
-
+import logging
+import os
+import struct
 from time import sleep
-msleep = lambda x: sleep(x / 1000.0)
 
-import rflip
-from memory import Memory
-from gphy import GPhy
-from pciephy import PCIePhy
-from smi import Smi
-from top import TopLevel
+logger = logging.getLogger(__name__)
 
 import blocks
 import block_utils
+from gphy import GPhy
+from memory import Memory
+import msix
 import pci
+from pciephy import PCIePhy
+import rflip
+from smi import Smi
+from top import TopLevel
+import tglib as tg
+
+msleep = lambda x: sleep(x / 1000.0)
 
 tg3_blocks = [
-	("pci", 0, rflip.pci),
-	("hpmb", 0x200, rflip.hpmb),
-	("emac", 0x400, rflip.emac),
+    ("pci", 0, rflip.pci),
+    ("hpmb", 0x200, rflip.hpmb),
+    ("emac", 0x400, rflip.emac),
     ("rss", 0x600, rflip.rss),
     ("stats", 0x800, rflip.mac_stats),
-	("sdi", 0xc00, rflip.sdi),
+    ("sdi", 0xc00, rflip.sdi),
     ("tcp_seg_ctrl", 0xce0, rflip.tcp_seg_ctrl),
     ("rtsdi", 0xd00, rflip.rtsdi),
-	("sdc", 0x1000, rflip.sdc),
-	("sbds", 0x1400, rflip.sbds),
-	("sbdi", 0x1800, rflip.sbdi),
-	("sbdc", 0x1c00, rflip.sbdc),
-	("rlp", 0x2000, rflip.rlp),
-	("rdi", 0x2400, rflip.rdi),
-	("rdc", 0x2800, rflip.rdc),
-	("rbdi", 0x2c00, rflip.rbdi),
-	("rbdc", 0x3000, rflip.rbdc),
-	("cpmu", 0x3600, rflip.cpmu),
-	("hc", 0x3c00, rflip.hc),
-	("ma", 0x4000, rflip.ma),
-	("bufman", 0x4400, rflip.bufman),
+    ("sdc", 0x1000, rflip.sdc),
+    ("sbds", 0x1400, rflip.sbds),
+    ("sbdi", 0x1800, rflip.sbdi),
+    ("sbdc", 0x1c00, rflip.sbdc),
+    ("rlp", 0x2000, rflip.rlp),
+    ("rdi", 0x2400, rflip.rdi),
+    ("rdc", 0x2800, rflip.rdc),
+    ("rbdi", 0x2c00, rflip.rbdi),
+    ("rbdc", 0x3000, rflip.rbdc),
+    ("cpmu", 0x3600, rflip.cpmu),
+    ("hc", 0x3c00, rflip.hc),
+    ("ma", 0x4000, rflip.ma),
+    ("bufman", 0x4400, rflip.bufman),
     ("rtbufman", 0x4600, rflip.bufman),
     ("bdrdma", 0x4700, rflip.bdrdma),
-	("rdma", 0x4800, rflip.rdma),
+    ("rdma", 0x4800, rflip.rdma),
     ("nrdma", 0x4900, rflip.nrdma),
     ("rtrdma", 0x4a00, rflip.rdma),
-	("wdma", 0x4c00, rflip.wdma),
-	("rxcpu", 0x5000, blocks.cpu),
-	("lpmb", 0x5800, rflip.lpmb),
-	("ftq", 0x5c00, blocks.ftq),
-	("msi", 0x6000, rflip.msi),
-        ("cr_port", 0x6100, rflip.cr_port),
-	("cfg_port", 0x6400, rflip.cfg_port),
-	("grc", 0x6800, rflip.grc),
-	("asf", 0x6c00, rflip.asf),
-	("nvram", 0x7000, blocks.nvram),
-	("otp", 0x7500, rflip.otp),
-	("pcie_alt", 0x7c00, rflip.pcie_alt),
-	("pcie_tl", 0x7c00, rflip.pcie_tl),
-	("pcie_dl", 0x7d00, rflip.pcie_dl),
-	("pcie_pl", 0x7e00, rflip.pcie_pl),
+    ("wdma", 0x4c00, rflip.wdma),
+    ("rxcpu", 0x5000, blocks.cpu),
+    ("lpmb", 0x5800, rflip.lpmb),
+    ("ftq", 0x5c00, blocks.ftq),
+    ("msi", 0x6000, rflip.msi),
+    ("cr_port", 0x6100, rflip.cr_port),
+    ("cfg_port", 0x6400, rflip.cfg_port),
+    ("grc", 0x6800, rflip.grc),
+    ("asf", 0x6c00, rflip.asf),
+    ("nvram", 0x7000, blocks.nvram),
+    ("otp", 0x7500, rflip.otp),
+    ("pcie_alt", 0x7c00, rflip.pcie_alt),
+    ("pcie_tl", 0x7c00, rflip.pcie_tl),
+    ("pcie_dl", 0x7d00, rflip.pcie_dl),
+    ("pcie_pl", 0x7e00, rflip.pcie_pl),
 ]
 
 tg3_mem = [
@@ -152,10 +154,10 @@ class Device(object):
 
         if hasattr(self, "pci"):
             if self.pci.command.bus_master:
-                print "[+] disabling bus mastering"
+                logger.info("disabling bus mastering")
                 self.pci.command.bus_master = 0
             if self.pci.command.memory_space:
-                print "[+] disabling memory space decode"
+                logger.info("disabling memory space decode")
                 self.pci.command.memory_space = 0
 
     def block_at(self, name, offset, t):
@@ -184,7 +186,7 @@ class Device(object):
     def init_memory_space_decode(self):
         tmp = self.config.read(0x4)
         if not tmp & 0x2:
-            print "[+] enabling for memory space decode"
+            logger.info("enabling for memory space decode")
 
             tmp |= 0x2
             self.config.write(0x4, tmp)
@@ -196,18 +198,18 @@ class Device(object):
         if self.pci.command.bus_master:
             return
 
-        print "[+] enabling for bus mastering"
+        logger.info("enabling for bus mastering")
         self.pci.command.bus_master = 1
 
     def mask_interrupts(self):		
         if self.pci.misc_host_ctrl.mask_interrupt:
             return
-        print "[+] masking interrupts"
+        logger.info("masking interrupts")
         self.pci.misc_host_ctrl.mask_interrupt = 1
 
     def unmask_interrupts(self):		
         if self.pci.misc_host_ctrl.mask_interrupt != 0:
-            print "[+] unmasking interrupts"
+            logger.info("unmasking interrupts")
             self.pci.misc_host_ctrl.mask_interrupt = 0
 
     def map_registers(self):
@@ -218,7 +220,7 @@ class Device(object):
             self.blocks += [getattr(self, name)]
 
     def map_memory(self):
-        print "[+] mapping device memory window"
+        logger.info("mapping device memory window")
         self.mem = Memory(self)
         for i in tg3_mem:
             self.mem.map_struct(*i)
@@ -244,38 +246,41 @@ class Device(object):
 	    cold = not hasattr(self, "drv")
 
         magic = self.mem.read_dword(0xb50)	
-        print "[+] found %08x at offset 0xb50," % magic, 
+        msg = "found %08x at offset 0xb50, " % magic
 	if not cold:
-	    print "writing 0x4b657654"
+	    msg += "writing 0x4b657654"
             self.mem.write_dword(0xb50, 0x4b657654)
 	else:
-	    print "clearing"
+	    msg += "clearing"
 	    self.mem.write_dword(0xb50, 0)
+        logger.debug(msg)
 
         if not cold:
 	    try:
 		self.nvram.acquire_lock()
 	    except:
-		print "\n[-] failed to acquire nvram lock"
+		logger.warn("failed to acquire nvram lock")
 		self.rxcpu.halt()
 		self.nvram.reset()
 		self.nvram.acquire_lock()
 
-	print "[+] clearing fast boot program counter register,",
-	print "was %08x" % self.grc.fastboot_pc.word
+	msg = "clearing fast boot program counter register, "
+	msg += "was %08x" % self.grc.fastboot_pc.word
+        logger.info(msg)
+
 	self.grc.fastboot_pc.word = 0
 
         if not pcie:
             if self.grc.misc_config.disable_grc_reset_on_pcie_block == 0:
-                print "[+] disabling grc reset on pcie block"
+                logger.info("disabling grc reset on pcie block")
                 self.grc.misc_config.disable_grc_reset_on_pcie_block = 1
 	
         if not cold:
             if self.grc.misc_config.gphy_keep_power_during_reset == 0:
-                print "[+] enabling gphy power during reset"
+                logger.info("enabling gphy power during reset")
                 self.grc.misc_config.gphy_keep_power_during_reset = 1
 
-        print "[+] resetting core clocks"
+        logger.info("resetting core clocks")
         self.grc.misc_config.grc_reset = 1
         if quick:
             self.init()
@@ -285,44 +290,41 @@ class Device(object):
 
         self.init()	
         
-        print "[+] polling for bootcode completion...",
+        logger.debug("waiting for bootcode completion...")
         cntr = 0
         while self.mem.read_dword(0xb50) != 0xb49a89ab:
             cntr += 1
             if cntr > 50000:
                 raise Exception("timed out waiting for bootcode completion")
             self.msleep(.1)
-        if cntr == 0:
-            print "complete."
-        else:
-            print "completed after %d.%d ms." % (cntr / 100, cntr % 100)
+        logger.info("bootcode complete")
 
     def init_pci_host_ctrl(self):
         if self.pci.misc_host_ctrl.enable_pci_state_register_rw_cap == 0:
-            print "[+] enabling pci state register rw capability"
+            logger.info("enabling pci state register rw capability")
             self.pci.misc_host_ctrl.enable_pci_state_register_rw_cap = 1
 
         if self.pci.misc_host_ctrl.enable_indirect_access == 0:
-            print "[+] enabling indirect access"
+            logger.info("enabling indirect access")
             self.pci.misc_host_ctrl.enable_indirect_access = 1
 
         if self.pci.misc_host_ctrl.enable_endian_word_swap == 0:
-            print "[+] enabling endian word swap"
+            logger.info("enabling endian word swap")
             self.pci.misc_host_ctrl.enable_endian_word_swap = 1
 
 
     def init_grc(self):
         if self.grc.mode.byte_swap_bd:
-            print "[-] disabling nonframe data byte swap"
+            logger.info("disabling nonframe data byte swap")
             self.grc.mode.byte_swap_bd = 0
         if not self.grc.mode.word_swap_bd:
-            print "[+] enabling nonframe data word swap"
+            logger.info("enabling nonframe data word swap")
             self.grc.mode.word_swap_bd = 1
         if not self.grc.mode.byte_swap_data:
-            print "[+] enabling frame data byte swap"
+            logger.info("enabling frame data byte swap")
             self.grc.mode.byte_swap_data = 1
         if not self.grc.mode.word_swap_data:
-            print "[+] enabling frame data word swap"
+            logger.info("enabling frame data word swap")
             self.grc.mode.word_swap_data = 1
 
     def init_eratta(self):
@@ -343,26 +345,7 @@ class Device(object):
         self.init_pci_host_ctrl()
         self.init_grc()
 
-    def fwed(self):
-        oldhash = hashfile("fw/app.c")
-        res = os.system("vim fw/app.c")
-        if 0 == res:
-            newhash = hashfile("fw/app.c")
-            if oldhash != newhash:
-                print "[+] building new firmware"
-                res = os.system("make -C fw")
-                if 0 == res:
-                    print "[+] firmware compilation successful"
-                    self.nvram.init(wr=1)
-                    self.nvram.install_thundergate()
-                    self.reset()
-                else:
-                    print "[-] firmware compilation failed!"
-
     def reattach(self):
         self.interface.reattach()
         self.init()
 
-def hashfile(path):
-    with open(path, 'rb') as f:
-        return hashlib.sha1(f.read()).hexdigest()

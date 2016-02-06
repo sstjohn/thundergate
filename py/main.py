@@ -45,9 +45,7 @@ if __name__ == "__main__":
         tgdir = os.sep.join(tgdir.split(os.sep)[:-2])
         cwd = os.getcwd()
         if tgdir != cwd:
-            print >> sys.stderr, "[!] resetting cwd!"
-            print >> sys.stderr, "  was: %s" % cwd
-            print >> sys.stderr, "  now: %s" % tgdir
+            logger.warn("resetting cwd (was %s, now %s)", cwd, tgdir)
             os.chdir(tgdir)
 
 from device import Device
@@ -113,20 +111,20 @@ def main(args):
     except: 
         pass
 
-    print "[+] tg3 %s initializing" % ima
+    logger.info("tg3 %s initializing" % ima)
+    logger.debug("process id is %d" % os.getpid())
 
     if args.ptvsd:
         import ptvsd
         ptvsd.enable_attach(secret=args.ptvsdpass)
         if args.wait:
-            print "[+] waiting for ptvsd client..."
+            logger.info("waiting for ptvsd client...")
             ptvsd.wait_for_attach()
-            print "[+] ptvsd client attached!"
+            logger.info("ptvsd client attached!")
             ptvsd.break_into_debugger()
         else:
-            print "[+] ptvsd server enabled"
+            logger.info("ptvsd server enabled")
     elif args.wait:
-        print "[.] process id is %d" % os.getpid()
         print "[!] press 'enter' to continue..."
         raw_input()
 
@@ -137,7 +135,7 @@ def main(args):
                 devid = "14e4:1682"
             dbdf = subprocess.check_output(["lspci", "-d %s" % devid, "-n"]).split(" ")[0].strip()
             if '' == dbdf:
-                print "[-] tigon3 device not found"
+                logger.error("tigon3 device not found")
                 return 1
         else:
             dbdf = args.device
@@ -145,7 +143,9 @@ def main(args):
             dbdf = "0000:%s" % dbdf
 
         if not os.path.exists("/sys/bus/pci/devices/%s/" % dbdf):
-            print "[-] device resources at /sys/bus/pci/devices/%s/ not found; is sysfs mounted?" % dbdf
+            logger.error(
+                "device resources at /sys/bus/pci/devices/%s/ not found; " +
+                "is sysfs mounted?", dbdf)
             return 1
         
         try:
@@ -160,7 +160,7 @@ def main(args):
             dev_interface = SysfsInterface(dbdf)
 
         if kmod == 'tg3' and args.driver:
-            print "[!] device is currently bound to tg3; this won't work"
+            logger.errpr("device is currently bound to tg3; this won't work")
             return 1
 
     elif sys_name == 'Windows' or sys_name == 'cli':
@@ -169,16 +169,19 @@ def main(args):
         except:
             dev_interface = None
     if not args.backup:
-        if not os.path.exists("eeprom.bak") and not args.cdpserver:
-            print "[!] you do not currently have a backup eeprom image saved."
-            if raw_input("[?] would you like to create a backup image (y/n): ")[0] in "yY":
-                args.backup = True
+        if not os.path.exists("eeprom.bak"):
+            logger.warn("no backup image found")
+            if not args.cdpserver:
+                resp = raw_input("\n\n" + 
+                        "would you like to create a backup image (y/n): ")
+                if resp[0] in "yY":
+                    args.backup = True
 
     with Device(dev_interface) as dev:
         if args.backup:
             dev.nvram.init()
             dev.nvram.dump_eeprom("eeprom.bak")
-            print "[+] eeprom backup saved as 'eeprom.bak'"
+            logger.info("eeprom backup saved as 'eeprom.bak'")
 
         if args.install:
             from tginstall import TgInstaller

@@ -101,9 +101,10 @@ class TapDriver(TDInt):
     _replenish_rx_bds = replenish_rx_bds
 
 
-    def _write_pkt(self, pkt, length):
-        super(TapDriver, self)._write_pkt(pkt, length)
-        self.stats.pkt_in(length)
+    def put_tap_pkt(self, pkt):
+        sent = self._put_tap_pkt(pkt)
+        self.mm.free(pkt)
+        self.stats.pkt_in(sent)
 
     def send(self, data, flags=None):
         if len(data) < 64:
@@ -147,19 +148,21 @@ class TapDriver(TDInt):
 
     @asyncio.coroutine
     def help_handler(self):
+        '''display keypress bindings'''
         print 
         for k in self.keypress_handlers:
-            print "%s - %s" % (k, self.keypress_handlers[k])
+            print "%s - %s" % (k, self.keypress_handlers[k].__doc__)
         print
 
     @asyncio.coroutine
     def verbosity_handler(self):
+        '''toggle tap driver verbosity'''
         self.verbose = not self.verbose
         print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
 
     @asyncio.coroutine
     def quit_handler(self):
-        print "goodbye!"
+        '''terminate tap driver execution and close device'''
         self.running = False
         self.loop.stop()
 

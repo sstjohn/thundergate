@@ -20,10 +20,16 @@ from IPython.core.magic import (Magics, magics_class, line_magic,
                         cell_magic, line_cell_magic)
 from elftools.elf.elffile import ELFFile
 from StringIO import StringIO
+import os
+import hashlib
 
 from blocks.cpu import mips_regs
 import reutils
 from struct import pack, unpack
+
+def hashfile(path):
+    with open(path, 'rb') as f:
+        return hashlib.sha1(f.read()).hexdigest()
 
 @magics_class
 class DeviceMagic(Magics):
@@ -72,6 +78,24 @@ class DeviceMagic(Magics):
     def gui(self, arg):
         import gui
         return gui.run(self.dev)
+
+    @line_magic
+    def fwed(self, arg):
+        oldhash = hashfile("fw/app.c")
+        res = os.system("vim fw/app.c")
+        if 0 == res:
+            newhash = hashfile("fw/app.c")
+            if oldhash != newhash:
+                print "[+] building new firmware"
+                res = os.system("make -C fw")
+                if 0 == res:
+                    print "[+] firmware compilation successful"
+                    self.dev.nvram.init(wr=1)
+                    self.dev.nvram.install_thundergate()
+                    self.dev.reset()
+                else:
+                    print "[-] firmware compilation failed!"
+
 def _register_device_magic(dev):
     ip = get_ipython()
     ip.register_magics(DeviceMagic(ip, dev))

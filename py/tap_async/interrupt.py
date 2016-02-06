@@ -46,14 +46,15 @@ def handle_rr(self, i):
             if self.verbose:
                 self._dump_bd(ci, rbd)
 
-            buf = cast(self.rx_ring_buffers[rbd.index], POINTER(c_char * rbd.length))[0]
+            pkt = cast(self.rx_ring_buffers[rbd.index], POINTER(c_char * rbd.length))[0]
+            
             new_buf = self.mm.alloc(0x800)
             new_pbuf = self.mm.get_paddr(new_buf)
             self.rx_ring_bds[rbd.index].addr_hi = new_pbuf >> 32
             self.rx_ring_bds[rbd.index].addr_low = new_pbuf & 0xffffffff
             self.rx_ring_buffers[rbd.index] = new_buf
 
-            self._write_pkt(buf, rbd.length)
+            self.put_tap_pkt(pkt)
              
             count -= 1
 
@@ -62,8 +63,6 @@ def handle_rr(self, i):
         self.rr_rings_ci[i] = ci
 
 def handle_interrupt(self):
-    _ = self._get_serial()
-
     dev = self.dev
     if self.verbose:
         print "[+] handling interrupt"
