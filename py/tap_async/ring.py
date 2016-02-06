@@ -33,7 +33,7 @@ def _init_xx_ring(self, bdtype):
     ring_len = ring_len - (ring_len >> 1)
 
     vaddr = mm.alloc(ring_len * ctypes.sizeof(bdtype))
-    raise Return(vaddr, ring_len)
+    return (vaddr, ring_len)
 
 def init_tx_rings(self):
     mm = self.mm
@@ -67,14 +67,13 @@ def init_rx_rings(self):
 
     self.rx_ring_vaddr, self.rx_ring_len = _init_xx_ring(self, tg.rbd)
     self.rx_ring_paddr = mm.get_paddr(self.rx_ring_vaddr)
-    
+
     dev.rdi.std_rcb.host_addr_hi = self.rx_ring_paddr >> 32
     dev.rdi.std_rcb.host_addr_low = self.rx_ring_paddr & 0xffffffff
     dev.rdi.std_rcb.ring_size = self.rx_ring_len
     dev.rdi.std_rcb.max_frame_len = 0x600
     dev.rdi.std_rcb.nic_addr = 0x6000
     dev.rdi.std_rcb.disable_ring = 0
-
     print "[+] standard receive producer ring of size %d allocated at %x" % (self.rx_ring_len, self.rx_ring_vaddr)
 
     dev.rdi.jumbo_rcb.disable_ring = 1

@@ -22,6 +22,19 @@ import os
 import sys
 import subprocess
 import platform
+import logging
+class tglog(logging.Formatter):
+    cmap= {logging.NOTSET: '?', logging.DEBUG: '.', logging.INFO: '+', 
+            logging.WARNING: '-', logging.ERROR: '!', logging.CRITICAL: '*'}
+    def format(self, rec):
+        return "[%s] %s" % (self.cmap[rec.levelno], rec.msg % rec.args)
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+formatter = tglog()
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 sys_name = platform.system()
 

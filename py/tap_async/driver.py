@@ -25,8 +25,6 @@ import reutils
 import platform
 import functools
 import sys
-import logging
-logging.basicConfig(level=logging.DEBUG)
 
 import trollius as asyncio
 from trollius import From, Return
@@ -66,7 +64,7 @@ from link import link_detect
 from interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
 
 def async_msleep(self, t):
-    yield From(asyncio.sleep(t / 1000))
+    yield From(asyncio.sleep(t / 1000.0))
 
 class TapDriver(TDInt):
     def __init__(self, dev):
@@ -79,11 +77,13 @@ class TapDriver(TDInt):
     def __enter__(self):
         print "[+] tap driver initializing"
         super(TapDriver, self).__enter__()
+        self.old_msleep = self.dev.msleep
         self.dev.msleep = async_msleep.__get__(self.dev)
         asyncio.ensure_future(self._device_setup())
         return self
 
     def __exit__(self, t, v, traceback):
+        self.dev.msleep = self.old_msleep
         super(TapDriver, self).__exit__()
         self.dev.close()
         print "[+] tap driver terminated"

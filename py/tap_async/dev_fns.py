@@ -20,80 +20,105 @@ from ctypes import sizeof, cast, POINTER
 import trollius as asyncio
 from trollius import From, Return
 import tglib as tg
+import logging
+logger = logging.getLogger(__name__)
+
+def prepare_block(block, registerflags, silent = False):
+    bname = block.block_name
+    for register in registerflags:
+        flags = registerflags[register]
+        oreg = getattr(block, register)
+        if isinstance(flags, dict):
+            for flag in flags:
+                ival = flags[flag]
+                cval = getattr(oreg, flag)
+                if cval != ival:
+                    if not silent:
+                        if ival > 1:
+                            verb = "configuring"
+                        elif ival:
+                            verb = "setting"
+                        else:
+                            verb = "clearing"
+                        fname = flag.replace("_", " ")
+                        logger.debug("%s %s (%s.%s)" % (verb, fname, bname, register))
+                    setattr(oreg, flag, ival)
+        elif oreg != flags:
+            if not silent:
+                logger.debug("configuring %s.%s" % (bname, register))
+            setattr(block, register, flags)
 
 @asyncio.coroutine
 def device_setup(self):
-    print "!!!!!!!!in device setup!!!!!!!!!!!!!"
     dev = self.dev
     mm = self.mm
     dev.drv = self
-    print "[+] resetting device"
-    dev.reset(cold=True)
-    print "[+] initializing device"
+    logger.info("initializing device")
     dev.init()
-    yield From(asyncio.sleep(0.5))
-
-    if dev.pci.misc_host_ctrl.enable_tagged_status_mode == 0:
-        print "[+] enabling tagged status mode"
-        dev.pci.misc_host_ctrl.enable_tagged_status_mode = 1
-
+    logger.info("resetting device")
+    dev.reset()
+    dev.msleep(0.5)
+    
     dma_wmm = 0x6
     try:
         if dev.config.caps['pcie'].max_payload_size > 0:
             dma_wmm += 0x1
     except: pass
-
-    if dev.pci.dma_rw_ctrl.dma_write_watermark != dma_wmm:
-        print "[+] configuring dma write watermark"
-        dev.pci.dma_rw_ctrl.dma_write_watermark = dma_wmm
-
-    if not dev.pci.dma_rw_ctrl.disable_cache_alignment:
-        print "[+] disabling pci dma alignment"
-        dev.pci.dma_rw_ctrl.disable_cache_alignment = 1
-
-    if dev.msi.mode.msix_multi_vector_mode:
-        print "[+] disabling multi vector mode"
-        dev.msi.mode.msix_multi_vector_mode = 0
-
-    if not dev.grc.misc_local_control.interrupt_on_attention:
-        print "[+] configuring interrupts on grc attention"
-        dev.grc.misc_local_control.interrupt_on_attention = 1
-
-    if not dev.grc.misc_local_control.auto_seeprom:
-        print "[+] configuring automatic eeprom access mode"
-        dev.grc.misc_local_control.auto_seeprom = 1
-
-    if not dev.grc.misc_config.timer_prescaler == 0x41:
-        print "[+] configuring grc timer prescaler"
-        dev.grc.misc_config.timer_prescaler = 0x41
-
-    if not dev.grc.mode.host_send_bds:
-        print "[+] enabling host send bds"
-        self.dev.grc.mode.send_no_pseudo_header_cksum = 1
-        self.dev.grc.mode.host_send_bds = 1
-
-    if not dev.grc.mode.host_stack_up:
-        print "[+] setting host stack up"
-        dev.grc.mode.host_stack_up = 1
-
-    if dev.bufman.dma_mbuf_low_watermark.count != 0x2a:
-        print "[+] setting dma mbuf low watermark"
-        dev.bufman.dma_mbuf_low_watermark.count = 0x2a
-
-    if dev.bufman.mbuf_high_watermark.count != 0xa0:
-        print "[+] setting mbuf high watermark"
-        dev.bufman.mbuf_high_watermark.count = 0xa0
-
-    if dev.emac.low_watermark_max_receive_frame.count != 1:
-        print "[+] configuring dma low watermark flow control"
-        dev.emac.low_watermark_max_receive_frame.count = 1
     
-    dev.bufman.mode.attention_enable = 1
-    dev.bufman.block_enable()
+    pci_regflags = {
+        'misc_host_ctrl': {
+            'enable_tagged_status_mode': 1,
+        },
+        'dma_rw_ctrl': {
+            'dma_write_watermark': dma_wmm,
+            'disable_cache_alignment': 1,
+        },
+    }
+    prepare_block(dev.pci, pci_regflags)
 
-    if dev.rbdi.std_ring_replenish_threshold.count != 0x19:
-        print "[+] configuring standard rx producer ring replenish threshold"
-        dev.rbdi.std_ring_replenish_threshold.count = 0x19
+    msi_regflags = {
+        'mode': {
+            'msix_multi_vector_mode': 0,
+        },
+    }
+    prepare_block(dev.msi, msi_regflags)
+
+    grc_regflags = {
+            'misc_local_control': {
+                'interrupt_on_attention': 1,
+                'auto_seeprom': 1,
+            },
+            'misc_config': {
+                'timer_prescaler': 0x41,
+            },
+            'mode': {
+                'send_no_pseudo_header_cksum': 1,
+                'host_send_bds': 1,
+                'host_stack_up': 1,
+            },
+    }
+    prepare_block(dev.grc, grc_regflags)
+
+    bufman_regflags = {
+        'dma_mbuf_low_watermark': {
+            'count': 0x2a,
+        },
+        'mbuf_high_watermark': {
+            'count': 0xa0,
+        },
+        'mode': {
+            'attention_enable': 1
+        },
+    }
+    prepare_block(dev.bufman, bufman_regflags)
+    dev.bufman.block_enable()
+    
+    rbdi_regflags = {
+        'std_ring_replenish_threshold': {
+            'count': 0x19,
+        },
+    }
+    prepare_block(dev.rbdi, rbdi_regflags)
 
     self._init_rx_rings()
 
@@ -108,63 +133,85 @@ def device_setup(self):
 
     self.mac_addr = [getattr(dev.emac.addr[0], "byte_%d" % (i + 1)) for i in range(6)]
 
-    print ("[+] device mac addr: %02x" + (":%02x" * 5)) % tuple(self.mac_addr)
+    logger.info(("ethernet mac addr: %02x" + (":%02x" * 5)) % tuple(self.mac_addr))
 
-    print "[+] configuring tx mac"
-    dev.emac.tx_random_backoff = sum(self.mac_addr) & 0x3ff
-    dev.emac.tx_mac_lengths.ipg = 0x6
-    dev.emac.tx_mac_lengths.ipg_crs = 0x2
-    dev.emac.tx_mac_lengths.slot = 0x20
-   
-    print "[+] configuring rx mac"
-    dev.emac.rx_mtu = 1500
-    dev.emac.rx_rules_conf.no_rules_matches_default_class = 2
+    logger.info("configuring ethernet mac")
+    emac_regflags = {
+        'low_watermark_max_receive_frame': {
+            'count': 1,
+        },
+        'tx_mac_lengths': {
+            'ipg': 0x6,
+            'ipg_crs': 0x2,
+            'slot': 0x20,
+        },
+        'rx_rules_conf': {
+            'no_rules_matches_default_class': 2,
+        },
+        'tx_random_backoff': sum(self.mac_addr) & 0x3ff,
+        'rx_mtu': 1500,
+    }
+    prepare_block(dev.emac, emac_regflags)
 
-    print "[+] configuring receive list placement"
-    dev.rlp.config.default_interrupt_distribution_queue = 0
-    dev.rlp.config.bad_frames_class = 1
-    dev.rlp.config.number_of_active_lists = 0x10
-    dev.rlp.config.number_of_lists_per_distribution_group = 1
+    logger.info("configuring receive list placement")
+    rlp_regflags = {
+        'config': {
+            'default_interrupt_distribution_queue': 0,
+            'bad_frames_class': 1,
+            'number_of_active_lists': 0x10,
+            'number_of_lists_per_distribution_group': 1,
+        },
+        'stats_enable_mask': {
+            'a1_silent_indication': 1,
+            'cpu_mactq_priority_disable': 1,
+            'enable_cos_stats': 1,
+            'enable_indiscard_stats': 1,
+            'enable_inerror_stats': 1,
+            'enable_no_more_rbd_stats': 0,
+            'perst_l': 1,
+            'rc_return_ring_enable': 0,
+            'rss_priority': 0,
+        },
+        'stats_control': {
+            'statistics_enable': 1,
+        },
+    }
+    prepare_block(dev.rlp, rlp_regflags)
 
-    print "[+] enabling rx statistics"
-    dev.rlp.stats_enable_mask.a1_silent_indication = 1
-    dev.rlp.stats_enable_mask.cpu_mactq_priority_disable = 1
-    dev.rlp.stats_enable_mask.enable_cos_stats = 1
-    dev.rlp.stats_enable_mask.enable_indiscard_stats = 1
-    dev.rlp.stats_enable_mask.enable_inerror_stats = 1
-    dev.rlp.stats_enable_mask.enable_no_more_rbd_stats = 0
-    dev.rlp.stats_enable_mask.perst_l = 1
-    dev.rlp.stats_enable_mask.rc_return_ring_enable = 0
-    dev.rlp.stats_enable_mask.rss_priority = 0
-    assert dev.rlp.stats_enable_mask.word == 0x7bffff
-    dev.rlp.stats_control.statistics_enable = 1
-
-    print "[+] enabling tx statistics"
-    dev.sdi.statistics_mask.counters_enable_mask = 1
-    dev.sdi.statistics_control.faster_update = 1
-    dev.sdi.statistics_control.statistics_enable = 1
+    logger.info("enabling tx statistics")
+    sdi_regflags = {
+        'statistics_mask': {
+            'counters_enable_mask': 1
+        },
+        'statistics_control': {
+            'faster_update': 1,
+            'statistics_enable': 1,
+        },
+    }
+    prepare_block(dev.sdi, sdi_regflags)
     
-    dev.hc.block_disable()
-    print "[+] configuring host coalesence"
-
-    dev.hc.mode.status_block_size = 2
-    dev.hc.mode.clear_ticks_mode_on_rx = 1
-
-    dev.hc.rx_coal_ticks = 0x48
-    dev.hc.tx_coal_ticks = 0x14
-    dev.hc.rx_max_coal_bds = 0x05
-    dev.hc.tx_max_coal_bds = 0x35
-    dev.hc.rc_max_coal_bds_in_int = 0x05
-    dev.hc.tx_max_coal_bds_in_int = 0x05
-    
+    logger.info("allocating status block")
     self.status_block_vaddr = mm.alloc(sizeof(tg.status_block))
     self.status_block = cast(self.status_block_vaddr, POINTER(tg.status_block))[0]
-
     self.status_block_paddr = mm.get_paddr(self.status_block_vaddr)
-    
-    dev.hc.status_block_host_addr_hi = self.status_block_paddr >> 32
-    dev.hc.status_block_host_addr_low = self.status_block_paddr & 0xffffffff
 
+    logger.info("configuring host coalesence")
+    dev.hc.block_disable()
+    hc_regflags = {
+        'mode': {
+            'status_block_size': 2,
+            'clear_ticks_mode_on_rx': 1,
+        },
+        'rx_coal_ticks': 0x48,
+        'tx_coal_ticks': 0x14,
+        'rx_max_coal_bds': 0x05,
+        'tx_max_coal_bds': 0x35,
+        'rx_max_coal_bds_in_int': 0x05,
+        'tx_max_coal_bds_in_int': 0x05,
+        'status_block_host_addr_hi': self.status_block_paddr >> 32,
+        'status_block_host_addr_low': self.status_block_paddr & 0xffffffff,
+    }
+    prepare_block(dev.hc, hc_regflags)
     dev.hc.block_enable()
 
     dev.rbdc.mode.attention_enable = 1
