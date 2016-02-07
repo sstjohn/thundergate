@@ -58,7 +58,7 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
 
-from dev_fns import device_setup
+from dev_fns import device_setup, enable_rx, enable_tx
 from ring import init_tx_rings, init_rx_rings, init_rr_rings, populate_rx_ring
 from link import link_detect
 from interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
@@ -89,10 +89,14 @@ class TapDriver(TDInt):
         print "[+] tap driver terminated"
 
     _device_setup = device_setup
+    _enable_rx = enable_rx
+    _enable_tx = enable_tx
+    
     _init_tx_rings = init_tx_rings                
     _init_rx_rings = init_rx_rings
     _init_rr_rings = init_rr_rings
     _populate_rx_ring = populate_rx_ring
+
     _link_detect = link_detect
     _handle_interrupt = handle_interrupt
     _handle_rr = handle_rr

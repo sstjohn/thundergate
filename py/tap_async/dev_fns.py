@@ -18,10 +18,14 @@
 
 from ctypes import sizeof, cast, POINTER
 import trollius as asyncio
-from trollius import From, Return
-import tglib as tg
+from trollius import From, Return, coroutine
 import logging
 logger = logging.getLogger(__name__)
+
+import tglib as tg
+from ring import init_rr_rings, init_rx_rings, init_tx_rings, populate_rx_ring
+
+msleep = lambda t: asyncio.sleep(t / 1000.0)
 
 def prepare_block(block, registerflags, silent = False):
     bname = block.block_name
@@ -48,7 +52,7 @@ def prepare_block(block, registerflags, silent = False):
                 logger.debug("configuring %s.%s" % (bname, register))
             setattr(block, register, flags)
 
-@asyncio.coroutine
+@coroutine
 def device_setup(self):
     dev = self.dev
     mm = self.mm
@@ -57,7 +61,7 @@ def device_setup(self):
     dev.init()
     logger.info("resetting device")
     dev.reset()
-    dev.msleep(0.5)
+    yield From(msleep(0.5))
     
     dma_wmm = 0x6
     try:
@@ -117,22 +121,13 @@ def device_setup(self):
         'std_ring_replenish_threshold': {
             'count': 0x19,
         },
+        'std_ring_replenish_watermark': {
+            'count': 0x20,
+        },
     }
     prepare_block(dev.rbdi, rbdi_regflags)
 
-    self._init_rx_rings()
-
-    dev.hpmb.box[tg.mb_rbd_standard_producer].low = 0
-
-    dev.rbdi.std_ring_replenish_watermark.count = 0x20
-
-    self._init_tx_rings()
-    dev.hpmb.box[tg.mb_sbd_host_producer].low = 0
-
-    self._init_rr_rings()
-
     self.mac_addr = [getattr(dev.emac.addr[0], "byte_%d" % (i + 1)) for i in range(6)]
-
     logger.info(("ethernet mac addr: %02x" + (":%02x" * 5)) % tuple(self.mac_addr))
 
     logger.info("configuring ethernet mac")
@@ -214,27 +209,17 @@ def device_setup(self):
     prepare_block(dev.hc, hc_regflags)
     dev.hc.block_enable()
 
+    logger.info("enabling rbdc")
     dev.rbdc.mode.attention_enable = 1
     dev.rbdc.block_enable()
 
+    logger.info("enabling rlp")
     dev.rlp.block_enable()
 
-    if not dev.emac.mode.en_fhde:
-        print "[+] enabling frame header dma engine"
-        dev.emac.mode.en_fhde = 1
-
-    if not dev.emac.mode.en_rde:
-        print "[+] enabling receive dma engine"
-        dev.emac.mode.en_rde = 1
-
-    if not dev.emac.mode.en_tde:
-        print "[+] enabling transmit dma engine"
-        dev.emac.mode.en_tde = 1
-
-    print "[+] clearing rx statistics"
+    logger.debug("clearing rx statistics")
     dev.emac.mode.clear_rx_statistics = 1
 
-    print "[+] clearing tx statistics"
+    logger.debug("clearing tx statistics")
     dev.emac.mode.clear_tx_statistics = 1
 
     while dev.emac.mode.clear_rx_statistics:
@@ -243,61 +228,76 @@ def device_setup(self):
     while dev.emac.mode.clear_tx_statistics:
         pass
 
-    if not dev.emac.mode.en_rx_statistics:
-        print "[+] enabling rx statistics"
-        dev.emac.mode.en_rx_statistics = 1
+    logger.info("configuring emac")
+    emac_regflags = {
+        'mode': {
+            'en_fhde': 1,
+            'en_rde': 1,
+            'en_tde': 1,
+            'en_rx_statistics': 1,
+            'en_tx_statistics': 1,
+        },
+        'event_enable': {
+            'link_state_changed': 1,
+        },
+    }
+    prepare_block(dev.emac, emac_regflags)
 
-    if not dev.emac.mode.en_tx_statistics:
-        print "[+] enabling tx statistics"
-        dev.emac.mode.en_tx_statistics = 1
+    logger.info("configuring grc")
+    grc_regflags = {
+        'mode': {
+            'int_on_mac_attn': 1,
+        },
+    }
+    prepare_block(dev.grc, grc_regflags)
 
-    if not dev.emac.event_enable.link_state_changed:
-        print "[+] enabling emac attention on link statue changed"
-        dev.emac.event_enable.link_state_changed = 1
-
-    if not dev.grc.mode.int_on_mac_attn:
-        print "[+] enabling interrupt on mac attention"
-        dev.grc.mode.int_on_mac_attn = 1
-
-    print "[+] configuringing write dma engine"
-    dev.wdma.mode.write_dma_pci_target_abort_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_master_abort_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_parity_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_host_address_overflow_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_fifo_overrun_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_fifo_underrun_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_fifo_overwrite_attention_enable = 1
-    dev.wdma.mode.write_dma_local_memory = 1
-    dev.wdma.mode.write_dma_pci_parity_error_attention_enable = 1
-    dev.wdma.mode.write_dma_pci_host_address_overflow_error_attention_enable = 1
-    dev.wdma.mode.status_tag_fix_enable = 1
-    dev.wdma.mode.reserved2 = 0
+    logger.info("configuringing write dma engine")
+    wdma_regflags = {
+        "mode": {
+            "write_dma_pci_target_abort_attention_enable": 1,
+            "write_dma_pci_master_abort_attention_enable": 1,
+            "write_dma_pci_fifo_overrun_attention_enable": 1,
+            "write_dma_pci_fifo_underrun_attention_enable": 1,
+            "write_dma_pci_fifo_overwrite_attention_enable": 1,
+            "write_dma_local_memory": 1,
+            "write_dma_pci_parity_error_attention_enable": 1,
+            "write_dma_pci_host_address_overflow_error_attention_enable": 1,
+            "status_tag_fix_enable": 1,
+            "reserved2": 0,
+        },
+    }
+    prepare_block(dev.wdma, wdma_regflags)
     dev.wdma.block_enable()
 
-    print "[+] configuring read dma engine"
-    dev.rdma.mode.read_dma_pci_target_abort_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_master_abort_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_parity_error_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_host_address_overflow_error_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_fifo_overrun_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_fifo_underrun_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_fifo_overread_attention_enable = 1
-    dev.rdma.mode.read_dma_local_memory_write_longer_than_dma_length_attention_enable = 1
-    dev.rdma.mode.read_dma_pci_x_split_transaction_timeout_expired_attention_enable = 0
-    dev.rdma.mode.bd_sbd_corruption_attn_enable = 0
-    dev.rdma.mode.mbuf_rbd_corruption_attn_enable = 0
-    dev.rdma.mode.mbuf_sbd_corruption_attn_enable = 0
-    dev.rdma.mode.reserved3 = 0
-    dev.rdma.mode.pci_request_burst_length = 3
-    dev.rdma.mode.reserved2 = 0
-    dev.rdma.mode.jumbo_2k_mmrr_mode = 1
-    dev.rdma.mode.mmrr_disable = 0
-    dev.rdma.mode.address_overflow_error_logging_enable = 0
-    dev.rdma.mode.post_dma_debug_enable = 0
-    dev.rdma.mode.hardware_ipv4_post_dma_processing_enable = 0
-    dev.rdma.mode.hardware_ipv6_post_dma_processing_enable = 0
-    dev.rdma.mode.in_band_vtag_enable = 0
-    dev.rdma.mode.reserved = 0
+    logger.info("configuring read dma engine")
+    rdma_regflags = {
+        "mode": {
+            "read_dma_pci_target_abort_attention_enable": 1,
+            "read_dma_pci_master_abort_attention_enable": 1,
+            "read_dma_pci_parity_error_attention_enable": 1,
+            "read_dma_pci_host_address_overflow_error_attention_enable": 1,
+            "read_dma_pci_fifo_overrun_attention_enable": 1,
+            "read_dma_pci_fifo_underrun_attention_enable": 1,
+            "read_dma_pci_fifo_overread_attention_enable": 1,
+            "read_dma_local_memory_write_longer_than_dma_length_attention_enable": 1,
+            "read_dma_pci_x_split_transaction_timeout_expired_attention_enable": 0,
+            "bd_sbd_corruption_attn_enable": 0,
+            "mbuf_rbd_corruption_attn_enable": 0,
+            "mbuf_sbd_corruption_attn_enable": 0,
+            "reserved3": 0,
+            "pci_request_burst_length": 3,
+            "reserved2": 0,
+            "jumbo_2k_mmrr_mode": 1,
+            "mmrr_disable": 0,
+            "address_overflow_error_logging_enable": 0,
+            "post_dma_debug_enable": 0,
+            "hardware_ipv4_post_dma_processing_enable": 0,
+            "hardware_ipv6_post_dma_processing_enable": 0,
+            "in_band_vtag_enable": 0,
+            "reserved": 0,
+        },
+    }
+    prepare_block(dev.rdma, rdma_regflags)
     dev.rdma.block_enable()
 
     dev.rdc.mode.attention_enable = 1
@@ -324,16 +324,21 @@ def device_setup(self):
     dev.sbds.mode.attention_enable = 1
     dev.sbds.block_enable()
 
-    self._populate_rx_ring()
+    print "[+] configuring led"
+    dev.emac.led_control.word = 0x800
 
-    print "[+] enabling transmit mac"
+@coroutine
+def _enable_tx_mac(self):
+    logger.info("enabling transmit mac")
     dev.emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1
     #dev.emac.tx_mac_mode.enable_flow_control = 1
     dev.emac.tx_mac_mode.enable = 1
     
-    yield From(asyncio.sleep(.1)) 
+    yield From(msleep(100)) 
 
-    print "[+] enabling receive mac"
+@coroutine
+def _enable_rx_mac(self):
+    logger.info("enabling receive mac")
     #dev.emac.mac_hash_0 = 0xffffffff
     #dev.emac.mac_hash_1 = 0xffffffff
     #dev.emac.mac_hash_2 = 0xffffffff
@@ -348,9 +353,19 @@ def device_setup(self):
     #dev.emac.rx_mac_mode.rss_tcpipv6_hash_enable = 1
     dev.emac.rx_mac_mode.enable = 1
 
-    yield From(asyncio.sleep(.1))
+    yield From(msleep(100))
 
-    print "[+] configuring led"
-    dev.emac.led_control.word = 0x800
 
     dev.emac.low_watermark_max_receive_frames = 1
+
+@coroutine
+def enable_rx(self):
+    yield From(init_rx_rings(self))
+    yield From(init_rr_rings(self))
+    yield From(populate_rx_ring(self))
+    yield From(_enable_rx_mac(self))
+
+@coroutine
+def enable_tx(self):
+    yield From(init_tx_rings(self))
+    yield From(_enable_tx_mac(self))

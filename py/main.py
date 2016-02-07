@@ -160,7 +160,7 @@ def main(args):
             dev_interface = SysfsInterface(dbdf)
 
         if kmod == 'tg3' and args.driver:
-            logger.errpr("device is currently bound to tg3; this won't work")
+            logger.error("device is currently bound to tg3; this won't work")
             return 1
 
     elif sys_name == 'Windows' or sys_name == 'cli':
