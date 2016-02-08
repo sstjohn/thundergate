@@ -19,6 +19,7 @@
 import ctypes
 import tglib as tg
 import struct
+import time
 import os
 import select
 import reutils
@@ -28,6 +29,9 @@ import sys
 
 import trollius as asyncio
 from trollius import From, Return, coroutine
+
+import logging
+logger = logging.getLogger(__name__)
 
 from stats import TapStatistics
 
@@ -59,8 +63,8 @@ usleep = lambda x: sleep(x / 1000000.0)
 from ctypes import cast, pointer, POINTER, sizeof
 
 from dev_fns import _device_setup, _enable_rx, _enable_tx
-from link import link_detect
-from interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
+from link import _link_detect
+from interrupt import _handle_interrupt
 
 def async_msleep(self, t):
     yield From(asyncio.sleep(t / 1000.0))
@@ -72,13 +76,13 @@ class TapDriver(TDInt):
         self.dev = dev
         self.mm = dev.interface.mm
         self.stats = TapStatistics()
+        self._connected = False
 
     def __enter__(self):
         print "[+] tap driver initializing"
         super(TapDriver, self).__enter__()
         self.old_msleep = self.dev.msleep
         self.dev.msleep = async_msleep.__get__(self.dev)
-        asyncio.ensure_future(self.device_setup())
         return self
 
     def __exit__(self, t, v, traceback):
@@ -91,58 +95,14 @@ class TapDriver(TDInt):
     enable_rx = _enable_rx
     enable_tx = _enable_tx
     
-    _link_detect = link_detect
-    _handle_interrupt = handle_interrupt
-    _handle_rr = handle_rr
-    _free_sent_bds = free_sent_bds
-    _dump_bd = dump_bd
-    _replenish_rx_bds = replenish_rx_bds
+    link_detect = _link_detect
+    handle_interrupt = _handle_interrupt
 
-
-    def put_tap_pkt(self, pkt):
-        sent = self._put_tap_pkt(pkt)
-        self.mm.free(pkt)
-        self.stats.pkt_in(sent)
-
-    def send(self, data, flags=None):
-        if len(data) < 64:
-            data = data + ('\x00' * (64 - len(data)))
-        b_vaddr = self.mm.alloc(len(data))
-        b = ctypes.cast(b_vaddr, ctypes.POINTER(ctypes.c_char * len(data)))
-        b[0] = (ctypes.c_char * len(data)).from_buffer_copy(data)
-        
-        self._send_b(b_vaddr, len(data), flags=flags)
-
-    def _send_b(self, buf, buf_sz, flags=None):
-        i = self._tx_pi
-        self._tx_buffers[i] = buf
-        if self.verbose:
-            print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
-        paddr = self.mm.get_paddr(buf)
-        txb = ctypes.cast(self.tx_ring_vaddr, ctypes.POINTER(tg.sbd))
-        txb[i].addr_hi = paddr >> 32
-        txb[i].addr_low = paddr & 0xffffffff
-        txb[i].length = buf_sz
-        txb[i].flags.packet_end = 1
-        if flags != None:
-            for j in flags:
-                setattr(txb[i].flags, j, 1)
-
-        i += 1
-        if i == self.tx_ring_len:
-            i = 0
-
-        self.dev.hpmb.box[tg.mb_sbd_host_producer].low = i
-        _ = self.dev.hpmb.box[tg.mb_sbd_host_producer].low
-        self._tx_pi = i
-        if self.verbose:
-            print "[+] host sbd pi now %x" % i
-        self.stats.pkt_out(buf_sz)
-    
-    def _handle_tap(self):
-        pkt, sz = self._get_packet()
-        self._send_b(pkt, sz)
-
+    @coroutine
+    def gui_handler(self):
+        '''launch wxwidgets gui'''
+        import gui
+        gui.run(self.dev)
 
     @coroutine
     def help_handler(self):
@@ -177,25 +137,49 @@ class TapDriver(TDInt):
             asyncio.ensure_future(self.unknown_keypress_handler(r))
         asyncio.ensure_future(self.keypress_dispatch())
 
+    def _watch_for_sb_update(self):
+        logger.info("watching for status block update")
+        while self.running:
+            if self.status_block.updated:
+                logger.info("status block updated")
+                return
+            time.sleep(.01)
+        logger.info("status block not updated, terminating watch")
+
     @coroutine
     def interrupt_watcher(self):
-        pass
+        if hasattr(self, "_wait_for_interrupt"):
+            waiter = self._wait_for_interrupt
+        else:
+            waiter = self._watch_for_sb_update
+
+        yield From(self.loop.run_in_executor(None, waiter))
+        yield From(self.handle_interrupt())
+        if self.running:
+            asyncio.ensure_future(self.interrupt_watcher())
 
     @coroutine
     def tap_watcher(self):
         pass
 
+
+    @coroutine
+    def arrive_device(self):
+        yield From(self.device_setup())
+        yield From(self.enable_rx())
+        asyncio.ensure_future(self.interrupt_watcher())
+
     def run(self):
         self.running = True
-        self.keypress_handlers = {'h': self.help_handler,
-                                  'q': self.quit_handler,
-                                  'v': self.verbosity_handler,}
+        self.keypress_handlers = {
+            'g': self.gui_handler,
+            'h': self.help_handler,
+            'q': self.quit_handler,
+            'v': self.verbosity_handler,
+        }
 
         self.loop = asyncio.get_event_loop()
         asyncio.ensure_future(self.keypress_dispatch())
-        asyncio.ensure_future(self.interrupt_watcher())
-        asyncio.ensure_future(self.enable_rx())
-        asyncio.ensure_future(self.enable_tx())
-        asyncio.ensure_future(self.tap_watcher())
+        asyncio.ensure_future(self.arrive_device())
         self.loop.run_forever()
-        asyncio.executor.get_default_executor().shutdown(True) 
+        asyncio.executor.get_default_executor().shutdown(False) 

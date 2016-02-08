@@ -16,14 +16,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import logging
+logger = logging.getLogger(__name__)
 
-def link_detect(self):
-    print "[+] detecting link"
+import trollius as asyncio
+from trollius import coroutine, From, Return
+
+@coroutine
+def _link_detect(self):
+    logger.info("detecting link")
     res = self.dev.gphy.autonegotiate()
     if not res & 0x8000:
-        print "[-] no link detected"
-        self._set_tapdev_status(False)
+        logger.warn("no link detected")
         self._hcd = 0
+        return False
     else:
         hcd = (res & 0x700) >> 8
         self._hcd = hcd
@@ -63,7 +69,6 @@ def link_detect(self):
 
             self.dev.emac.rx_mac_mode.enable_flow_control = 0
             self.dev.emac.tx_mac_mode.enable_flow_control = 0
-
+            return True
         else:
             raise Exception("autonegotiaton failed, hcd %x" % hcd)
-        self._set_tapdev_status(True)

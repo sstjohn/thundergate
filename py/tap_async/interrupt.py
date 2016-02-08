@@ -17,15 +17,55 @@
 '''
 
 from ctypes import cast, POINTER, c_char
+import trollius as asyncio
+from trollius import coroutine
+
 import tglib as tg
 
-def handle_rr(self, i):
+@coroutine
+def _handle_interrupt(self):
+    dev = self.dev
+    if self.verbose:
+        logger.info("handling interrupt")
+    
+    _ = dev.hpmb.box[tg.mb_interrupt].low
+    tag = 0
+
+    while self.status_block.updated:
+        tag = self.status_block.status_tag
+        if self.verbose:
+            logger.debug("processing status tag %x", tag)
+        tag = tag << 24
+
+        self.status_block.updated = 0
+        if self.verbose:
+            logger.debug("status block updated! link: %d, attention: %d", self.status_block.link_status, self.status_block.attention)
+
+        if dev.emac.status.link_state_changed:
+            self.dev.emac.status.link_state_changed = 1
+            now_connected = self.link_detect()
+            if now_connected != self._connected:
+                self._set_tapdev_status(now_connected)
+                self._connected = now_connected
+            
+        #for i in range(len(dev.mem.rxrcb)):
+        #    _handle_rr(self, i)
+        
+        #_replenish_rx_bds(self)
+        #_free_sent_bds(self)
+
+    if self.verbose:
+        logger.info("interrupt handling concluded")
+    self.dev.hpmb.box[tg.mb_interrupt].low = tag
+    _ = self.dev.hpmb.box[tg.mb_interrupt].low
+
+def _handle_rr(self, i):
     pi = getattr(self.status_block, "rr%d_pi" % i)
     ci = self.rr_rings_ci[i]
 
     if pi != ci:
         if self.verbose:
-            print "[+] rr %d: pi is %x, ci was %x," % (i, pi, ci),
+            msg = "rr %d: pi is %x, ci was %x," % (i, pi, ci)
 
         if pi < ci:
             count = self.rr_rings_len - ci 
@@ -34,7 +74,7 @@ def handle_rr(self, i):
             count = pi - ci
         
         if self.verbose:
-            print "%d bds received" % count
+            logger.info("%s %d bds received", msg, count)
 
         rbds = cast(self.rr_rings_vaddr[i], POINTER(tg.rbd))
         while count > 0:
@@ -62,47 +102,14 @@ def handle_rr(self, i):
         self.dev.hpmb.box[mb].low = ci
         self.rr_rings_ci[i] = ci
 
-def handle_interrupt(self):
-    dev = self.dev
-    if self.verbose:
-        print "[+] handling interrupt"
-    
-    _ = dev.hpmb.box[tg.mb_interrupt].low
-    tag = 0
 
-    while self.status_block.updated:
-        tag = self.status_block.status_tag
-        if self.verbose:
-            print "[+] status tag %x" % tag
-        tag = tag << 24
-
-        self.status_block.updated = 0
-        if self.verbose:
-            print "[+] status block updated! link: %d, attention: %d" % (self.status_block.link_status, self.status_block.attention)
-
-        if dev.emac.status.link_state_changed:
-            self._link_detect()
-            dev.emac.status.link_state_changed = 1
-            
-        for i in range(len(dev.mem.rxrcb)):
-            self._handle_rr(i)
-        
-        self._replenish_rx_bds()
-
-        self._free_sent_bds()
-
-    if self.verbose:
-        print "[+] interrupt handling concluded"
-    self.dev.hpmb.box[tg.mb_interrupt].low = tag
-    _ = self.dev.hpmb.box[tg.mb_interrupt].low
-
-def replenish_rx_bds(self):
+def _replenish_rx_bds(self):
     new_ci = self.status_block.rpci
     old_ci = self._std_rbd_ci
     count = 0
     if new_ci != old_ci:
         if self.verbose:
-            print "[+] rbdp ci now %x, was %x" % (new_ci, old_ci)
+            logger.debug("rbdp ci now %x, was %x", new_ci, old_ci)
         rbds = cast(self.rx_ring_vaddr, POINTER(tg.rbd))
         while new_ci != old_ci:
             count += 1
@@ -120,21 +127,21 @@ def replenish_rx_bds(self):
             self._std_rbd_pi -= self.rx_ring_len
 
         if self.verbose:
-            print "[+] moving std rbd pi to %x" % self._std_rbd_pi
+            logger.debug("moving std rbd pi to %x", self._std_rbd_pi)
         self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
 
-def free_sent_bds(self):
+def _free_sent_bds(self):
     tx_ci = self.status_block.sbdci
     if tx_ci != self._tx_ci:
         if self.verbose:
-            print "[+] sbd ci: %x" % tx_ci
+            logger.debug("sbd ci: %x", tx_ci)
 
         if tx_ci < self._tx_ci:
             if self.verbose:
                 if self._tx_ci + 1 == self.tx_ring_len:
-                    print "[.] freeing tx buffer %02x" % self._tx_ci
+                    logger.debug("freeing tx buffer %02x", self._tx_ci)
                 else:
-                    print "[.] freeing tx buffers %02x-%02x" % (self._tx_ci, self.tx_ring_len - 1)
+                    logger.debug("freeing tx buffers %02x-%02x", self._tx_ci, self.tx_ring_len - 1)
             while self._tx_ci < self.tx_ring_len:
                 self.mm.free(self._tx_buffers[self._tx_ci])
                 self._tx_ci += 1
@@ -142,14 +149,14 @@ def free_sent_bds(self):
             self._tx_ci = 0
         if self.verbose:
             if tx_ci == self._tx_ci + 1:
-                print "[.] freeing tx buffer %02x" % self._tx_ci
+                logger.debug("freeing tx buffer %02x", self._tx_ci)
             elif tx_ci > self._tx_ci:
-                print "[.] freeing tx buffers %02x-%02x" % (self._tx_ci, tx_ci - 1)
+                logger.debug("freeing tx buffers %02x-%02x", self._tx_ci, tx_ci - 1)
         while tx_ci > self._tx_ci:
             self.mm.free(self._tx_buffers[self._tx_ci])
             self._tx_ci += 1
 
-def dump_bd(self, ci, rbd):
+def _dump_bd(self, ci, rbd):
     print "consuming bd 0x%x" % ci
     print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
     print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))

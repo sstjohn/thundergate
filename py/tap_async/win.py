@@ -16,33 +16,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from winlib import *
-from async_win import ReadAsync, IoctlAsync
 import functools
+import logging
+
+logger = logging.getLogger(__name__)
+
+from winlib import (
+    ReadConsoleInput, WinError, pointer, INPUT_RECORD, GetStdHandle, STD_INPUT_HANDLE,
+    DWORD, create_tap_if, del_tap_if, IOCTL_TGWINK_PEND_INTR, ioctl, create_string_buffer,
+    c_int32, TAP_WIN_IOCTL_SET_MEDIA_STATUS, DeviceIoControl,
+)
 
 class TapWinInterface(object):
     def __init__(self, dev):
         self.dev = dev
-        self.mm = dev.interface.mm
-        self._connected = False
-        self._pending_completions = {}
 
     def __enter__(self):
         self.tfd = create_tap_if()
-        self._tg_evt = IoctlAsync(IOCTL_TGWINK_PEND_INTR, self.dev.interface.cfgfd, 8)
-        self._tap_evt = ReadAsync(self.tfd, 0x800, self.mm)
         self._hCon = GetStdHandle(STD_INPUT_HANDLE)
-        self._events = (HANDLE * 3)(self._hCon, self._tg_evt.req.hEvent, self._tap_evt.req.hEvent)
-        self._tg_evt.submit()
         return self
     
     def __exit__(self):
-        self._tap_evt.reset(False)
-        self._tg_evt.reset(False)
-        del self._events
-        del self._tap_evt
-        del self._tg_evt
-
         del_tap_if(self.tfd)
 
     def _wait_for_keypress(self):
@@ -53,68 +47,17 @@ class TapWinInterface(object):
                 raise WinError()
         return ir.Event.KeyEvent.uChar.AsciiChar
 
-    def _wait_for_something(self):
-        while self._running:        
-            res = WaitForMultipleObjectsEx(len(self._events), cast(pointer(self._events), POINTER(c_void_p)), False, INFINITE, True)
-            if res < 3:
-                return res
-            if res == WAIT_FAILED:
-                raise WinError()
-        
-    def _get_serial(self):
-        serial = cast(self._tg_evt.buffer, POINTER(c_uint64)).contents.value
-        self._tg_evt.reset()
-        return serial
- 
-    def _get_packet(self):
-        if self.verbose:
-            print "[+] getting a packet from tap device...",
-        pkt_len = self._tap_evt.pkt_len
-        pkt = self._tap_evt.buffer
-        self._tap_evt.reset()
-        if self.verbose:
-            print "read %d bytes" % pkt_len
-        return (pkt, pkt_len)
-
-    def _tap_write_completion(self, overlapped, pkt, errcode, written, overlapped_ptr):
-        if self.verbose:
-            print "[.] freeing sent packet at %x" % addressof(pkt)
-        self.mm.free(addressof(pkt))
-        del self._pending_completions[addressof(pkt)]
-
-    def _write_pkt(self, pkt, length):
-        if not self._connected:
+    def _wait_for_interrupt(self):
+        if not self.running:
             return
-        o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
-        if self.verbose:
-            print "[!] attempting to write to the tap device...",
-        completion = FileIOCompletion(functools.partial(TapWinInterface._tap_write_completion, self, o, pkt))
-        if not WriteFileEx(self.tfd, pkt, length, pointer(o), completion):
-            raise WinError()
-        else:
-            self._pending_completions[addressof(pkt)] = completion
-        if self.verbose:
-            print "queued %d bytes" % len(pkt)
+        logger.debug("waiting for interrupt")
+        buf = create_string_buffer(8)
+        ioctl(self.dev.interface.cfgfd, IOCTL_TGWINK_PEND_INTR, None, buf) 
+        logger.debug("finished waiting for interrupt")
 
     def _set_tapdev_status(self, connected):
         if self.verbose:
             print "[+] setting tapdev status to %s" % ("up" if connected else "down")
-        o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
-        try:
-            val = c_int32(1 if connected else 0)
-            if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, pointer(o)):
-                err = get_last_error()
-                if err == ERROR_IO_PENDING:
-                    if WAIT_FAILED == WaitForSingleObject(o.hEvent, INFINITE):
-                        raise WinError()
-                elif err == 0:
-                    pass
-                else:
-                    raise WinError(err)
-            if connected:
-                self._tap_evt.submit()
-            else:
-                self._tap_evt.reset(False)
-            self._connected = connected
-        finally:
-            CloseHandle(o.hEvent)
+        val = c_int32(1 if connected else 0)
+        if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, None):
+            raise WinError()

@@ -59,7 +59,7 @@ class WinInterface(object):
         self.mm = WinMemMgr(self.cfgfd)
 
     def _attach(self):
-        self.cfgfd = CreateFile(self.device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, None)
+        self.cfgfd = CreateFile(self.device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING, 0, None)
         if self.cfgfd == INVALID_HANDLE_VALUE:
             raise WinError()
 

@@ -53,7 +53,7 @@ def prepare_block(block, registerflags, silent = False):
             setattr(block, register, flags)
 
 @coroutine
-def device_setup(self):
+def _device_setup(self):
     dev = self.dev
     mm = self.mm
     dev.drv = self
@@ -145,6 +145,16 @@ def device_setup(self):
         },
         'tx_random_backoff': sum(self.mac_addr) & 0x3ff,
         'rx_mtu': 1500,
+        'mode': {
+            'en_fhde': 1,
+            'en_rde': 1,
+            'en_tde': 1,
+            'en_rx_statistics': 1,
+            'en_tx_statistics': 1,
+        },
+        'event_enable': {
+            'link_state_changed': 1,
+        },
     }
     prepare_block(dev.emac, emac_regflags)
 
@@ -227,22 +237,6 @@ def device_setup(self):
 
     while dev.emac.mode.clear_tx_statistics:
         pass
-
-    logger.info("configuring emac")
-    emac_regflags = {
-        'mode': {
-            'en_fhde': 1,
-            'en_rde': 1,
-            'en_tde': 1,
-            'en_rx_statistics': 1,
-            'en_tx_statistics': 1,
-        },
-        'event_enable': {
-            'link_state_changed': 1,
-        },
-        'low_watermark_max_receive_frames':  1,
-    }
-    prepare_block(dev.emac, emac_regflags)
 
     logger.info("configuring grc")
     grc_regflags = {
@@ -331,32 +325,29 @@ def device_setup(self):
 @coroutine
 def enable_tx_mac(self):
     logger.info("enabling transmit mac")
-    dev.emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1
-    #dev.emac.tx_mac_mode.enable_flow_control = 1
-    dev.emac.tx_mac_mode.enable = 1
-    
+    emac_txflags = {
+        'tx_mac_mode': {
+            'enable_bad_txmbuf_lockup_fix': 1,
+            'enable': 1,
+        },
+    }
+    prepare_block(self.dev.emac, emac_txflags)
     yield From(msleep(100)) 
 
 @coroutine
 def enable_rx_mac(self):
     logger.info("enabling receive mac")
-    #dev.emac.mac_hash_0 = 0xffffffff
-    #dev.emac.mac_hash_1 = 0xffffffff
-    #dev.emac.mac_hash_2 = 0xffffffff
-    #dev.emac.mac_hash_3 = 0xffffffff
-    dev.emac.rx_mac_mode.promiscuous_mode = 1
-    dev.emac.rx_mac_mode.accept_runts = 1
-    #dev.emac.rx_mac_mode.enable_flow_control = 1
-    dev.emac.rx_mac_mode.rss_enable = 1
-    #dev.emac.rx_mac_mode.rss_ipv4_hash_enable = 1
-    #dev.emac.rx_mac_mode.rss_tcpipv4_hash_enable = 1
-    #dev.emac.rx_mac_mode.rss_ipv6_hash_enable = 1
-    #dev.emac.rx_mac_mode.rss_tcpipv6_hash_enable = 1
-    dev.emac.rx_mac_mode.enable = 1
-
+    emac_rxflags = {
+        'rx_mac_mode': {
+            'promiscuous_mode': 1,
+            'accept_runts': 1,
+            'rss_enable': 1,
+            'enable': 1,
+        },
+    }
+    prepare_block(self.dev.emac, emac_rxflags)
     yield From(msleep(100))
  
-
 @coroutine
 def _enable_rx(self):
     yield From(init_rx_rings(self))

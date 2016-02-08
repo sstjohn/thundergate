@@ -37,6 +37,7 @@ tgwink.sys  = 1,,
 
 [Standard.NT$ARCH$]
 %tgwink.DeviceDesc%=tgwink_Device, PCI\VEN_14e4&DEV_1682
+%tgwink.DeviceDesc%=tgwink_Device, PCI\VEN_14e4&DEV_16b4
 %tgwink.StealthDesc%=tgwink_Device, PCI\VEN_88b5&DEV_1682
 
 [tgwink_Device.NT]
@@ -64,16 +65,6 @@ ServiceBinary  = %12%\tgwink.sys
 [DestinationDirs]
 tgwink_Device_CoInstaller_CopyFiles = 11
 
-;[tgwink_Device.NT.CoInstallers]
-;AddReg=tgwink_Device_CoInstaller_AddReg
-;CopyFiles=tgwink_Device_CoInstaller_CopyFiles
-
-;[tgwink_Device_CoInstaller_AddReg]
-;HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
-
-;[tgwink_Device_CoInstaller_CopyFiles]
-;WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
-
 [SourceDisksFiles]
 WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
 
@@ -98,4 +89,3 @@ DiskName = "tgwink Installation Disk"
 tgwink.DeviceDesc = "tgwink Device"
 tgwink.SVCDESC = "tgwink Service"
 tgwink.StealthDesc = "tgwink Device (stealth)"
-

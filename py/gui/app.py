@@ -58,14 +58,14 @@ class App(wx.App):
         self.splash = ThunderSplash(self.toplevel)
         self.splash.Refresh()
         wx.Yield()
-	wx.CallAfter(self.PrepareMain)
+        wx.CallAfter(self.PrepareMain)
 
     def PrepareMain(self):
         self.main_frame = wx.Frame(self.toplevel, -1, 'thundergate')
         self.nb = wx.Notebook(self.main_frame)
-	page = wx.NotebookPage(self.nb)
-	wx.py.shell.Shell(page, locals = {"dev": self.dev})
-	self.nb.AddPage(page, text = "console")
+        page = wx.NotebookPage(self.nb)
+        wx.py.shell.Shell(page, locals = {"dev": self.dev})
+        self.nb.AddPage(page, text = "console")
         self.bgthreads = []
         t = threading.Thread(
                 target = self._collect_model,
@@ -105,4 +105,8 @@ class App(wx.App):
         self.main_frame.Show()
 
         if not self.nosplash:
-            self.splash.Destroy()
+            try:
+                self.splash.Destroy()
+                self.nosplash = True
+            except:
+                pass

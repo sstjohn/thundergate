@@ -438,15 +438,13 @@ def create_tap_if(name = None):
         raise WinError(result)
     device_path = LPCSTR("\\\\.\\Global\\%s.tap" % cfg_iid.value)
 
-    hdev = CreateFile(device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED, 0)
+    hdev = CreateFile(device_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_SYSTEM, 0)
     if INVALID_HANDLE_VALUE == hdev:
         raise WinError()
   
     info = (ULONG * 3)()
     sz = DWORD(0)
 
-    #if not DeviceIoControl(hdev, TAP_WIN_IOCTL_GET_VERSION, pointer(info), sizeof(info), pointer(info), sizeof(info), pointer(sz), None):
-    #    raise WinError()
     ioctl(hdev, TAP_WIN_IOCTL_GET_VERSION, info, info)
     print "[+] tap-windows v%d.%d%s device %s created" % (info[0], info[1], "d" if info[2] else "", cfg_iid.value)
 
@@ -540,12 +538,3 @@ def elevate():
         return rc.value
     else:
         raise WinError()
-        
-if __name__ == "__main__":
-    if IsUserAnAdmin():
-        print "i'm an admin!"
-        sys.exit(0)
-    else:
-        print "not yet an admin"
-        rc = elevate()
-        sys.exit(rc)
