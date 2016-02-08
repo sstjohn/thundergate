@@ -240,6 +240,7 @@ def device_setup(self):
         'event_enable': {
             'link_state_changed': 1,
         },
+        'low_watermark_max_receive_frames':  1,
     }
     prepare_block(dev.emac, emac_regflags)
 
@@ -328,7 +329,7 @@ def device_setup(self):
     dev.emac.led_control.word = 0x800
 
 @coroutine
-def _enable_tx_mac(self):
+def enable_tx_mac(self):
     logger.info("enabling transmit mac")
     dev.emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1
     #dev.emac.tx_mac_mode.enable_flow_control = 1
@@ -337,7 +338,7 @@ def _enable_tx_mac(self):
     yield From(msleep(100)) 
 
 @coroutine
-def _enable_rx_mac(self):
+def enable_rx_mac(self):
     logger.info("enabling receive mac")
     #dev.emac.mac_hash_0 = 0xffffffff
     #dev.emac.mac_hash_1 = 0xffffffff
@@ -354,18 +355,16 @@ def _enable_rx_mac(self):
     dev.emac.rx_mac_mode.enable = 1
 
     yield From(msleep(100))
-
-
-    dev.emac.low_watermark_max_receive_frames = 1
+ 
 
 @coroutine
-def enable_rx(self):
+def _enable_rx(self):
     yield From(init_rx_rings(self))
     yield From(init_rr_rings(self))
     yield From(populate_rx_ring(self))
-    yield From(_enable_rx_mac(self))
+    yield From(enable_rx_mac(self))
 
 @coroutine
-def enable_tx(self):
+def _enable_tx(self):
     yield From(init_tx_rings(self))
-    yield From(_enable_tx_mac(self))
+    yield From(enable_tx_mac(self))

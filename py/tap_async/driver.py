@@ -27,7 +27,7 @@ import functools
 import sys
 
 import trollius as asyncio
-from trollius import From, Return
+from trollius import From, Return, coroutine
 
 from stats import TapStatistics
 
@@ -58,8 +58,7 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
 
-from dev_fns import device_setup, enable_rx, enable_tx
-from ring import init_tx_rings, init_rx_rings, init_rr_rings, populate_rx_ring
+from dev_fns import _device_setup, _enable_rx, _enable_tx
 from link import link_detect
 from interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
 
@@ -79,7 +78,7 @@ class TapDriver(TDInt):
         super(TapDriver, self).__enter__()
         self.old_msleep = self.dev.msleep
         self.dev.msleep = async_msleep.__get__(self.dev)
-        asyncio.ensure_future(self._device_setup())
+        asyncio.ensure_future(self.device_setup())
         return self
 
     def __exit__(self, t, v, traceback):
@@ -88,15 +87,10 @@ class TapDriver(TDInt):
         self.dev.close()
         print "[+] tap driver terminated"
 
-    _device_setup = device_setup
-    _enable_rx = enable_rx
-    _enable_tx = enable_tx
+    device_setup = _device_setup
+    enable_rx = _enable_rx
+    enable_tx = _enable_tx
     
-    _init_tx_rings = init_tx_rings                
-    _init_rx_rings = init_rx_rings
-    _init_rr_rings = init_rr_rings
-    _populate_rx_ring = populate_rx_ring
-
     _link_detect = link_detect
     _handle_interrupt = handle_interrupt
     _handle_rr = handle_rr
@@ -150,7 +144,7 @@ class TapDriver(TDInt):
         self._send_b(pkt, sz)
 
 
-    @asyncio.coroutine
+    @coroutine
     def help_handler(self):
         '''display keypress bindings'''
         print 
@@ -158,23 +152,23 @@ class TapDriver(TDInt):
             print "%s - %s" % (k, self.keypress_handlers[k].__doc__)
         print
 
-    @asyncio.coroutine
+    @coroutine
     def verbosity_handler(self):
         '''toggle tap driver verbosity'''
         self.verbose = not self.verbose
         print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
 
-    @asyncio.coroutine
+    @coroutine
     def quit_handler(self):
         '''terminate tap driver execution and close device'''
         self.running = False
         self.loop.stop()
 
-    @asyncio.coroutine
+    @coroutine
     def unknown_keypress_handler(self, k):
         print "read unknown keypress '%s'" % k
 
-    @asyncio.coroutine
+    @coroutine
     def keypress_dispatch(self):
         r = yield From(self.loop.run_in_executor(None, self._wait_for_keypress))
         if r in self.keypress_handlers:
@@ -182,6 +176,14 @@ class TapDriver(TDInt):
         else:
             asyncio.ensure_future(self.unknown_keypress_handler(r))
         asyncio.ensure_future(self.keypress_dispatch())
+
+    @coroutine
+    def interrupt_watcher(self):
+        pass
+
+    @coroutine
+    def tap_watcher(self):
+        pass
 
     def run(self):
         self.running = True
@@ -191,5 +193,9 @@ class TapDriver(TDInt):
 
         self.loop = asyncio.get_event_loop()
         asyncio.ensure_future(self.keypress_dispatch())
+        asyncio.ensure_future(self.interrupt_watcher())
+        asyncio.ensure_future(self.enable_rx())
+        asyncio.ensure_future(self.enable_tx())
+        asyncio.ensure_future(self.tap_watcher())
         self.loop.run_forever()
         asyncio.executor.get_default_executor().shutdown(True) 
