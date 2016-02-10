@@ -62,28 +62,6 @@ def init_tx_rings(self):
         logger.debug("send ring %d disabled", i + 1)
     dev.hpmb.box[tg.mb_sbd_host_producer].low = 0
 
-@coroutine
-def init_rx_rings(self):
-    dev = self.dev
-    
-    dev.rdi.mini_rcb.disable_ring = 1
-    logger.debug("mini receive producer ring disabled")
-
-    self.rx_ring_vaddr, self.rx_ring_len = _init_xx_ring(self, tg.rbd)
-    self.rx_ring_paddr = self.mm.get_paddr(self.rx_ring_vaddr)
-
-    dev.rdi.std_rcb.host_addr_hi = self.rx_ring_paddr >> 32
-    dev.rdi.std_rcb.host_addr_low = self.rx_ring_paddr & 0xffffffff
-    dev.rdi.std_rcb.ring_size = self.rx_ring_len
-    dev.rdi.std_rcb.max_frame_len = 0x600
-    dev.rdi.std_rcb.nic_addr = 0x6000
-    dev.rdi.std_rcb.disable_ring = 0
-    logger.info("standard receive producer ring of size %d allocated at %x",
-            self.rx_ring_len, self.rx_ring_vaddr)
-
-    dev.rdi.jumbo_rcb.disable_ring = 1
-    logger.debug("jumbo receive producer ring disabled")
-    dev.hpmb.box[tg.mb_rbd_standard_producer].low = 0
 
 @coroutine
 def init_rr_rings(self):
@@ -117,25 +95,51 @@ def init_rr_rings(self):
         dev.mem.rxrcb[i].flags.disabled = 0
 
 @coroutine
-def populate_rx_ring(self, count = None):
-    if count == None:
-        count = self.rx_ring_len - 1
-    assert count < self.rx_ring_len
-    r = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
-    self.rx_ring_bds = r
-    self.rx_ring_buffers = []
-    for i in range(self.rx_ring_len):
-        buf = self.mm.alloc(0x800)
-        self.rx_ring_buffers += [buf]
+def init_rx_rings(self):
+    dev = self.dev
+    
+    dev.rdi.mini_rcb.disable_ring = 1
+    logger.debug("mini receive producer ring disabled")
 
-        pbuf = self.mm.get_paddr(buf)
-        r[i].addr_hi = pbuf >> 32
-        r[i].addr_low = pbuf & 0xffffffff
-        r[i].index = i
-        r[i].length = 0x800
-        r[i].flags.disabled = 0
+    self.rx_ring_vaddr, self.rx_ring_len = _init_xx_ring(self, tg.rbd)
+    self.rx_ring_paddr = self.mm.get_paddr(self.rx_ring_vaddr)
+    self.rx_buffers = [0] * self.rx_ring_len
 
-    logger.info("produced %d rx buffers", self.rx_ring_len)
-    self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = count
-    self._std_rbd_pi = count
+    dev.rdi.std_rcb.host_addr_hi = self.rx_ring_paddr >> 32
+    dev.rdi.std_rcb.host_addr_low = self.rx_ring_paddr & 0xffffffff
+    dev.rdi.std_rcb.ring_size = self.rx_ring_len
+    dev.rdi.std_rcb.max_frame_len = 0x600
+    dev.rdi.std_rcb.nic_addr = 0x6000
+    dev.rdi.std_rcb.disable_ring = 0
+    logger.info("standard receive producer ring of size %d allocated at %x",
+            self.rx_ring_len, self.rx_ring_vaddr)
+
+    dev.rdi.jumbo_rcb.disable_ring = 1
+    logger.debug("jumbo receive producer ring disabled")
+    dev.hpmb.box[tg.mb_rbd_standard_producer].low = 0
+    self._std_rbd_pi = 0
     self._std_rbd_ci = 0
+    producers = []
+    for i in range(self.rx_ring_len):
+        producers += [asyncio.ensure_future(produce_rxb(self, i))]
+    asyncio.wait(producers)
+    self._std_rbd_pi = self.rx_ring_len - 1
+    dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
+
+@coroutine
+def produce_rxb(self, idx):
+    assert idx < self.rx_ring_len
+    rbds = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
+    rbd = rbds[idx]
+
+    buf = self.mm.alloc(0x800)
+    self.rx_buffers[idx] = buf
+    
+    pbuf = self.mm.get_paddr(buf)
+    rbd.addr_hi = pbuf >> 32
+    rbd.addr_low = pbuf & 0xffffffff
+    rbd.index = idx
+    rbd.length = 0x800
+    rbd.flags.disabled = 0
+
+    logger.debug("produced rx buffer #%d", idx)

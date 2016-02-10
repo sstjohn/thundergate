@@ -20,6 +20,9 @@ from ctypes import cast, POINTER, c_char
 import trollius as asyncio
 from trollius import coroutine
 
+import logging
+logger = logging.getLogger(__name__)
+
 import tglib as tg
 
 @coroutine

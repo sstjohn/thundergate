@@ -23,7 +23,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import tglib as tg
-from ring import init_rr_rings, init_rx_rings, init_tx_rings, populate_rx_ring
+from ring import init_rr_rings, init_rx_rings, init_tx_rings
 
 msleep = lambda t: asyncio.sleep(t / 1000.0)
 
@@ -350,9 +350,8 @@ def enable_rx_mac(self):
  
 @coroutine
 def _enable_rx(self):
-    yield From(init_rx_rings(self))
     yield From(init_rr_rings(self))
-    yield From(populate_rx_ring(self))
+    yield From(init_rx_rings(self))
     yield From(enable_rx_mac(self))
 
 @coroutine
