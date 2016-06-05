@@ -22,4 +22,12 @@ SECTIONS
     .reginfo : {
         *(.reginfo)
     }
+
+    .MIPS.abiflags : {
+	*(.MIPS.abiflags)
+    }
+
+    .scommon : {
+	*(.scommon)
+    }
 }

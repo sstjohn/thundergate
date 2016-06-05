@@ -39,18 +39,30 @@ class VfioInterface(object):
         os.close(self.container)
 
     def show_irqs(self):
-        device_info = c.vfio_device_info()
-        device_info.argsz = c.sizeof(c.vfio_device_info)
-        ioctl(self.device, c.VFIO_DEVICE_GET_INFO, device_info)
-
+        self._intx avail = False
+        self._msi_avail = False
+        self._msix_avail = False
         print "[+] enumerating vfio device irqs"
-        for i in range(device_info.num_irqs - 1):
+        for i in range(self.device_info.num_irqs - 1):
             irq = c.vfio_irq_info()
             irq.argsz = c.sizeof(c.vfio_irq_info)
             irq.index = i
             ioctl(self.device, c.VFIO_DEVICE_GET_IRQ_INFO, irq)
-
-            print "[*] irq %d: count %x, flags %x" % (i, irq.count, irq.flags)
+            
+            if irq.count > 0:
+                if i == c.VFIO_PCI_MSI_IRQ_INDEX:
+                    d = "msi"
+                    self._msi_avail = True
+                elif i == c.VFIO_PCI_MSIX_IRQ_INDEX:
+                    d = "msix"
+                    self._msix_avail = True
+                elif i == c.VFIO_PCI_INTX_IRQ_INDEX:
+                    d = "intx"
+                    self._intx_avail = True    
+                else:
+                    d = str(ii)
+                print "[*] irq %d: count %x, flags %x" % (i, irq.count, irq.flags)
+                
 
     def reattach(self):
         self._dev_close()
@@ -100,16 +112,24 @@ class VfioInterface(object):
         device_info = c.vfio_device_info()
         device_info.argsz = c.sizeof(c.vfio_device_info)
         ioctl(device, c.VFIO_DEVICE_GET_INFO, device_info)
-
+        
+        self.device_info = device_info
+        
+        self.show_regions()
+        self.show_irqs()
+        self.setup_irqs()
+        
+    def show_regions(self):
         print "[+] enumerating vfio device regions"
         self.regions = []
-        for i in range(device_info.num_regions - 1):
+        for i in range(self.device_info.num_regions - 1):
             r = c.vfio_region_info()
             r.argsz = c.sizeof(c.vfio_region_info)
             r.index = i
 
             ioctl(device, c.VFIO_DEVICE_GET_REGION_INFO, r)
-
+            if r.size == 0:
+                continue
             self.regions += [r]
             flags = ""
             if r.flags & c.VFIO_REGION_INFO_FLAG_READ:
@@ -120,6 +140,9 @@ class VfioInterface(object):
 
             if r.flags & c.VFIO_REGION_INFO_FLAG_MMAP:
                 flags += "M"
+                
+            if r.flags & c.VFIO_REGION_INFO_FLAG_CAPS:
+                flags += "*"
 
             t = "region %d" % r.index
             if i == c.VFIO_PCI_BAR0_REGION_INDEX:
@@ -136,11 +159,16 @@ class VfioInterface(object):
             elif i == c.VFIO_PCI_CONFIG_REGION_INDEX:
                 self.config_offset = r.offset
                 t = "pci config"
-            print "[*] %s [%s]: size %04x, ofs %x, resv %x" % (t, flags, r.size, r.offset, r.resv)
+            elif i == c.VFIO_PCI_ROM_REGION_INDEX:
+                t = "rom bar"
+            else:
+                t += " (type 0x%x)" % i
+            print "[*] %s [%s]: size %04x, ofs %x" % (t, flags, r.size, r.offset)
 
-        self.show_irqs()
-
+        
+    def setup_irqs(self):
         print "[+] enabling msi-x"
+        
         irq_set = c.vfio_irq_set()
         c.resize(irq_set, c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint))
         irq_set.argsz = c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint)

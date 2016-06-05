@@ -2,7 +2,7 @@
 
 include ../Make.common
 
-CLIB_HEADERS=unistd.h sys/mman.h sys/types.h sys/stat.h fcntl.h stdlib.h malloc.h string.h sys/socket.h linux/vfio.h sys/ioctl.h sys/eventfd.h errno.h linux/if.h
+CLIB_HEADERS=unistd.h sys/mman.h sys/types.h sys/stat.h fcntl.h stdlib.h malloc.h string.h sys/socket.h $(PROJ_ROOT)/misc/vfio.h sys/ioctl.h sys/eventfd.h errno.h linux/if.h
 
 all: tglib.py clib.py tunlib.py
 
