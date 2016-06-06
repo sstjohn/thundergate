@@ -39,7 +39,7 @@ class VfioInterface(object):
         os.close(self.container)
 
     def show_irqs(self):
-        self._intx avail = False
+        self._intx_avail = False
         self._msi_avail = False
         self._msix_avail = False
         print "[+] enumerating vfio device irqs"
@@ -60,8 +60,8 @@ class VfioInterface(object):
                     d = "intx"
                     self._intx_avail = True    
                 else:
-                    d = str(ii)
-                print "[*] irq %d: count %x, flags %x" % (i, irq.count, irq.flags)
+                    d = str(i)
+                print "[*] irq %s: count %x, flags %x" % (d, irq.count, irq.flags)
                 
 
     def reattach(self):
@@ -127,7 +127,7 @@ class VfioInterface(object):
             r.argsz = c.sizeof(c.vfio_region_info)
             r.index = i
 
-            ioctl(device, c.VFIO_DEVICE_GET_REGION_INFO, r)
+            ioctl(self.device, c.VFIO_DEVICE_GET_REGION_INFO, r)
             if r.size == 0:
                 continue
             self.regions += [r]
@@ -146,12 +146,12 @@ class VfioInterface(object):
 
             t = "region %d" % r.index
             if i == c.VFIO_PCI_BAR0_REGION_INDEX:
-                bar0 = c.mmap(0, r.size, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, device, r.offset)
+                bar0 = c.mmap(0, r.size, c.PROT_READ | c.PROT_WRITE, c.MAP_SHARED | c.MAP_LOCKED, self.device, r.offset)
                 self.bar0 = bar0
                 self.bar0_sz = r.size
                 t = "pci bar 0"
             elif i == c.VFIO_PCI_BAR2_REGION_INDEX:
-                bar2 = c.mmap64(0, r.size, c.PROT_READ | c.PROT_WRITE, c.MAP_PRIVATE, device, r.offset)
+                bar2 = c.mmap64(0, r.size, c.PROT_READ | c.PROT_WRITE, c.MAP_PRIVATE, self.device, r.offset)
                 if 0xffffffffffffffff != bar2:
                     self.bar2 = bar2
                     self.bar2_sz = r.size
@@ -167,12 +167,19 @@ class VfioInterface(object):
 
         
     def setup_irqs(self):
-        print "[+] enabling msi-x"
         
         irq_set = c.vfio_irq_set()
         c.resize(irq_set, c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint))
         irq_set.argsz = c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint)
-        irq_set.index = c.VFIO_PCI_MSIX_IRQ_INDEX
+	if self._msix_avail:
+		print "[+] enabling msi-x"
+		irq_set.index = c.VFIO_PCI_MSIX_IRQ_INDEX
+	elif self._msi_avail:
+		print "[+] enabling msi"
+		irq_set.index = c.VFIO_PCI_MSI_IRQ_INDEX
+	else:
+		print "[+] enabling intx"
+		irq_set.index = c.VFIO_PCI_INTX_IRQ_INDEX
         irq_set.start = 0
         irq_set.count = 1
         irq_set.flags = c.VFIO_IRQ_SET_DATA_EVENTFD | c.VFIO_IRQ_SET_ACTION_TRIGGER

@@ -35,9 +35,9 @@ class nvram(rflip.nvram):
         self.access_enable()
         self.reset()
 
+        self._locked = 0
         self.acquire_lock()
         self.access_enable()
-        self._locked = 0
 
         if wr: self.write_enable()
         if lh: self.load_eeprom_header()
@@ -100,7 +100,7 @@ class nvram(rflip.nvram):
 		print "\n[!] nvram arbitration timed out"
 		self._dump_sw_arb()
                 raise Exception("timed out waiting for nvram arbitration")
-            usleep(10)
+            usleep(100)
         if cntr == 0:
             print "granted."
         else:
