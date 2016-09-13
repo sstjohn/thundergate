@@ -255,7 +255,8 @@ class nvram(rflip.nvram):
         self.command.dome = 1
 
     def write_block(self, offset, data, updater = None):
-        assert len(data) >= 4 and 0 == (len(data) % 4)
+        assert len(data) >= 4 
+	assert 0 == (len(data) % 4)
         
         if updater is not None:
             updater(0)
@@ -318,22 +319,28 @@ class nvram(rflip.nvram):
             nv_xb = 0 != (dentry.typelen & 0x00400000)
 
             if nv_ofs > 0:
-                d = (index, nv_type, nv_ofs, sram_ofs, nv_len)
+                d = (index, nv_type, nv_ofs, sram_ofs, nv_len, nv_xa, nv_xb)
                 directory += [d]
 
         return directory
 
     def show_directory(self):
         directory = self.get_directory()
-        for index, nv_type, nv_ofs, sram_ofs, nv_len in directory:
-                print "nvram image #%d. attrs: type %02x, nv_ofs %x, sram_ofs: %x, len %x," % d,
-                if nv_xa:
-                    print "xa",
-                if nv_xb:
-                    print "xb",
-                if not nv_xa and not nv_xb:
-                    print "nx",
-                print
+        for d in directory:
+                index, nv_type, nv_ofs, sram_ofs, nv_len, nv_xa, nv_xb = d
+                print "nvram image #%d. " % index,
+		print "attrs: type %02x, " % nv_type,
+		print "nv_ofs %x, " % nv_ofs,
+		print "sram_ofs: %x, " % sram_ofs,
+		print "len %x, " % nv_len,
+                if nv_xa and nv_xb:
+                    print "xab"
+                elif nv_xa:
+                    print "xa"
+		elif nv_xb:
+		    print "xb"
+		else:
+		    print "nx"
 
     def get_dir_image(self, index, updater = None):
         dentry = self.eeprom_hdr.directory[index]
@@ -439,14 +446,14 @@ class nvram(rflip.nvram):
         with open(cpufw, "rb") as f:
             data = f.read()
         print "[+] installing thundergate bootcode"
-        self.install_bc(data)
-        bclen = len(data) + 0x204
+        bcstart, bclen = self.install_bc(data)
+        #bclen = len(data) + 0x204
 
         with open(efidrv, "rb") as f:
             data = f.read()
         oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
         print "[+] installing thundergate oprom"
-        start += self.write_dir_image(0, oprom, nv_ofs=bclen)
+        start += self.write_dir_image(0, oprom, nv_ofs=bcstart+bclen)
 
         self._dev.reset()
         return 0
@@ -534,6 +541,8 @@ class nvram(rflip.nvram):
         self.install_bc(nullcode)
 
     def install_bc(self, image):
+	if 0 != (len(image) % 4):
+	    image += ('\x00' * (4 - (len(image) % 4)))
         image += struct.pack("i", crc32(image))
         iwords = len(image) >> 2
         nvstart = self.eeprom_hdr.bs.bc_nvram_start
@@ -543,4 +552,5 @@ class nvram(rflip.nvram):
         crc = unpack("<I", pack(">i", crc))[0]
         self.eeprom_hdr.bs.crc = crc 
         self._flush_eeprom_header(8, 0xc)
+	return (nvstart, len(image))
 

@@ -25,7 +25,7 @@ $ git submodule update
 3. Install distributed dependencies:
 
     ~~~
-$ pip install ./python-eficompressor
+$ pip install ext/python-eficompressor
     ~~~
 
 4. Build Tigon3 cross-tools following the instructions from [firmware.md](firmware.md).

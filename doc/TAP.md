@@ -49,6 +49,10 @@ but may need IP configuration using host OS tools (such as Linux's `ip` or
  * Link detection and change notifications are hit-and-miss and may not trigger
 at startup. Press `d` to force link re-negotiation.
 
+* The TAP driver relies on asyncio from Python 3, as backported to Python 2
+by the 'trollius' package (`pip install trollius`). This package has since 
+been deprecated without replacement, although it continues to work.
+
 ## Performance ##
 
 Performance was measured using iPerf3 over a point-to-point Cat5 cable
