@@ -6,11 +6,12 @@ EFI_OBJS        = main.o splash.o werk.o
 TARGET          = dmarf.efi dmarf.rom
 EFIROM		= $(PROJ_ROOT)/py/efirom.py
 TGINC		= -I$(PROJ_ROOT)/include
-EFIINC          = /usr/include/efi
+EFIINC          = $(PROJ_ROOT)/ext/gnu-efi/inc
 EFIINCS         = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol
-EFILIB          = /usr/lib
-EFI_CRT_OBJS    = $(EFILIB)/crt0-efi-$(ARCH).o
-EFI_LDS         = $(EFILIB)/elf_$(ARCH)_efi.lds
+LIB_EFI         = $(PROJ_ROOT)/ext/gnu-efi/$(ARCH)/lib/libefi.a
+LIB_GNUEFI	= $(PROJ_ROOT)/ext/gnu-efi/$(ARCH)/gnuefi/libgnuefi.a
+EFI_CRT_OBJ     = $(PROJ_ROOT)/ext/gnu-efi/$(ARCH)/gnuefi/crt0-efi-$(ARCH).o
+EFI_LDS         = $(PROJ_ROOT)/ext/gnu-efi/gnuefi/elf_$(ARCH)_efi.lds
 LIB_GCC         = $(shell $(CC) -print-libgcc-file-name)
 CFLAGS          = $(EFIINCS) $(TGINC) -mno-red-zone -mno-mmx -mno-sse \
 		  -Os -fpic -fshort-wchar -fno-strict-aliasing \
@@ -19,7 +20,7 @@ CFLAGS          = $(EFIINCS) $(TGINC) -mno-red-zone -mno-mmx -mno-sse \
 		  -maccumulate-outgoing-args --std=c11 -D__KERNEL__
 
 LDFLAGS         = -nostdlib --warn-common --no-undefined --fatal-warnings \
-		-shared -Bsymbolic -s -L$(EFILIB) $(EFI_CRT_OBJS)
+		-shared -Bsymbolic -s
 
 all: $(TARGET)
 
@@ -30,7 +31,7 @@ clean:
 	-rm *.rom
 
 dmarf.so: $(EFI_OBJS) dmarf.h
-	ld $(LDFLAGS) $(EFI_OBJS) -o $@ -lefi -lgnuefi $(LIB_GCC) -T $(EFI_LDS)
+	ld $(LDFLAGS) $(EFI_CRT_OBJ) $(EFI_OBJS) $(LIB_EFI) $(LIB_GNUEFI) $(LIB_GCC) -T $(EFI_LDS) -o $@
 
 %.efi: %.so
 	objcopy -j .text -j .sdata -j .data -j .dynamic \

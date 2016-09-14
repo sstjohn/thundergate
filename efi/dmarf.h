@@ -19,21 +19,12 @@
 #ifndef _DMARF_H_
 #define _DMARF_H_
 
-#ifdef _MSC_VER
 #include <efi.h>
 #include <efidevp.h>
 #include <efilib.h>
 #include <efiprot.h>
 #include <efipciio.h>
 #include <eficon.h>
-#else
-#include <efi/efi.h>
-#include <efi/efidevp.h>
-#include <efi/efilib.h>
-#include <efi/efiprot.h>
-#include <efi/efipciio.h>
-#include <efi/eficon.h>
-#endif
 
 #include <wchar.h>
 #include "acpi.h"

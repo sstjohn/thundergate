@@ -37,10 +37,9 @@ static EFI_STATUS EFI_FUNCTION DmarfUnload(IN EFI_HANDLE ImageHandle)
   return EFI_SUCCESS;
 }
 
+#ifndef EFI_COMPONENT_NAME_PROTOCOL_GUID
 #define EFI_COMPONENT_NAME_PROTOCOL_GUID \
 	  { 0x107a772c, 0xd5e1, 0x11d4, { 0x9a, 0x46, 0x0, 0x90, 0x27, 0x3f, 0xc1, 0x4d } }
-
-EFI_GUID EfiComponentNameProtocolGuid = EFI_COMPONENT_NAME_PROTOCOL_GUID;
 
 typedef struct _EFI_COMPONENT_NAME_PROTOCOL EFI_COMPONENT_NAME_PROTOCOL;
 
@@ -57,6 +56,9 @@ struct _EFI_COMPONENT_NAME_PROTOCOL {
 			CHAR16 **);
 	CHAR8 *langs;
 };
+#endif
+
+EFI_GUID EfiComponentNameProtocolGuid = EFI_COMPONENT_NAME_PROTOCOL_GUID;
 
 CHAR16 dmarf_driver_name[] = L"ThunderGate DMARF";
 
@@ -80,12 +82,9 @@ EFI_COMPONENT_NAME_PROTOCOL dmarf_component_name = {
 	"eng"
 };
 
+#ifndef EFI_DRIVER_BINDING_PROTOCOL_GUID
 #define EFI_DRIVER_BINDING_PROTOCOL_GUID \
   {0x18A031AB,0xB443,0x4D1A,0xA5,0xC0,0x0C,0x09,0x26,0x1E,0x9F,0x71}
-
-EFI_GUID EfiDriverBindingProtocolGuid = EFI_DRIVER_BINDING_PROTOCOL_GUID;
-
-EFI_GUID EfiDevicePathProtocol = DEVICE_PATH_PROTOCOL;
 
 typedef struct _EFI_DRIVER_BINDING_PROTOCOL EFI_DRIVER_BINDING_PROTOCOL;
 
@@ -100,8 +99,13 @@ struct _EFI_DRIVER_BINDING_PROTOCOL {
   EFI_HANDLE                            ImageHandle;
   EFI_HANDLE                            DriverBindingHandle;
 };
+#endif
 
-EFI_GUID EfiPciIoProtocolGuid = EFI_PCI_IO_PROTOCOL;
+EFI_GUID EfiDriverBindingProtocolGuid = EFI_DRIVER_BINDING_PROTOCOL_GUID;
+
+EFI_GUID EfiDevicePathProtocol = DEVICE_PATH_PROTOCOL;
+
+EFI_GUID EfiPciIoProtocolGuid = EFI_PCI_IO_PROTOCOL_GUID;
 
 EFI_STATUS EFIAPI drv_supported(
 		EFI_DRIVER_BINDING_PROTOCOL *this,
