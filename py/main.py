@@ -190,11 +190,7 @@ def main(args):
         elif args.shell:
             from shelldrv import ShellDriver
             with ShellDriver(dev) as shell:
-                if args.driver:
-                    from tapdrv import TapDriver
-                    with TapDriver(dev) as tap:
-                        return shell.run(loc=locals())
-                elif args.tests:
+                if args.tests:
                     from testdrv import TestDriver
                     with TestDriver(dev) as test:
                         test.run()
@@ -211,9 +207,8 @@ def main(args):
             gui._run(dev)
         else:
             if args.driver:
-                from tap_async import TapDriver
-                with TapDriver(dev) as tap:
-                    return tap.run()
+                import tap
+                return tap.run(dev)
             elif args.tests:
                 from testdrv import TestDriver
                 with TestDriver(dev) as test:
