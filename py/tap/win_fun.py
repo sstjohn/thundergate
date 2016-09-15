@@ -3,12 +3,20 @@ logger = logging.getLogger(__name__)
 
 import trollius as asyncio
 
-from winlib import INPUT_RECORD, DWORD, ReadConsoleInput, pointer, WinError
+from winlib import (
+    INPUT_RECORD, DWORD, ReadConsoleInput, pointer, WinError,
+    GetStdHandle, STD_INPUT_HANDLE,
+)
 
 def platform_setup(driver):
     driver.loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(driver.loop)
-    driver.kbd_h = ??
+    driver.kbd_h = GetStdHandle(STD_INPUT_HANDLE)
+
+def create_tap(driver):
+    #driver.tap_h = ??
+    #driver.tap_name = ??
+    raise NotImplementedError
 
 def wait_for_keypress(driver):
     input_rec = INPUT_RECORD()
@@ -23,3 +31,8 @@ def wait_for_keypress(driver):
             raise WinError()
     return input_rec.Event.KeyEvent.uChar.AsciiChar
 
+def register_int_callback(driver, callback):
+    raise NotImplementedError
+
+def register_tapin_callback(driver, callback):
+    raise NotImplementedError

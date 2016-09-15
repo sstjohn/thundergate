@@ -1,4 +1,3 @@
-from collections import namedtuple
 import sys
 import trollius as asyncio
 
@@ -12,6 +11,9 @@ DRIVER_PROPERTIES = {
     "device": None,
     "loop": None,
     "kbd_h": None,
+    "status_block": None,
+    "tap_h": None,
+    "tap_name": None,
     "verbose": False,
 }
 
@@ -28,5 +30,6 @@ def run(dev=None):
         asyncio.ensure_future(arrive_device(driver, dev))
     asyncio.ensure_future(keypress_dispatch(driver))
     driver.running = True
+    #driver.loop.set_debug(True)
     driver.loop.run_forever()
     driver.loop.close()
