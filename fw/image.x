@@ -11,12 +11,17 @@ SECTIONS
     }
 
     .rodata ADDR(.data)+SIZEOF(.data) : { 
-        *(.rodata) 
+        *(.rodata)
+	*(.rodata.*) 
     }
 
 
     .bss ADDR(.rodata)+SIZEOF(.rodata) : { 
         *(.bss) 
+    }
+
+    .pdr : {
+	*(.pdr)
     }
 
     .reginfo : {

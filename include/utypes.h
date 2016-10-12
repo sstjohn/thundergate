@@ -19,12 +19,17 @@
 #ifndef _UTYPES_H_
 #define _UTYPES_H_
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #define uint8_t unsigned __int8
 #define uint16_t unsigned __int16
 #define uint32_t unsigned __int32
 #define uint64_t unsigned __int64
-#else
+#elif defined(__clang__)
+#define uint8_t __UINT8_TYPE__
+#define uint16_t __UINT16_TYPE__
+#define uint32_t __UINT32_TYPE__
+#define uint64_t __UINT64_TYPE__
+#elif defined(__GNUC__)
 #include <stdint-gcc.h>
 #endif
 

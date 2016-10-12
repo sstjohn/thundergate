@@ -20,9 +20,16 @@
 
 unsigned test_glob = 0;
 char unused_glob;
+void test_fun() 
+{
+	int var = 0;
+	int *pVar = (int *)31337;
+	var = *pVar;
+}
 
 void main() 
 {
+    unsigned alignment_test = *((int *)1);
     unsigned test_var = 0;
 
     while (1) {
