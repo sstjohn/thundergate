@@ -203,6 +203,7 @@ class CDPServer(object):
             o = {}
             o["name"] = v
             if 1:
+                print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
                 o["value"] = "%x" % self._image.expr_evaluator.process_expr(self.dev, variables[v]["location"])
             else:
                 o["value"] = "(unknown)"

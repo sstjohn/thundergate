@@ -31,6 +31,9 @@ class ExprLiveEval(GenericExprVisitor):
     def process_expr(self, dev, expr):
         self._val = 0
         self._dev = dev
+        if isinstance(expr, (int, long)):
+            expr = [ord(x) for x in struct.pack("I", expr)]
+            #expr = [expr]
         super(ExprLiveEval, self).process_expr(expr)
         return self.value
 
@@ -54,7 +57,7 @@ class ExprLiveEval(GenericExprVisitor):
             v = self._dev.rxcpu.tr_read(b, 1)
             self._val = struct.unpack("I", v)[0]
         else:
-            raise Exception("unable to handle opcode %x" % opcode)
+            raise Exception("unable to handle opcode %x (%s)" % (opcode, opcode_name))
         print "val is now %x" % self._val
 
 class Image(object):
@@ -102,6 +105,9 @@ class Image(object):
         self._compile_units = {}
         self._addresses = {}
         self._lowest_known_address = None
+        
+        location_lists = dw.location_lists()
+
         for c in dw.iter_CUs():
             functions = {}  
             variables = {}
@@ -124,6 +130,7 @@ class Image(object):
                             name = child.attributes['DW_AT_name'].value
                             v = {}
                             try:
+                                print "DW_TAG_formal_parameter child.attributes['DW_AT_location'].value = %s\n" % str(child.attributes['DW_AT_location'])
                                 v["location"] = child.attributes['DW_AT_location'].value
                             except:
                                 v["location"] = []
@@ -132,7 +139,11 @@ class Image(object):
                             name = child.attributes['DW_AT_name'].value
                             v = {}
                             try:
-                                v["location"] = child.attributes['DW_AT_location'].value
+                                print "DW_TAG_variable child.attributes['DW_AT_location'].value = %s\n" % str(child.attributes['DW_AT_location'])
+
+                                if child.attributes['DW_AT_location'].form == 'DW_FORM_data4':
+
+                                    v["location"] = child.attributes['DW_AT_location'].value
                             except:
                                 v["location"] = []
                             f["vars"][name] = v
@@ -143,6 +154,7 @@ class Image(object):
                         name = d.attributes['DW_AT_name'].value
                         v = {}
                         try:
+                            print "DW_TAG_variable d.attributes['DW_AT_location'].value = %s\n" % str(d.attributes['DW_AT_location'])
                             v["location"] = d.attributes['DW_AT_location'].value
                         except:
                             v["location"] = []
