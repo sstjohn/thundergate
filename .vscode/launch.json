@@ -1,0 +1,12 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Thundergate-Debug",
+			"type": "tg",
+			"request": "launch",
+			"program": "fw/fw.elf",
+			"stopOnEntry": true
+		}
+	]
+}
