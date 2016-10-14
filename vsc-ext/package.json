@@ -26,7 +26,8 @@
 					]
 				},
 				"program": "./cdp.py",
-				"runtime": "python",
+				"linux": { "runtime": "sudo" },
+				"windows": { "runtime": "python" },
 				"configurationAttributes": {
 					"launch": {
 						"required": [

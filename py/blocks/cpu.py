@@ -104,7 +104,9 @@ class cpu(rflip.cpu):
             raise Exception("image too big")
         
         if (len(blob) % 4) != 0:
-            raise Exception("bad image length")
+            blob += '\x00' * (4 - len(blob) % 4)
+            assert len(blob) % 4 == 0
+            #raise Exception("bad image length")
 
         for i in range(0, len(blob), 4):
             wd = struct.unpack("!I", blob[i:i+4])[0]

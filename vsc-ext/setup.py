@@ -27,7 +27,7 @@ if __name__ == "__main__":
         mkdir_f(path)
 
     shutil.copy("vsc-ext/package.json", path)
-    shutil.copy("py/cdp.py", path)
+    shutil.copy("vsc-ext/cdp.py", path)
     with open("%s/tgdir.conf" % path, "w") as f:
         f.write(tgdir)
 

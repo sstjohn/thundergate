@@ -74,7 +74,7 @@ def banner():
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.9.6a
+                                 Version 0.9.7x
                     Copyright (c) 2015-2016 Saul St John
                              http://thundergate.io
 """
