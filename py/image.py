@@ -31,9 +31,6 @@ class ExprLiveEval(GenericExprVisitor):
     def process_expr(self, dev, expr):
         self._val = 0
         self._dev = dev
-        if isinstance(expr, (int, long)):
-            expr = [ord(x) for x in struct.pack("I", expr)]
-            #expr = [expr]
         super(ExprLiveEval, self).process_expr(expr)
         return self.value
 
@@ -131,7 +128,10 @@ class Image(object):
                             v = {}
                             try:
                                 print "DW_TAG_formal_parameter child.attributes['DW_AT_location'].value = %s\n" % str(child.attributes['DW_AT_location'])
-                                v["location"] = child.attributes['DW_AT_location'].value
+                                if child.attributes['DW_AT_location'].form == 'DW_FORM_data4':
+                                    v["location"] = location_lists.get_location_list_at_offset(child.attributes['DW_AT_location'].value)
+                                else:
+                                    v["location"] = child.attributes['DW_AT_location'].value
                             except:
                                 v["location"] = []
                             f["args"][name] = v
@@ -142,7 +142,8 @@ class Image(object):
                                 print "DW_TAG_variable child.attributes['DW_AT_location'].value = %s\n" % str(child.attributes['DW_AT_location'])
 
                                 if child.attributes['DW_AT_location'].form == 'DW_FORM_data4':
-
+                                    v["location"] = location_lists.get_location_list_at_offset(child.attributes['DW_AT_location'].value)
+                                else:
                                     v["location"] = child.attributes['DW_AT_location'].value
                             except:
                                 v["location"] = []
@@ -151,7 +152,11 @@ class Image(object):
                     functions[function_name] = f
                 elif d.tag == 'DW_TAG_variable':
                     if d.attributes['DW_AT_decl_file'].value == 1:
-                        name = d.attributes['DW_AT_name'].value
+                        try:
+                            name = d.attribute['DW_AT_name'].value
+                        except:
+                            name = '(??)'
+                            
                         v = {}
                         try:
                             print "DW_TAG_variable d.attributes['DW_AT_location'].value = %s\n" % str(d.attributes['DW_AT_location'])

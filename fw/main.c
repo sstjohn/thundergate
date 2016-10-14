@@ -19,8 +19,8 @@
 #include "fw.h"
 
 unsigned test_glob = 0;
-char unused_glob;
-void test_fun() 
+
+void test_fun(unsigned argument) 
 {
 	int var = 0;
 	int *pVar = (int *)31337;
@@ -29,7 +29,6 @@ void test_fun()
 
 void main() 
 {
-    unsigned alignment_test = *((int *)1);
     unsigned test_var = 0;
 
     while (1) {
@@ -40,6 +39,7 @@ void main()
 		test_var = 0;
 	} else {
 		test_var += 0x11111111;
+		test_fun(test_var);
 	}
 	if (grc.rxcpu_event.emac) {
 		check_link();
