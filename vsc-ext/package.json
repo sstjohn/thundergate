@@ -52,7 +52,7 @@
 						"name": "Thundergate-Debug",
 						"type": "tg",
 						"request": "launch",
-						"program": "fw/fw.elf",
+						"program": "${workspaceRoot}/fw/fw.elf",
 						"stopOnEntry": true
 					}
 				]
