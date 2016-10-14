@@ -198,7 +198,7 @@ def main(args):
                 else:
                     return shell.run(loc=locals())
         elif args.cdpserver:
-            from cdp import CDPServer
+            from cdpserver import CDPServer
             with CDPServer(dev, conin, conout) as server:
                 return server.run()
         elif args.gui:

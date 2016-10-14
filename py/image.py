@@ -168,7 +168,9 @@ class Image(object):
             self._compile_units[c]["lines"] = {}
 	    for line in self._compile_units[c]["line_program"]:
                 state = line.state
-                if state is not None:
+                if state is not None and not state.end_sequence:
+                    if state.address in self._addresses:
+                        raise Exception("addr %x is both \"%s\" and \"%s+%d\"" % (state.address, self._addresses[state.address], c, state.line))
                     self._addresses[state.address] = "%s+%d" % (c, state.line)
 		    self._compile_units[c]["lines"][state.line] = state.address
 
