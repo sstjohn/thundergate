@@ -202,11 +202,12 @@ class CDPServer(object):
         for v in variables:
             o = {}
             o["name"] = v
-            if 1:
-                print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
-                o["value"] = "%x" % self._image.expr_evaluator.process_expr(self.dev, variables[v]["location"])
+            v_value = self._image.expr_evaluator.process_expr(self.dev, variables[v]["location"]) 
+            print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
+            if isinstance(v_value, (int, long)):
+                o["value"] = "%x" % v_value
             else:
-                o["value"] = "(unknown)"
+                o["value"] = str(v_value)
             o["variablesReference"] = 0
             b["variables"] += [o]
 

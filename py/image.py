@@ -19,6 +19,7 @@
 from elftools.elf.elffile import ELFFile
 from elftools.dwarf.descriptions import set_global_machine_arch
 from elftools.dwarf.dwarf_expr import GenericExprVisitor
+from elftools.dwarf.locationlists import LocationEntry
 from StringIO import StringIO
 import bisect
 import platform
@@ -31,8 +32,12 @@ class ExprLiveEval(GenericExprVisitor):
     def process_expr(self, dev, expr):
         self._val = 0
         self._dev = dev
-        super(ExprLiveEval, self).process_expr(expr)
-        return self.value
+        assert isinstance(expr, list) and len(expr) > 0
+        if isinstance(expr[0], LocationEntry):
+            return '(location list unhandled)'
+        else:
+            super(ExprLiveEval, self).process_expr(expr)
+            return self.value
 
     @property
     def value(self):
@@ -215,4 +220,4 @@ class Image(object):
         return (fname, cuname, culine, c["comp_dir"])
 
     def line2addr(self, fname, line):
-	return self._compile_units[fname]["lines"][line]	
+        return self._compile_units[fname]["lines"][line]	

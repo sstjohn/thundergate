@@ -66,21 +66,23 @@ void init()
     grc.misc_config.timer_prescaler = 0x7f;
     
     grc.power_management_debug.perst_override = 1;
-     
+    
+    /* 
     if (config.flags & CLOAK_EN)
         cloak_engage();
-    
+        
     if (config.flags & LOCAL_CTRL) {
-	cfg_port.bar_ctrl.bar0_sz = 1;
-	lgate_setup();
+	    cfg_port.bar_ctrl.bar0_sz = 1;
+	    lgate_setup();
     } else {
-	cfg_port.bar_ctrl.bar0_sz = 0;
-    }
+	    cfg_port.bar_ctrl.bar0_sz = 0;
+    }    
 
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
     grc.exp_rom_addr.base = read_nvram(0x1c);
     if (config.flags & OPROM_EN)
-    	pci.state.rom_enable = 1;
+    	pci.state.rom_enable = 1;    
+    */
 
     ftq.reset.word = 0xffffffff;
     ftq.reset.word = 0;
@@ -136,14 +138,17 @@ void init()
 
     set_and_wait(hc.mode.enable);
 
+    /* 
     nv_load_mac(state.my_mac);
 
     mac_cpy(state.my_mac, (void *)0xc0000412);
+    */
 
     gencomm[0] = 0xb49a89ab;
 
     pci.command.bus_master = 1;
 
+    /*
     if (config.flags & PEER_CTRL)
     	rx_setup();
 
@@ -151,6 +156,6 @@ void init()
     	beacon();
 
     check_link();
-
+    */
     main();
 }

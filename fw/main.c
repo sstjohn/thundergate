@@ -24,7 +24,7 @@ void test_fun(unsigned argument)
 {
 	int var = 0;
 	int *pVar = (int *)31337;
-	var = *pVar;
+	var = *pVar; /* unaligned access exception */
 }
 
 void main() 
@@ -41,6 +41,7 @@ void main()
 		test_var += 0x11111111;
 		test_fun(test_var);
 	}
+	/*
 	if (grc.rxcpu_event.emac) {
 		check_link();
 	}
@@ -53,5 +54,6 @@ void main()
 	if (grc.rxcpu_event.sw_event_0) {
 		lgate_reply();
 	}
-    } 
-}
+	*/
+    }
+} 
