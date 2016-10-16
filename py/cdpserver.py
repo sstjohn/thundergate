@@ -23,6 +23,8 @@ import platform
 import traceback
 import functools
 
+from collections import namedtuple
+
 p = platform.system()
 if "Windows" == p:
 	LINE_SEP = "\n"
@@ -32,7 +34,10 @@ del p
 
 from image import Image
 from monitor import ExecutionMonitor
-from datamodel import model_registers, model_memory, get_data_value
+from datamodel import model_registers, model_memory, get_data_value, GenericModel
+
+class ScopeModel(GenericModel):
+    pass
 
 class Var_Tracker(object):
     def __init__(self):
@@ -91,7 +96,9 @@ class CDPServer(object):
         self._monitor = ExecutionMonitor(dev)
         self.__dispatch_setup()      
         self._register_model = model_registers(dev)
+        self._register_model.accessor = functools.partial(get_data_value, mroot=self._register_model)
         self._memory_model = model_memory(dev)
+        self._memory_model.accessor = functools.partial(get_data_value, mroot=self._register_model)
         self._vt = Var_Tracker()
         self._vt.add_fixed_scope(self._register_model)
         self._vt.add_fixed_scope(self._memory_model)
@@ -215,8 +222,8 @@ class CDPServer(object):
         self.dev.rxcpu.halt()
 
     def _cmd_stackTrace(self, cmd):
-        self._top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
-        frame_name, source_name, source_line, source_dir = self._top_of_stack
+        top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
+        frame_name, source_name, source_line, source_dir = top_of_stack
         source_path = source_dir + os.sep + source_name
         source_name = "fw" + os.sep + source_name
         s = {"name": source_name, "path": source_path}
@@ -224,13 +231,54 @@ class CDPServer(object):
 
         b = {"stackFrames": [f]}
         self._respond(cmd, True, body = b)
+    
+    def _collect_scopes(self):
+        top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
+        func_name, cu_name, cu_line, source_dir = top_of_stack 
+
+        scopes = []
+        if len(self._image._compile_units[cu_name]["variables"]) > 0:
+            global_scope = ScopeModel("global variables")
+            global_scope.children = self._collect_vars(self._image._compile_units[cu_name]["variables"], global_scope)
+            global_scope.accessor = lambda x: x.evaluator()
+
+            scopes += [global_scope]
+
+        if len(self._image._compile_units[cu_name]["functions"][func_name]["args"]) > 0:
+            argument_scope = ScopeModel("function arguments")
+            argument_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["args"], argument_scope)
+            argument_scope.accessor = lambda x: x.evaluator()
+
+            scopes += [argument_scope]
+
+        if len(self._image._compile_units[cu_name]["functions"][func_name]["vars"]) > 0:
+            local_scope = ScopeModel("local variables")
+            local_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["vars"], local_scope)
+            local_scope.accessor = lambda x: x.evaluator()
+
+            scopes += [local_scope]
+
+        return scopes
+
+    def _collect_vars(self, variables, scope):
+        def _var_pp(v):
+            try: return "%x" % v
+            except: return str(v)
+
+        collected = []
+        for v in variables:
+            o = GenericModel(v, scope, scope)
+            o.evaluator = lambda v=v: _var_pp(self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"])) 
+            collected += [o]
+        return collected
 
     def _cmd_scopes(self, cmd):
         self._vt.clear_dynamic_scopes()   
+        dynamic_scopes = self._collect_scopes()
+        for scope in dynamic_scopes:
+            self._vt.add_dynamic_scope(scope)
         #func, fname, _, _ = self._top_of_stack
-        #if len(self._image._compile_units[fname]["variables"]) > 0:
-        #    scopes += [{"name": "Globals", "variablesReference": 1, "expensive": True}]
-
+        
         #if "" != func:
         #    if len(self._image._compile_units[fname]["functions"][func]["args"]) > 0:
         #        scopes += [{"name": "Arguments", "variablesReference": 2, "expensive": True}]
@@ -258,7 +306,7 @@ class CDPServer(object):
                 o["value"] = ""
             else:
                 o["variablesReference"] = 0
-                data_value = get_data_value(child, child.scope)
+                data_value = child.scope.accessor(child)
                 try: o["value"] = "%x" % data_value
                 except: o["value"] = str(data_value)
             b["variables"] += [o]

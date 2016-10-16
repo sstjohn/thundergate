@@ -18,7 +18,7 @@
 
 /* #include "fw.h" */
 
-// int global = 0;
+int global = 0;
 
 void main() 
 {
@@ -28,14 +28,13 @@ void main()
 		local++;
 		if (16 == local)
 			local = 0;
-		/*
 		if (0 == local % 4) {
 			local = 0; 
 			global++;
 			if (0 == global % 16) {
 				global = 0;
 			}
-		}	*/	
+		}	
 	}
 	/*
 	if (grc.rxcpu_event.emac) {

@@ -41,7 +41,7 @@ class ExprLiveEval(GenericExprVisitor):
             cu_base = cu["lpc"]
             selected_expr = _select_from_location_list(cur_pc, cu_base, expr)
             if not selected_expr:
-                return '(unhandled ll, offset %d, list: %s)' % (offset, str(expr))
+                return '(undefined)'
             expr = selected_expr
         super(ExprLiveEval, self).process_expr(expr)
         try:
@@ -67,12 +67,14 @@ class ExprLiveEval(GenericExprVisitor):
         elif 0x50 <= opcode and opcode < 0x70:
             self._val = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x50))
         elif 0x70 <= opcode and opcode < 0x90:
+            print "val was %x" % self._val
             b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
-            b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
+            print "register %d contains %x" % ((opcode - 0x70), b)
             if len(args) > 0:
                 assert len(args) == 1
                 b += args[0]
-            v = self._dev.rxcpu.tr_read(b, 1)
+            #self._val = b
+            #print "reading at %x" % b
             v = self._dev.rxcpu.tr_read(b, 1)
             self._val = struct.unpack("!I", v)[0]
         elif 0x91 == opcode:
@@ -104,8 +106,9 @@ class ExprLiveEval(GenericExprVisitor):
                     print "offset is %d" % args[0]
                     addr += args[0]
                 print "frame base plus offset is %x" % addr
-                v = self._dev.rxcpu.tr_read(addr, 1)
-                self._val = struct.unpack("!I", v)[0]
+                self._val = addr
+                #v = self._dev.rxcpu.tr_read(addr, 1)
+                #self._val = struct.unpack("!I", v)[0]
         else:
             self._val = "(unable to handle opcode %x (%s))" % (opcode, opcode_name)
         try: 
