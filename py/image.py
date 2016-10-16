@@ -21,15 +21,14 @@ from elftools.dwarf.descriptions import set_global_machine_arch
 from elftools.dwarf.dwarf_expr import GenericExprVisitor
 from elftools.dwarf.locationlists import LocationEntry
 from StringIO import StringIO
-import bisect
 import platform
 import struct
 
 class ExprLiveEval(GenericExprVisitor):
     def __init__(self, image):
-        self._image = image 
+        self._image = image
         super(ExprLiveEval, self).__init__(image.dwarf.structs)
-    
+
     def process_expr(self, dev, expr):
         self._val = 0
         self._dev = dev
@@ -111,6 +110,7 @@ class ExprLiveEval(GenericExprVisitor):
                 addr = fb_value
                 if len(args) > 0:
                     assert len(args) == 1
+                    print "offset is %d" % args[0]
                     addr += args[0]
                 print "frame base plus offset is %x" % addr
                 v = self._dev.rxcpu.tr_read(addr, 1)
@@ -210,18 +210,19 @@ class Image(object):
                     if 'DW_AT_frame_base' in d.attributes:
                         a = d.attributes['DW_AT_frame_base']
                         print "frame base attribute: %s" % str(a)
-                        if a.form == 'DW_FORM_data4':
+                        if a.form == 'DW_FORM_data4' or a.form == 'DW_FORM_sec_offset':
                             f["fb"] = location_lists.get_location_list_at_offset(a.value)
+                            print "fb attribute: %s" % str(a)
                         else:
                             f["fb"] = a.value
                     
                     for child in d.iter_children():
                         if child.tag == "DW_TAG_formal_parameter":
+                            print "argument DIE: %s" % str(child)
                             name = child.attributes['DW_AT_name'].value
                             v = {}
                             try:
-                                print "DW_TAG_formal_parameter child.attributes['DW_AT_location'].value = %s\n" % str(child.attributes['DW_AT_location'])
-                                if child.attributes['DW_AT_location'].form == 'DW_FORM_data4':
+                                if child.attributes['DW_AT_location'].form in ['DW_FORM_sec_offset', 'DW_FORM_data4']:
                                     v["location"] = location_lists.get_location_list_at_offset(child.attributes['DW_AT_location'].value)
                                 else:
                                     v["location"] = child.attributes['DW_AT_location'].value
@@ -229,12 +230,11 @@ class Image(object):
                                 v["location"] = []
                             f["args"][name] = v
                         if child.tag == "DW_TAG_variable":
+                            print "local DIE: %s" % str(child)
                             name = child.attributes['DW_AT_name'].value
                             v = {}
                             try:
-                                print "DW_TAG_variable child.attributes['DW_AT_location'].value = %s\n" % str(child.attributes['DW_AT_location'])
-
-                                if child.attributes['DW_AT_location'].form == 'DW_FORM_data4':
+                                if child.attributes['DW_AT_location'].form in ['DW_FORM_sec_offset', 'DW_FORM_data4']:
                                     v["location"] = location_lists.get_location_list_at_offset(child.attributes['DW_AT_location'].value)
                                 else:
                                     v["location"] = child.attributes['DW_AT_location'].value
@@ -244,6 +244,7 @@ class Image(object):
 
                     functions[function_name] = f
                 elif d.tag == 'DW_TAG_variable':
+                    print "variable DIE: %s" % str(d)
                     if d.attributes['DW_AT_decl_file'].value == 1:
                         try:
                             name = d.attributes['DW_AT_name'].value
@@ -252,7 +253,6 @@ class Image(object):
                             
                         v = {}
                         try:
-                            print "DW_TAG_variable d.attributes['DW_AT_location'].value = %s\n" % str(d.attributes['DW_AT_location'])
                             v["location"] = d.attributes['DW_AT_location'].value
                         except:
                             v["location"] = []
@@ -278,10 +278,11 @@ class Image(object):
             for line in self._compile_units[c]["line_program"]:
                 state = line.state
                 if state is not None and not state.end_sequence:
-                    if state.address in self._addresses:
+                    cl = "%s+%d" % (c, state.line)
+                    if state.address in self._addresses and self._addresses[state.address] != cl:
                         raise Exception("addr %x is both \"%s\" and \"%s+%d\"" % (state.address, self._addresses[state.address], c, state.line))
-                    self._addresses[state.address] = "%s+%d" % (c, state.line)
-		    self._compile_units[c]["lines"][state.line] = state.address
+                    self._addresses[state.address] = cl
+                    self._compile_units[c]["lines"][state.line] = state.address
 
     def addr2line(self, addr):
         if addr in self._addresses:

@@ -20,6 +20,10 @@ SECTIONS
         *(.bss) 
     }
 
+    .eh_frame : {
+	*(.eh_frame)
+    }
+
     .pdr : {
 	*(.pdr)
     }
