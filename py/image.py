@@ -91,7 +91,7 @@ class ExprLiveEval(GenericExprVisitor):
             expr = None
             if isinstance(frame_base[0], LocationEntry):
                 cu_base = self._image._compile_units[cu_name]['lpc']
-                offset = cur_pc - cu_base 
+                offset = cur_pc - cu_base
                 for le in frame_base:
                     if offset >= le.begin_offset and offset < le.end_offset:
                         expr = le.loc_expr
@@ -102,7 +102,7 @@ class ExprLiveEval(GenericExprVisitor):
             else:
                 expr = frame_base
             print "frame base expression is %s" % str(expr)
-            evaluator = ExprLiveEval(self._image)
+            evaluator = self._image.get_expr_evaluator()
             fb_value = evaluator.process_expr(self._dev, expr)
             if isinstance(fb_value, str):
                 self._val = fb_value + " (encountered by frame base evaluator)"
@@ -135,7 +135,7 @@ class Image(object):
             self.dwarf = self.elf.get_dwarf_info()
             set_global_machine_arch(self.elf.get_machine_arch())
             self.__tame_dwarf()
-            self.expr_evaluator = ExprLiveEval(self)
+            self.get_expr_evaluator = lambda: ExprLiveEval(self)
 
     @property
     def executable(self):
@@ -172,7 +172,22 @@ class Image(object):
         self._lowest_known_address = None
         
         location_lists = dw.location_lists()
-
+        if location_lists is not None:
+            print "location lists:"
+            for e in location_lists.iter_location_lists():
+                print str(e)
+            print
+            
+        if dw.has_CFI():
+            print "cfi entries:"
+            cfi = dw.CFI_entries()
+            for c in cfi:
+                try:
+                    print str(c.get_decoded())
+                except:
+                    print "(decoding exception)"
+            print
+        
         for c in dw.iter_CUs():
             functions = {}  
             variables = {}

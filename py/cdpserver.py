@@ -203,7 +203,7 @@ class CDPServer(object):
         for v in variables:
             o = {}
             o["name"] = v
-            v_value = self._image.expr_evaluator.process_expr(self.dev, variables[v]["location"]) 
+            v_value = self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"]) 
             print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
             if isinstance(v_value, (int, long)):
                 o["value"] = "%x" % v_value
