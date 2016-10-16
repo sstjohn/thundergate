@@ -26,28 +26,49 @@ import platform
 import struct
 
 class ExprLiveEval(GenericExprVisitor):
-    def __init__(self, structs):
-        super(ExprLiveEval, self).__init__(structs)
+    def __init__(self, image):
+        self._image = image 
+        super(ExprLiveEval, self).__init__(image.dwarf.structs)
     
     def process_expr(self, dev, expr):
         self._val = 0
         self._dev = dev
+        print "processing expr %s" % str(expr)
         assert isinstance(expr, list) and len(expr) > 0
         if isinstance(expr[0], LocationEntry):
-            return '(location list unhandled)'
+            cur_pc = self._dev.rxcpu.pc
+            fname, cu_name, cu_line_no, cu_comp_dir = self._image.top_frame_at(cur_pc)
+            cu = self._image._compile_units[cu_name]
+            cu_base = cu["lpc"]
+            offset = cur_pc - cu_base
+            found = False
+            for entry in expr:
+                if offset >= entry.begin_offset and offset < entry.end_offset:
+                    super(ExprLiveEval, self).process_expr(entry.loc_expr)
+                    found = True
+                    break
+            if not found:
+                self._val = '(unhandled ll, offset %d, list: %s)' % (offset, str(expr))
         else:
             super(ExprLiveEval, self).process_expr(expr)
-            return self.value
+        try:
+            print "expr %s evaluates to %x" % (expr, self.value)
+        except:
+            print "expr %s produces error message %s" % (expr, self.value)
+        return self.value
 
     @property
     def value(self):
         return self._val
 
     def _after_visit(self, opcode, opcode_name, args):
-        print "opcode: %s, args: %s" % (opcode_name, args)
+        if isinstance(self._val, str):
+            return
+        print
+        print "processing opcode: %s (0x%x), args: %s" % (opcode_name, opcode, args)
         if 0x3 == opcode:
             v = self._dev.rxcpu.tr_read(args[0], 1)
-            self._val = struct.unpack("I", v)[0]
+            self._val = struct.unpack("!I", v)[0]
         elif 0x30 <= opcode and opcode < 0x50:
             self._val = opcode - 0x30
         elif 0x50 <= opcode and opcode < 0x70:
@@ -55,12 +76,49 @@ class ExprLiveEval(GenericExprVisitor):
         elif 0x70 <= opcode and opcode < 0x90:
             b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
             if len(args) > 0:
+                assert len(args) == 1
                 b += args[0]
             v = self._dev.rxcpu.tr_read(b, 1)
-            self._val = struct.unpack("I", v)[0]
+            self._val = struct.unpack("!I", v)[0]
+        elif 0x91 == opcode:
+            cur_pc = self._dev.rxcpu.pc
+            fname, cu_name, cu_line_no, cu_comp_dir = self._image.top_frame_at(cur_pc)
+            frame_base = self._image._compile_units[cu_name]["functions"][fname]["fb"]
+            print "frame base is %s" % str(frame_base)
+            assert isinstance(frame_base, list) and len(frame_base) > 0
+            expr = None
+            if isinstance(frame_base[0], LocationEntry):
+                cu_base = self._image._compile_units[cu_name]['lpc']
+                offset = cur_pc - cu_base 
+                for le in frame_base:
+                    if offset >= le.begin_offset and offset < le.end_offset:
+                        expr = le.loc_expr
+                        break
+                if expr is None:
+                    self._val = "(op %s unhandled, pc: %d, args: %s, fb: %s)" % (opcode_name, cur_pc, args, str(frame_base))
+                    return
+            else:
+                expr = frame_base
+            print "frame base expression is %s" % str(expr)
+            evaluator = ExprLiveEval(self._image)
+            fb_value = evaluator.process_expr(self._dev, expr)
+            if isinstance(fb_value, str):
+                self._val = fb_value + " (encountered by frame base evaluator)"
+            else:
+                print "frame base expression evaluates to %x" % fb_value
+                addr = fb_value
+                if len(args) > 0:
+                    assert len(args) == 1
+                    addr += args[0]
+                print "frame base plus offset is %x" % addr
+                v = self._dev.rxcpu.tr_read(addr, 1)
+                self._val = struct.unpack("!I", v)[0]
         else:
-            raise Exception("unable to handle opcode %x (%s)" % (opcode, opcode_name))
-        print "val is now %x" % self._val
+            self._val = "(unable to handle opcode %x (%s))" % (opcode, opcode_name)
+        try: 
+            print "val is now %x" % self._val
+        except: 
+            print "val is now \"%s\"" % self._val
 
 class Image(object):
     def __init__(self, fname):
@@ -75,7 +133,7 @@ class Image(object):
             self.dwarf = self.elf.get_dwarf_info()
             set_global_machine_arch(self.elf.get_machine_arch())
             self.__tame_dwarf()
-            self.expr_evaluator = ExprLiveEval(self.dwarf.structs)
+            self.expr_evaluator = ExprLiveEval(self)
 
     @property
     def executable(self):
@@ -114,7 +172,9 @@ class Image(object):
             functions = {}  
             variables = {}
 
-            for d in c.get_top_DIE().iter_children():
+            td = c.get_top_DIE()
+
+            for d in td.iter_children():
                 if d.tag == 'DW_TAG_subprogram':
                     lpc = d.attributes['DW_AT_low_pc'].value
                     hpc = d.attributes['DW_AT_high_pc'].value
@@ -127,6 +187,14 @@ class Image(object):
                     f["hpc"] = hpc
                     f["args"] = {}
                     f["vars"] = {}
+                    if 'DW_AT_frame_base' in d.attributes:
+                        a = d.attributes['DW_AT_frame_base']
+                        print "frame base attribute: %s" % str(a)
+                        if a.form == 'DW_FORM_data4':
+                            f["fb"] = location_lists.get_location_list_at_offset(a.value)
+                        else:
+                            f["fb"] = a.value
+                    
                     for child in d.iter_children():
                         if child.tag == "DW_TAG_formal_parameter":
                             name = child.attributes['DW_AT_name'].value
@@ -158,9 +226,9 @@ class Image(object):
                 elif d.tag == 'DW_TAG_variable':
                     if d.attributes['DW_AT_decl_file'].value == 1:
                         try:
-                            name = d.attribute['DW_AT_name'].value
+                            name = d.attributes['DW_AT_name'].value
                         except:
-                            name = '(??)'
+                            name = '(%s)' % str(d.attributes['DW_AT_name'])
                             
                         v = {}
                         try:
@@ -170,7 +238,6 @@ class Image(object):
                             v["location"] = []
                         variables[name] = v
 
-            td = c.get_top_DIE()
             x = {}
 
             fname = td.attributes['DW_AT_name'].value
@@ -188,7 +255,7 @@ class Image(object):
 
         for c in self._compile_units:
             self._compile_units[c]["lines"] = {}
-	    for line in self._compile_units[c]["line_program"]:
+            for line in self._compile_units[c]["line_program"]:
                 state = line.state
                 if state is not None and not state.end_sequence:
                     if state.address in self._addresses:

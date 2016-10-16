@@ -24,7 +24,7 @@ _start:
     addiu sp, sp, (-24)
     sw ra, 20(sp)
 loop:
-    jal init
+    jal main
     nop
     bnez v0,failed
     nop

@@ -6,14 +6,14 @@ OBJCOPY=mips-elf-objcopy
 include ../Make.common
 
 INCLUDE=-I$(PROJ_ROOT)/include
-CFLAGS=-mtune=r6000 -mips2 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared -mno-abicalls -mno-llsc -s -O0 -mno-split-addresses -mtigon -msoft-float -ggdb -std=gnu11 -Wall -Wno-main -feliminate-dwarf2-dups -fvar-tracking -gstrict-dwarf -gdwarf-2
+CFLAGS=-mtune=r6000 -mips2 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared -mno-abicalls -mno-llsc -s -O0 -mno-split-addresses -mtigon -msoft-float -ggdb -std=gnu11 -Wall -Wno-main -feliminate-dwarf2-dups -fvar-tracking -gdwarf-2
 #CFLAGS=-fintegrated-as -ffreestanding -fno-builtin -fno-pic -msoft-float -gstrict-dwarf -gdwarf-2 -nostdlib -nostdinc -target mips-none-elf -march=mips2
 LDFLAGS=-nostdlib --build-id=none -Timage.x -static -Rfixed.sym
 LIBGCC=$(shell $(CC) -print-libgcc-file-name)
 
 IMAGE=fw.img
 
-CSOURCE=init.c main.c #handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
+CSOURCE=main.c #init.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
 CHEADERS=$(shell ls $(PROJ_ROOT)/include)
 
 ASOURCE=entry.S
