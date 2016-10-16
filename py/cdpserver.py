@@ -117,9 +117,9 @@ class CDPServer(object):
         self._respond(cmd, True)
         initial_pc = self.dev.rxcpu.pc
         cl = self._image.addr2line(initial_pc)
+        self._log_write("initial pc: %x, cl: %s" % (initial_pc, cl))
         old_cl = cl
         while (cl == old_cl) or (not cl):
-            self._log_write("advancing PC")
             self.dev.rxcpu.mode.single_step = 1
             count = 0
             while self.dev.rxcpu.mode.single_step:
@@ -128,9 +128,10 @@ class CDPServer(object):
                     raise Exception("single step bit failed to clear")
                 self.msleep(10)
             current_pc = self.dev.rxcpu.pc
-            if current_pc == initial_pc:
-                raise Exception("pc failed to advance")
             cl = self._image.addr2line(current_pc)
+            self._log_write("now, pc: %x, cl: \"%s\"" % (current_pc, cl))
+            if not cl:
+                old_cl = ''
         
         self._event("stopped", {"reason": "step", "threadId": 1})
         self._log_write("next completed with PC at %x, cl at \"%s\"" % (self.dev.rxcpu.pc, cl))

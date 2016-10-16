@@ -75,9 +75,11 @@ class ExprLiveEval(GenericExprVisitor):
             self._val = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x50))
         elif 0x70 <= opcode and opcode < 0x90:
             b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
+            b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
             if len(args) > 0:
                 assert len(args) == 1
                 b += args[0]
+            v = self._dev.rxcpu.tr_read(b, 1)
             v = self._dev.rxcpu.tr_read(b, 1)
             self._val = struct.unpack("!I", v)[0]
         elif 0x91 == opcode:
@@ -146,17 +148,20 @@ class Image(object):
     def _build_executable(self):
         s = self.elf.get_section(1)
         base_addr = s.header["sh_addr"]
+        print "%s" % str(s.header)
         img = s.data()
 
         s = self.elf.get_section(2)
-        if s.header["sh_addr"] != base_addr + len(img):
-            raise Exception("bad section vaddr - #2 should follow #1")
-        img += s.data()
+        if s.header["sh_flags"] & 2:
+            if s.header["sh_addr"] != base_addr + len(img):
+                raise Exception("bad section vaddr - #2 should follow #1")
+            img += s.data()
 
         s = self.elf.get_section(3)
-        if s.header["sh_addr"] != base_addr + len(img):
-            raise Exception("bad section vaddr - #3 should follow #2")
-        img += s.data()
+        if s.header["sh_flags"] & 2:
+            if s.header["sh_addr"] != base_addr + len(img):
+                raise Exception("bad section vaddr - #3 should follow #2")
+            img += s.data()
 
         return (base_addr, img)
 

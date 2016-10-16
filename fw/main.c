@@ -18,27 +18,21 @@
 
 /* #include "fw.h" */
 
-int global_var = 0;
-
-int function(int local, int global) 
-{
-	static int static_var = 0;
-	int function_local_var = static_var++;
-	global_var = 0;
-	return function_local_var;
-}
+int global = 0;
 
 void main() 
 {
-	int local_var = 0;
-
+	int local = 0;
+	
     while (1) {
-		if (++local_var == 128) {
-			if (++global_var == 128) {
-				function(local_var, global_var);
+		local++;
+		if (0 == local % 4) {
+			local = 0; 
+			global++;
+			if (0 == global % 16) {
+				global = 0;
 			}
-			local_var = 0;			
-		}
+		}		
 	}
 	/*
 	if (grc.rxcpu_event.emac) {
