@@ -32,6 +32,56 @@ del p
 
 from image import Image
 from monitor import ExecutionMonitor
+from datamodel import model_registers, model_memory, get_data_value
+
+class Var_Tracker(object):
+    def __init__(self):
+        self._references = []
+        self._scopes = []
+        self._fixed_reference_end = None
+        self._fixed_scope_end = None
+
+    def _assign_variablesReference(self, v):
+	    self._references.append(v)
+	    v.variablesReference = len(self._references)
+    
+    def _add_variables_references(self, v):
+        if hasattr(v, "children") and isinstance(v.children, list) and len(v.children) > 0:
+            self._assign_variablesReference(v)
+            for c in v.children:
+                c.scope = v.scope
+                self._add_variables_references(c)
+    
+    def add_fixed_scope(self, s):
+        if self._fixed_scope_end:
+            raise Exception("fixed scopes cannot be added when dynamic scopes are present")
+        self._add_scope(s)
+        
+    def _add_scope(self, s):
+        print "adding scope %s" % s.name
+        self._assign_variablesReference(s)
+        self._scopes += [s]
+        for c in s.children:
+            c.scope = s
+            self._add_variables_references(c)
+            
+    def add_dynamic_scope(self, s):
+        if not self._fixed_scope_end:
+            self._fixed_scope_end = len(self._scopes)
+            self._fixed_reference_end = len(self._references)
+        self._add_scope(s)
+
+    def clear_dynamic_scopes(self):
+        self._scopes = self._scopes[:self._fixed_scope_end]
+        self._references = self._references[:self._fixed_reference_end]
+        self._fixed_scope_end = None
+        self._fixed_reference_end = None
+
+    def get_scopes(self):
+        return self._scopes
+        
+    def dereference(self, ref_no):
+        return self._references[ref_no - 1]
 
 class CDPServer(object):
     def __init__(self, dev, di, do):
@@ -39,8 +89,13 @@ class CDPServer(object):
         self.data_out = do
         self.dev = dev
         self._monitor = ExecutionMonitor(dev)
-        self.__dispatch_setup()
-
+        self.__dispatch_setup()      
+        self._register_model = model_registers(dev)
+        self._memory_model = model_memory(dev)
+        self._vt = Var_Tracker()
+        self._vt.add_fixed_scope(self._register_model)
+        self._vt.add_fixed_scope(self._memory_model)
+                    
     def __enter__(self):
         return self
 
@@ -116,10 +171,10 @@ class CDPServer(object):
     def _cmd_next(self, cmd):
         self._respond(cmd, True)
         initial_pc = self.dev.rxcpu.pc
+        current_pc = initial_pc
         cl = self._image.addr2line(initial_pc)
         self._log_write("initial pc: %x, cl: %s" % (initial_pc, cl))
-        old_cl = cl
-        while (cl == old_cl) or (not cl):
+        while True: 
             self.dev.rxcpu.mode.single_step = 1
             count = 0
             while self.dev.rxcpu.mode.single_step:
@@ -128,13 +183,11 @@ class CDPServer(object):
                     raise Exception("single step bit failed to clear")
                 self.msleep(10)
             current_pc = self.dev.rxcpu.pc
-            cl = self._image.addr2line(current_pc)
-            self._log_write("now, pc: %x, cl: \"%s\"" % (current_pc, cl))
-            if not cl:
-                old_cl = ''
-        
+            if current_pc in self._image._addresses:
+                break
+        cl = self._image.addr2line(current_pc)
+        self._log_write("now, pc: %x, cl: \"%s\"" % (current_pc, cl))
         self._event("stopped", {"reason": "step", "threadId": 1})
-        self._log_write("next completed with PC at %x, cl at \"%s\"" % (self.dev.rxcpu.pc, cl))
 	
     def _cmd_threads(self, cmd):
         t = {}
@@ -173,46 +226,81 @@ class CDPServer(object):
         self._respond(cmd, True, body = b)
 
     def _cmd_scopes(self, cmd):
-        scopes = []
-        func, fname, _, _ = self._top_of_stack
-        if len(self._image._compile_units[fname]["variables"]) > 0:
-            scopes += [{"name": "Globals", "variablesReference": 1, "expensive": True}]
+        self._vt.clear_dynamic_scopes()   
+        #func, fname, _, _ = self._top_of_stack
+        #if len(self._image._compile_units[fname]["variables"]) > 0:
+        #    scopes += [{"name": "Globals", "variablesReference": 1, "expensive": True}]
 
-        if "" != func:
-            if len(self._image._compile_units[fname]["functions"][func]["args"]) > 0:
-                scopes += [{"name": "Arguments", "variablesReference": 2, "expensive": True}]
-            if len(self._image._compile_units[fname]["functions"][func]["vars"]) > 0:
-                scopes += [{"name": "Locals", "variablesReference": 3, "expensive": True}]
+        #if "" != func:
+        #    if len(self._image._compile_units[fname]["functions"][func]["args"]) > 0:
+        #        scopes += [{"name": "Arguments", "variablesReference": 2, "expensive": True}]
+        #    if len(self._image._compile_units[fname]["functions"][func]["vars"]) > 0:
+        #        scopes += [{"name": "Locals", "variablesReference": 3, "expensive": True}]
+                
+        #scopes += [{"name": "CPU", "variablesReference": 4, "expensive": True}]
+        scopes = []
+        for s in self._vt.get_scopes():
+            scopes += [{"name": s.name, "variablesReference": s.variablesReference, "expensive": True}]
         b = {"scopes": scopes}
         self._respond(cmd, True, body = b)
 
     def _cmd_variables(self, cmd):
+        members = self._vt.dereference(cmd["arguments"]["variablesReference"])
+        b = {}
+        b["variables"] = []
+        for child in members.children:
+            o = {"name": child.name}
+            #try: 
+            #    o["variablesReference"] = child.variablesReference
+            #except: 
+            if hasattr(child, "variablesReference"):
+                o["variablesReference"] = child.variablesReference
+                o["value"] = ""
+            else:
+                o["variablesReference"] = 0
+                data_value = get_data_value(child, child.scope)
+                try: o["value"] = "%x" % data_value
+                except: o["value"] = str(data_value)
+            b["variables"] += [o]
+            
+        self._respond(cmd, True, body = b)
+                
+        '''
         func, fname, _, _ = self._top_of_stack
         ref = cmd["arguments"]["variablesReference"]
         b = {}
-        if ref == 1:
-            variables = self._image._compile_units[fname]["variables"]
-        elif ref == 2:
-            variables = self._image._compile_units[fname]["functions"][func]["args"]
-        elif ref == 3:
-            variables = self._image._compile_units[fname]["functions"][func]["vars"]
-        else:
-            variables = []
-
-        b["variables"] = []
-        for v in variables:
-            o = {}
-            o["name"] = v
-            v_value = self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"]) 
-            print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
-            if isinstance(v_value, (int, long)):
-                o["value"] = "%x" % v_value
+        if 0 < ref < 4:
+            if ref == 2:
+                variables = self._image._compile_units[fname]["functions"][func]["args"]
+            elif ref == 3:
+                variables = self._image._compile_units[fname]["functions"][func]["vars"]
             else:
-                o["value"] = str(v_value)
-            o["variablesReference"] = 0
-            b["variables"] += [o]
+                variables = self._image._compile_units[fname]["variables"]
 
-        self._respond(cmd, True, body = b)
+            b["variables"] = []
+            for v in variables:
+                o = {}
+                o["name"] = v
+                v_value = self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"]) 
+                print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
+                if isinstance(v_value, (int, long)):
+                    o["value"] = "%x" % v_value
+                else:
+                    o["value"] = str(v_value)
+                o["variablesReference"] = 0
+                b["variables"] += [o]
+
+            self._respond(cmd, True, body = b)               
+        elif ref == 4:
+            variables = []
+            for child in self._rxcpu_registers_model.children:
+                o = {}
+                o["name"] = child.name
+                o["value"] = 0
+                o["variablesReference"] = 0
+                variables += [o]
+            self._respond(cmd, True, body = {"variables": variables})
+        ''' 
             
     def _default_cmd(self, cmd):
         self._log_write("unknown command: %s" % cmd["command"])

@@ -39,17 +39,11 @@ class ExprLiveEval(GenericExprVisitor):
             fname, cu_name, cu_line_no, cu_comp_dir = self._image.top_frame_at(cur_pc)
             cu = self._image._compile_units[cu_name]
             cu_base = cu["lpc"]
-            offset = cur_pc - cu_base
-            found = False
-            for entry in expr:
-                if offset >= entry.begin_offset and offset < entry.end_offset:
-                    super(ExprLiveEval, self).process_expr(entry.loc_expr)
-                    found = True
-                    break
-            if not found:
-                self._val = '(unhandled ll, offset %d, list: %s)' % (offset, str(expr))
-        else:
-            super(ExprLiveEval, self).process_expr(expr)
+            selected_expr = _select_from_location_list(cur_pc, cu_base, expr)
+            if not selected_expr:
+                return '(unhandled ll, offset %d, list: %s)' % (offset, str(expr))
+            expr = selected_expr
+        super(ExprLiveEval, self).process_expr(expr)
         try:
             print "expr %s evaluates to %x" % (expr, self.value)
         except:
@@ -91,12 +85,9 @@ class ExprLiveEval(GenericExprVisitor):
             if isinstance(frame_base[0], LocationEntry):
                 cu_base = self._image._compile_units[cu_name]['lpc']
                 offset = cur_pc - cu_base
-                for le in frame_base:
-                    if offset >= le.begin_offset and offset < le.end_offset:
-                        expr = le.loc_expr
-                        break
+                expr = _select_from_location_list(cur_pc, cu_base, frame_base)
                 if expr is None:
-                    self._val = "(op %s unhandled, pc: %d, args: %s, fb: %s)" % (opcode_name, cur_pc, args, str(frame_base))
+                    self._val = "(unhandled ll in op %s, pc: %d, args: %s, fb: %s)" % (opcode_name, cur_pc, args, str(frame_base))
                     return
             else:
                 expr = frame_base
@@ -276,6 +267,7 @@ class Image(object):
         for c in self._compile_units:
             self._compile_units[c]["lines"] = {}
             for line in self._compile_units[c]["line_program"]:
+                print str(line)
                 state = line.state
                 if state is not None and not state.end_sequence:
                     cl = "%s+%d" % (c, state.line)
@@ -309,3 +301,25 @@ class Image(object):
 
     def line2addr(self, fname, line):
         return self._compile_units[fname]["lines"][line]	
+
+def _select_from_location_list(pc, cu_base, ll):
+    assert isinstance(ll, list)
+    assert len(ll) > 0
+    assert isinstance(ll[0], LocationEntry)
+    
+    offset = pc - cu_base
+    print "slecting from location list. pc: %x, cu_base: %x, offset: %x, ll: %s" % (pc, cu_base, offset, str(ll))
+
+    expr = None
+
+    for le in ll:
+        if offset >= le.begin_offset and offset < le.end_offset:
+            expr = le.loc_expr
+            break
+            
+    if expr:
+        print "selecting expr %s" % str(expr)
+    else:
+        print "did not find expr"
+        
+    return expr

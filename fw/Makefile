@@ -6,7 +6,7 @@ OBJCOPY=mips-elf-objcopy
 include ../Make.common
 
 INCLUDE=-I$(PROJ_ROOT)/include
-CFLAGS=-mtune=r6000 -mips2 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared -mno-abicalls -mno-llsc -s -mno-split-addresses -mtigon -msoft-float -g2 -std=gnu11 -Wall -Wno-main -gdwarf-4 -gstrict-dwarf -fno-dwarf2-cfi-asm -fasynchronous-unwind-tables -fvar-tracking -fvar-tracking-assignments
+CFLAGS=-mips2 -march=r6000 -mfix-r4000 -G 0 -fno-pic -fno-builtin -fverbose-asm  -mno-shared -mno-abicalls -mno-llsc -s -mno-split-addresses -mtigon -msoft-float -g2 -std=gnu11 -Wall -Wno-main -gdwarf-2 -gstrict-dwarf -fno-dwarf2-cfi-asm -fasynchronous-unwind-tables
 #CFLAGS=-fintegrated-as -ffreestanding -fno-builtin -fno-pic -msoft-float -gstrict-dwarf -gdwarf-2 -nostdlib -nostdinc -target mips-none-elf -march=mips2
 LDFLAGS=-nostdlib --build-id=none -Timage.x -static -Rfixed.sym
 LIBGCC=$(shell $(CC) -print-libgcc-file-name)
@@ -16,7 +16,7 @@ IMAGE=fw.img
 CSOURCE=main.c #init.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
 CHEADERS=$(shell ls $(PROJ_ROOT)/include)
 
-ASOURCE=entry.S
+ASOURCE= #entry.S
 
 ASFLAGS=$(CFLAGS)
 CPPFLAGS=$(INCLUDE)

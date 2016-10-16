@@ -137,7 +137,7 @@ def _model(o):
     return model
 
 def model_registers(device):
-    model = RegisterModel(name = "registers", root = device)
+    model = RegisterModel(name = "device registers", root = device)
     for block_name, _, block_type in tg3_blocks:
         block = getattr(device, block_name)
         anonymous_members = getattr(block, "_anonymous_", None)
@@ -148,7 +148,7 @@ def model_registers(device):
     return model
 
 def model_memory(device):
-    model = MemoryModel(name = "memory", root = device.mem)
+    model = MemoryModel(name = "device memory", root = device.mem)
     for seg_name, seg_type, _, count in tg3_mem:
         seg = getattr(device.mem, seg_name)
         anonymous_members = getattr(seg, "_anonymous_", None)

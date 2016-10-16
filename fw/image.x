@@ -1,8 +1,8 @@
 SECTIONS
 {
     .text 0x08008000 : { 
-        entry.o(.text)
-        *(.text)
+        /* entry.o(.text)
+        *(.text) */
 	main.o(.text)
     }
 
