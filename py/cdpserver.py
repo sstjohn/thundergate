@@ -22,6 +22,7 @@ import sys
 import platform
 import traceback
 import functools
+import struct
 
 from collections import namedtuple
 
@@ -93,7 +94,7 @@ class CDPServer(object):
         self.data_in = di
         self.data_out = do
         self.dev = dev
-        self._monitor = ExecutionMonitor(dev)
+        self._monitor = ExecutionMonitor(dev, functools.partial(CDPServer._evt_stopped, self)) 
         self.__dispatch_setup()      
         self._register_model = model_registers(dev)
         self._register_model.accessor = functools.partial(get_data_value, mroot=self._register_model)
@@ -102,6 +103,8 @@ class CDPServer(object):
         self._vt = Var_Tracker()
         self._vt.add_fixed_scope(self._register_model)
         self._vt.add_fixed_scope(self._memory_model)
+        self._breakpoints = {}
+        self._bp_replaced_insn = {}
                     
     def __enter__(self):
         return self
@@ -148,7 +151,7 @@ class CDPServer(object):
             b["threadId"] = 1
             self._event("stopped", body = b)
         else:
-            self.dev.rxcpu.resume()
+            self._monitor.watch()
 
         self._event("initialized")
 
@@ -156,24 +159,24 @@ class CDPServer(object):
         self._respond(cmd, True)
 
     def _cmd_setBreakpoints(self, cmd):
-	source = os.path.basename(cmd["arguments"]["source"]["path"])
-	self._clear_breakpoint(source)
-	breakpoints_set = []
-	if "lines" in cmd["arguments"]:
-	    for line in cmd["arguments"]["lines"]:
-		success = self._setup_breakpoint(source, line)
-		b = {"verified": success, "line": line}
-		breakpoints_set += [b]
-	if "breakpoints" in cmd["arguments"]:
-	    for bp in cmd["arguments"]["breakpoints"]:
-		line = bp["line"]
-		if "condition" in bp:
-		    success = False
-		else:
-		    success = self._setup_breakpoint(source, line)
-		b = {"verified": success, "line": line}
-		breakpoints_set += [b]
-	self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
+	    source = os.path.basename(cmd["arguments"]["source"]["path"])
+	    self._clear_breakpoint(source)
+	    breakpoints_set = []
+	    if "lines" in cmd["arguments"]:
+	        for line in cmd["arguments"]["lines"]:
+		        success = self._setup_breakpoint(source, line)
+		        b = {"verified": success, "line": line}
+		        breakpoints_set += [b]
+	    if "breakpoints" in cmd["arguments"]:
+	        for bp in cmd["arguments"]["breakpoints"]:
+		        line = bp["line"]
+		        if "condition" in bp:
+		            success = False
+		        else:
+		            success = self._setup_breakpoint(source, line)
+		        b = {"verified": success, "line": line}
+		        breakpoints_set += [b]
+	    self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
 
     def _cmd_next(self, cmd):
         self._respond(cmd, True)
@@ -210,12 +213,9 @@ class CDPServer(object):
 
     def _cmd_continue(self, cmd):
         callback = functools.partial(CDPServer._evt_stopped, self)
-        if self.dev.rxcpu.status.invalid_instruction:
-            self.dev.rxcpu.resume_from_breakpoint()
-        else:
-            self.dev.rxcpu.resume()
-        self._monitor.watch(callback)
         self._respond(cmd, True)
+        self._monitor.watch()
+        
 
     def _cmd_pause(self, cmd):
         self._respond(cmd, True)
@@ -311,18 +311,15 @@ class CDPServer(object):
         sys.stdout.flush()
 
     def _evt_stopped(self):
-        print "!!!!! stopped !!!!!!"
-	if self.dev.rxcpu.status.halted:
-	    reason = "pause"
-	elif self.dev.rxcpu.status.invalid_instruction:
-	    if self.dev.rxcpu.pc in self.dev.rxcpu._breakpoints:
-		reason = "breakpoint"
-	    else:
-		reason = "invalid instruction"
-	else:
-		reason = "unknown"
+        if self.dev.rxcpu.status.halted:
+            reason = "pause"
+        else:
+            if self.dev.rxcpu.pc in self._bp_replaced_insn:
+                reason = "breakpoint"
+                self.__prepare_resume_from_breakpoint()
+            else:
+                reason = "unknown"
         b = {"reason": reason, "threadId": 1}
-        print "!!!! sending event !!!!!"
         self._event("stopped", body = b)
 
     def _event(self, event, body = None):
@@ -358,19 +355,34 @@ class CDPServer(object):
             r.update(ex)
         self.send(r)
 
+    def __insn_repl(self, addr, replacement):
+        original_insn = struct.unpack("!I", self.dev.rxcpu.tr_read(addr, 1))[0]
+        self.dev.rxcpu.tr_write_dword(addr, replacement)
+        return original_insn
+
+        try:
+            self._breakpoints[addr] = original_insn
+        except:
+            self._breakpoints = {addr: original_insn}
+
     def _setup_breakpoint(self, filename, line):
-	try:
-	    addr = self._image.line2addr(filename, line)
+        try:
+            addr = self._image.line2addr(filename, line)
         except:
             return False
-	try:
-	    current_breakpoints = self._breakpoints[filename]
-	except:
-	    current_breakpoints = {}
+        if not filename in self._breakpoints:
+            self._breakpoints[filename] = {}
+
+        current_breakpoints = self._breakpoints[filename]
+
         if line in current_breakpoints and current_breakpoints[line] == addr:
-	    return True
-        self.dev.rxcpu.set_breakpoint(addr)
+            print "breakpoint at %s+%d already set" % (filename, line)
+            return True
+
+        self._bp_replaced_insn[addr] = self.__insn_repl(addr, 0xd)
+        
         current_breakpoints[line] = addr
+        print "breakpoint set at \"%s+%d\" (%x)" % (filename, line, addr)
         return True
 
     def _clear_breakpoint(self, filename, line_no = None):
@@ -379,16 +391,22 @@ class CDPServer(object):
         except:
             return
         if line_no is None:
-	    lines = current_breakpoints.keys()
-	else:
-	    lines = [line_no]
-	for line in lines:
-	    try:
-		addr = current_breakpoints[line]
-	    except:
-		continue
-	    dev.rxcpu.clear_breakpoint(addr)
-	    del self._breakpoints[filename][line]
+    	    lines = current_breakpoints.keys()
+        else:
+            lines = [line_no]
+        for line in lines:
+            try:
+                addr = current_breakpoints[line]
+            except:
+                continue
+            self.__insn_repl(addr, self._bp_replaced_insn[addr])
+            del self._bp_replaced_insn[addr]
+            del self._breakpoints[filename][line]
+            print "breakpoint cleared at \"%s+%d\" (%x)" % (filename, line, addr)
+
+    def __prepare_resume_from_breakpoint(self):
+        pc = self.dev.rxcpu.pc
+        self.dev.rxcpu.ir = self._bp_replaced_insn[pc]
 
     def send(self, resp):
         r = json.dumps(resp, separators=(",",":"))

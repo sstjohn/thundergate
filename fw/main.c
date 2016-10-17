@@ -26,8 +26,6 @@ void main()
 	
     while (1) {
 		local++;
-		if (16 == local)
-			local = 0;
 		if (0 == local % 4) {
 			local = 0; 
 			global++;

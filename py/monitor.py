@@ -24,22 +24,28 @@ from time import sleep
 yield_quantum = functools.partial(sleep, 0)
 
 class ExecutionMonitor(object):
-    def __init__(self, dev):
+    def __init__(self, dev, stopped_callback):
         self._dev = dev
         self._watching = False
+        self._stopped_callback = stopped_callback
 
-    def watch(self, callback):
+    def watch(self):
         if self._watching:
             raise Exception("monitor already running")
-
-        t = threading.Thread(target = self._watch, args = (callback,))
+        if not (self._dev.rxcpu.status.word & 0x7FFFFFFF):
+            raise Exception("cpu already running") 
+        
+        t = threading.Thread(target = self._watch, args = (self._stopped_callback,))
         t.daemon = True
         self._watching = True
         t.start()
 
     def _watch(self, callback):
-        while not (self._dev.rxcpu.status.halted or 
-	           self._dev.rxcpu.status.invalid_instruction):
+        if self._dev.rxcpu.mode.halt:
+            self._dev.rxcpu.mode.halt = 0
+        if self._dev.rxcpu.status.word & 0x7fffffff:
+            self._dev.rxcpu.status.word = 0xffffffff
+        while not (self._dev.rxcpu.status.word & 0x7FFFFFF):
             yield_quantum()
         self._watching = False
         print "stopped watching at pc = %x" % self._dev.rxcpu.pc
