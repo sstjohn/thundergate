@@ -277,15 +277,7 @@ class CDPServer(object):
         dynamic_scopes = self._collect_scopes()
         for scope in dynamic_scopes:
             self._vt.add_dynamic_scope(scope)
-        #func, fname, _, _ = self._top_of_stack
         
-        #if "" != func:
-        #    if len(self._image._compile_units[fname]["functions"][func]["args"]) > 0:
-        #        scopes += [{"name": "Arguments", "variablesReference": 2, "expensive": True}]
-        #    if len(self._image._compile_units[fname]["functions"][func]["vars"]) > 0:
-        #        scopes += [{"name": "Locals", "variablesReference": 3, "expensive": True}]
-                
-        #scopes += [{"name": "CPU", "variablesReference": 4, "expensive": True}]
         scopes = []
         for s in self._vt.get_scopes():
             scopes += [{"name": s.name, "variablesReference": s.variablesReference, "expensive": True}]
@@ -298,9 +290,6 @@ class CDPServer(object):
         b["variables"] = []
         for child in members.children:
             o = {"name": child.name}
-            #try: 
-            #    o["variablesReference"] = child.variablesReference
-            #except: 
             if hasattr(child, "variablesReference"):
                 o["variablesReference"] = child.variablesReference
                 o["value"] = ""
@@ -312,43 +301,6 @@ class CDPServer(object):
             b["variables"] += [o]
             
         self._respond(cmd, True, body = b)
-                
-        '''
-        func, fname, _, _ = self._top_of_stack
-        ref = cmd["arguments"]["variablesReference"]
-        b = {}
-        if 0 < ref < 4:
-            if ref == 2:
-                variables = self._image._compile_units[fname]["functions"][func]["args"]
-            elif ref == 3:
-                variables = self._image._compile_units[fname]["functions"][func]["vars"]
-            else:
-                variables = self._image._compile_units[fname]["variables"]
-
-            b["variables"] = []
-            for v in variables:
-                o = {}
-                o["name"] = v
-                v_value = self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"]) 
-                print "variables[v][\"location\"] = %s\n" % variables[v]["location"]
-                if isinstance(v_value, (int, long)):
-                    o["value"] = "%x" % v_value
-                else:
-                    o["value"] = str(v_value)
-                o["variablesReference"] = 0
-                b["variables"] += [o]
-
-            self._respond(cmd, True, body = b)               
-        elif ref == 4:
-            variables = []
-            for child in self._rxcpu_registers_model.children:
-                o = {}
-                o["name"] = child.name
-                o["value"] = 0
-                o["variablesReference"] = 0
-                variables += [o]
-            self._respond(cmd, True, body = {"variables": variables})
-        ''' 
             
     def _default_cmd(self, cmd):
         self._log_write("unknown command: %s" % cmd["command"])
