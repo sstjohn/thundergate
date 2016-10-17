@@ -18,22 +18,27 @@
 
 #include "regdef.h"
 .set noreorder
+.set noat
 .extern init
 .text
 _start:
     addiu sp, sp, (-24)
     sw ra, 20(sp)
+begin:
+    and $2,$2,$zero
+    ori $2,$2,0xffff
+reset:
+    and $1,$1,$zero
 loop:
-    jal main
+    addiu $1,1
+    beq $1,$2,reset
     nop
-    bnez v0,failed
-    nop
-    b _start
+    j loop
     nop
 failed:
-.set noat
     and $1,$1,$0
     lui $1,0xFFFF
     ori $1,$1,0xDEAD
     nop
     break
+

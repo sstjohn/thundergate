@@ -1,9 +1,9 @@
 SECTIONS
 {
     .text 0x08008000 : { 
-        /* entry.o(.text)
-        *(.text) */
-	main.o(.text)
+        entry.o(.text)
+        *(.text)
+	    /* main.o(.text) */
     }
 
     .data ADDR(.text)+SIZEOF(.text) : { 
@@ -12,7 +12,7 @@ SECTIONS
 
     .rodata ADDR(.data)+SIZEOF(.data) : { 
         *(.rodata)
-	*(.rodata.*) 
+	    *(.rodata.*) 
     }
 
 
@@ -21,11 +21,11 @@ SECTIONS
     }
 
     .eh_frame : {
-	*(.eh_frame)
+	    *(.eh_frame)
     }
 
     .pdr : {
-	*(.pdr)
+	    *(.pdr)
     }
 
     .reginfo : {
@@ -33,10 +33,10 @@ SECTIONS
     }
 
     .MIPS.abiflags : {
-	*(.MIPS.abiflags)
+	    *(.MIPS.abiflags)
     }
 
     .scommon : {
-	*(.scommon)
+	    *(.scommon)
     }
 }

@@ -13,15 +13,15 @@ LIBGCC=$(shell $(CC) -print-libgcc-file-name)
 
 IMAGE=fw.img
 
-CSOURCE=main.c #init.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
+CSOURCE=main.c init.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
 CHEADERS=$(shell ls $(PROJ_ROOT)/include)
 
-ASOURCE= #entry.S
+ASOURCE=entry.S
 
 ASFLAGS=$(CFLAGS)
 CPPFLAGS=$(INCLUDE)
 
-OBJECTS=$(CSOURCE:.c=.o) $(ASOURCE:.S=.o)
+OBJECTS=$(ASOURCE:.S=.o) #$(CSOURCE:.c=.o) 
 
 all: fw.elf $(IMAGE)
 

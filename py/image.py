@@ -141,21 +141,25 @@ class Image(object):
 
     def _build_executable(self):
         s = self.elf.get_section(1)
+        assert s.header["sh_flags"] & 2 and s.header["sh_type"] == "SHT_PROGBITS"        
         base_addr = s.header["sh_addr"]
-        print "%s" % str(s.header)
+        
         img = s.data()
 
         s = self.elf.get_section(2)
-        if s.header["sh_flags"] & 2:
+        if s.header["sh_flags"] & 2 and s.header["sh_type"] == "SHT_PROGBITS":
             if s.header["sh_addr"] != base_addr + len(img):
                 raise Exception("bad section vaddr - #2 should follow #1")
+
             img += s.data()
 
-        s = self.elf.get_section(3)
-        if s.header["sh_flags"] & 2:
-            if s.header["sh_addr"] != base_addr + len(img):
-                raise Exception("bad section vaddr - #3 should follow #2")
-            img += s.data()
+            s = self.elf.get_section(3)
+            print "%s" % str(s.header)
+            if s.header["sh_flags"] & 2 and s.header["sh_type"] == "SHT_PROGBITS":
+                if s.header["sh_addr"] != base_addr + len(img):
+                    raise Exception("bad section vaddr - #3 should follow #2")
+
+                img += s.data()
 
         return (base_addr, img)
 

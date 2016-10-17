@@ -103,6 +103,14 @@ class CDPServer(object):
         self._vt = Var_Tracker()
         self._vt.add_fixed_scope(self._register_model)
         self._vt.add_fixed_scope(self._memory_model)
+        for c in self._register_model.children:
+            if c.name == "rxcpu":
+                s = ScopeModel("mips registers")
+                for r in c.children:
+                    if r.name[0] == 'r' and r.name[1:].isdigit():
+                        s.children += [r]
+                s.accessor = self._register_model.accessor
+                self._vt.add_fixed_scope(s)
         self._breakpoints = {}
         self._bp_replaced_insn = {}
                     
@@ -244,19 +252,20 @@ class CDPServer(object):
 
             scopes += [global_scope]
 
-        if len(self._image._compile_units[cu_name]["functions"][func_name]["args"]) > 0:
-            argument_scope = ScopeModel("function arguments")
-            argument_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["args"], argument_scope)
-            argument_scope.accessor = lambda x: x.evaluator()
+        if func_name:
+            if len(self._image._compile_units[cu_name]["functions"][func_name]["args"]) > 0:
+                argument_scope = ScopeModel("function arguments")
+                argument_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["args"], argument_scope)
+                argument_scope.accessor = lambda x: x.evaluator()
 
-            scopes += [argument_scope]
+                scopes += [argument_scope]
 
-        if len(self._image._compile_units[cu_name]["functions"][func_name]["vars"]) > 0:
-            local_scope = ScopeModel("local variables")
-            local_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["vars"], local_scope)
-            local_scope.accessor = lambda x: x.evaluator()
+            if len(self._image._compile_units[cu_name]["functions"][func_name]["vars"]) > 0:
+                local_scope = ScopeModel("local variables")
+                local_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["vars"], local_scope)
+                local_scope.accessor = lambda x: x.evaluator()
 
-            scopes += [local_scope]
+                scopes += [local_scope]
 
         return scopes
 
