@@ -22,7 +22,7 @@
 				"label": "Thundergate Debug",
 				"enableBreakpointsFor": {
 					"languageIds": [
-						"c"
+						"c", "assembly"
 					]
 				},
 				"program": "./cdp.py",
@@ -57,6 +57,17 @@
 					}
 				]
 			}
-		]
+		],
+    "languages": [{
+        "id": "assembly",
+        "extensions": [ ".s",".S" ],
+        "aliases": [ ],
+        "configuration": "./mips-configuration.json"
+    }],
+    "grammars": [{
+        "language": "assembly",
+        "scopeName": "source.mips",
+        "path": "./mips.tmLanguage"
+    }]
 	}
 }

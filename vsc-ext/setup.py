@@ -26,8 +26,8 @@ if __name__ == "__main__":
         path += os.sep + d
         mkdir_f(path)
 
-    shutil.copy("vsc-ext/package.json", path)
-    shutil.copy("vsc-ext/cdp.py", path)
+    for f in ['package.json', 'cdp.py', 'mips-configuration.json', 'mips.tmLanguage']:
+	shutil.copy('vsc-ext/%s' % f, path)
     with open("%s/tgdir.conf" % path, "w") as f:
         f.write(tgdir)
 

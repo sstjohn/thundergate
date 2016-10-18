@@ -17,6 +17,7 @@
  */
 
 #include "regdef.h"
+
 .set noreorder
 .set noat
 .extern init
