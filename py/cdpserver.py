@@ -150,6 +150,9 @@ class CDPServer(object):
         program = cmd["arguments"]["program"]
         self._image = Image(program)
         self.dev.rxcpu.reset()
+        self.dev.ma.mode.fast_ath_read_disable = 1
+        self.dev.ma.mode.cpu_pipeline_request_disable = 1
+        self.dev.ma.mode.low_latency_enable = 1
         self.dev.rxcpu.image_load(*self._image.executable)
         self._respond(cmd, True)
 
