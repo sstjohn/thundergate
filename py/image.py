@@ -27,10 +27,10 @@ import struct
 class ExprLiveEval(GenericExprVisitor):
     def __init__(self, image):
         self._image = image
+        self._val = 0
         super(ExprLiveEval, self).__init__(image.dwarf.structs)
 
     def process_expr(self, dev, expr):
-        self._val = 0
         self._dev = dev
         print "processing expr %s" % str(expr)
         assert isinstance(expr, list) and len(expr) > 0
@@ -276,17 +276,17 @@ class Image(object):
             for line in self._compile_units[c]["line_program"]:
                 print str(line)
                 state = line.state
-                if state is not None and not state.end_sequence:
+                if state is not None and not (state.end_sequence or state.basic_block or state.epilogue_begin or state.prologue_end):
                     cl = "%s+%d" % (c, state.line)
                     if state.address in self._addresses and self._addresses[state.address] != cl:
                         raise Exception("addr %x is both \"%s\" and \"%s+%d\"" % (state.address, self._addresses[state.address], c, state.line))
                     self._addresses[state.address] = cl
-                    self._compile_units[c]["lines"][state.line] = state.address
+                    try: self._compile_units[c]["lines"][state.line] += [state.address]
+                    except: self._compile_units[c]["lines"][state.line] = [state.address]
 
     def addr2line(self, addr):
-        if addr in self._addresses:
-            return self._addresses[addr]
-        return ''
+        try: return self._addresses[addr]
+        except: return ''
 
     def top_frame_at(self, addr):
         line = self.addr2line(addr)

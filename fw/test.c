@@ -16,49 +16,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "regdef.h"
+int global_variable = 0;
 
-.set noreorder
-.extern test
+void another_function(int i)
+{
+    int j = 0;
+    while (j < i) {
+        j++;
+    }
+    global_variable++;
+}
 
-.text
-.globl _start
-_start:     .ent _start
-.frame sp, 16, ra
-.cfi_startproc
-     addiu   sp,sp,-16
-.cfi_def_cfa_offset 16
-    sw      fp,12(sp)
-.cfi_offset 30, -4
-    move    fp,sp
-.cfi_def_cfa_register 30
-begin:
-    and s0,s0,$zero
-    ori s0,s0,0xffff
-reset:
-    lw s1,(counter)
-    addiu s1,1
-    sw s1,(counter)
-    jal test
-    nop
-    and s2,s2,$zero
-loop:
-    addiu s2,1
-    beq s0,s2,reset
-    nop
-    j loop
-    nop
-failed:
-.set noat
-    and $1,$1,$0
-    lui $1,0xFFFF
-    ori $1,$1,0xDEAD
-    nop
-    break
-.cfi_endproc
-.end _start
-
-.data 
-.align 4
-counter: .word 0
-test_string: .asciiz "test string"
+int test() 
+{
+    int i = 0;
+    while (i < 0xff)
+        i++;
+    return i;
+}

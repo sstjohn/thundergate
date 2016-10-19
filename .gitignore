@@ -23,6 +23,7 @@ efi/*.o
 efi/*.pdb
 efi/*.rom
 eeprom.bak
+eeproms/*
 win/**/[Dd]ebug/
 win/**/[Rr]elease/
 win/**/x64/

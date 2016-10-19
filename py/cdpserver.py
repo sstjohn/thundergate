@@ -379,7 +379,7 @@ class CDPServer(object):
 
     def _setup_breakpoint(self, filename, line):
         try:
-            addr = self._image.line2addr(filename, line)
+            line_addrs = self._image.line2addr(filename, line)
         except:
             return False
         if not filename in self._breakpoints:
@@ -387,14 +387,14 @@ class CDPServer(object):
 
         current_breakpoints = self._breakpoints[filename]
 
-        if line in current_breakpoints and current_breakpoints[line] == addr:
-            print "breakpoint at %s+%d already set" % (filename, line)
-            return True
-
-        self._bp_replaced_insn[addr] = self.__insn_repl(addr, 0xd)
-        
-        current_breakpoints[line] = addr
-        print "breakpoint set at \"%s+%d\" (%x)" % (filename, line, addr)
+        for addr in line_addrs:
+            if line in current_breakpoints and addr in current_breakpoints[line]:
+                print "breakpoint at %s+%d already set" % (filename, line)
+            else:
+                self._bp_replaced_insn[addr] = self.__insn_repl(addr, 0xd)
+                try: current_breakpoints[line] += [addr]
+                except: current_breakpoints[line] = [addr]
+                print "breakpoint set at \"%s+%d\" (%x)" % (filename, line, addr)
         return True
 
     def _clear_breakpoint(self, filename, line_no = None):
@@ -407,14 +407,12 @@ class CDPServer(object):
         else:
             lines = [line_no]
         for line in lines:
-            try:
-                addr = current_breakpoints[line]
-            except:
-                continue
-            self.__insn_repl(addr, self._bp_replaced_insn[addr])
-            del self._bp_replaced_insn[addr]
+            line_addrs = current_breakpoints[line]
+            for addr in line_addrs:
+                self.__insn_repl(addr, self._bp_replaced_insn[addr])
+                del self._bp_replaced_insn[addr]
+                print "breakpoint cleared at \"%s+%d\" (%x)" % (filename, line, addr)
             del self._breakpoints[filename][line]
-            print "breakpoint cleared at \"%s+%d\" (%x)" % (filename, line, addr)
 
     def __prepare_resume_from_breakpoint(self):
         pc = self.dev.rxcpu.pc
