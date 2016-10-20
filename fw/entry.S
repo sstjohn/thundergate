@@ -23,13 +23,17 @@
 
 .text
 .globl _start
-_start:     .ent _start
-.frame sp, 16, ra
 .cfi_startproc
-     addiu   sp,sp,-16
+.ent _start
+.type _start, @function
+_start:
+.frame fp,16,ra
+    addiu   sp,sp,-16
 .cfi_def_cfa_offset 16
-    sw      fp,12(sp)
-.cfi_offset 30, -4
+    sw      ra,12(sp)
+.cfi_offset 31,-4
+    sw      fp,8(sp)
+.cfi_offset 30, -8
     move    fp,sp
 .cfi_def_cfa_register 30
 begin:
@@ -55,6 +59,17 @@ failed:
     ori $1,$1,0xDEAD
     nop
     break
+    nop
+    move sp,fp
+.cfi_def_cfa_register 29
+    lw ra,12(sp)
+.cfi_restore 31
+    lw fp,8(sp)
+.cfi_restore 30
+    addiu sp,sp,16
+.cfi_def_cfa_offset 0
+    j ra
+    nop
 .cfi_endproc
 .end _start
 

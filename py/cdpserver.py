@@ -28,14 +28,15 @@ from collections import namedtuple
 
 p = platform.system()
 if "Windows" == p:
-	LINE_SEP = "\n"
+    LINE_SEP = "\n"
 else:
-	LINE_SEP = "\r\n"
+    LINE_SEP = "\r\n"
 del p
 
 from image import Image
 from monitor import ExecutionMonitor
 from datamodel import model_registers, model_memory, get_data_value, GenericModel
+from blocks.cpu import mips_regs
 
 class ScopeModel(GenericModel):
     pass
@@ -48,21 +49,21 @@ class Var_Tracker(object):
         self._fixed_scope_end = None
 
     def _assign_variablesReference(self, v):
-	    self._references.append(v)
-	    v.variablesReference = len(self._references)
-    
+        self._references.append(v)
+        v.variablesReference = len(self._references)
+
     def _add_variables_references(self, v):
         if hasattr(v, "children") and isinstance(v.children, list) and len(v.children) > 0:
             self._assign_variablesReference(v)
             for c in v.children:
                 c.scope = v.scope
                 self._add_variables_references(c)
-    
+
     def add_fixed_scope(self, s):
         if self._fixed_scope_end:
             raise Exception("fixed scopes cannot be added when dynamic scopes are present")
         self._add_scope(s)
-        
+
     def _add_scope(self, s):
         print "adding scope %s" % s.name
         self._assign_variablesReference(s)
@@ -70,7 +71,7 @@ class Var_Tracker(object):
         for c in s.children:
             c.scope = s
             self._add_variables_references(c)
-            
+
     def add_dynamic_scope(self, s):
         if not self._fixed_scope_end:
             self._fixed_scope_end = len(self._scopes)
@@ -85,7 +86,7 @@ class Var_Tracker(object):
 
     def get_scopes(self):
         return self._scopes
-        
+
     def dereference(self, ref_no):
         return self._references[ref_no - 1]
 
@@ -94,8 +95,8 @@ class CDPServer(object):
         self.data_in = di
         self.data_out = do
         self.dev = dev
-        self._monitor = ExecutionMonitor(dev, functools.partial(CDPServer._evt_stopped, self)) 
-        self.__dispatch_setup()      
+        self._monitor = ExecutionMonitor(dev, functools.partial(CDPServer._evt_stopped, self))
+        self.__dispatch_setup()
         self._register_model = model_registers(dev)
         self._register_model.accessor = functools.partial(get_data_value, mroot=self._register_model)
         self._memory_model = model_memory(dev)
@@ -108,12 +109,16 @@ class CDPServer(object):
                 s = ScopeModel("mips registers")
                 for r in c.children:
                     if r.name[0] == 'r' and r.name[1:].isdigit():
-                        s.children += [r]
+                        reg_no = int(r.name[1:])
+                        reg_name = mips_regs.inv[reg_no]
+                        reg_for_display = GenericModel(r.name, r.parent)
+                        reg_for_display.display_name = reg_name
+                        s.children += [reg_for_display]
                 s.accessor = self._register_model.accessor
                 self._vt.add_fixed_scope(s)
         self._breakpoints = {}
         self._bp_replaced_insn = {}
-                    
+
     def __enter__(self):
         return self
 
@@ -131,7 +136,6 @@ class CDPServer(object):
             fncall = self.__dispatch_tbl[cmd["command"]]
         except:
             fncall = self._default_cmd
-            
         fncall(cmd)
 
     def _cmd_initialize(self, cmd):
@@ -170,24 +174,24 @@ class CDPServer(object):
         self._respond(cmd, True)
 
     def _cmd_setBreakpoints(self, cmd):
-	    source = os.path.basename(cmd["arguments"]["source"]["path"])
-	    self._clear_breakpoint(source)
-	    breakpoints_set = []
-	    if "lines" in cmd["arguments"]:
-	        for line in cmd["arguments"]["lines"]:
-		        success = self._setup_breakpoint(source, line)
-		        b = {"verified": success, "line": line}
-		        breakpoints_set += [b]
-	    if "breakpoints" in cmd["arguments"]:
-	        for bp in cmd["arguments"]["breakpoints"]:
-		        line = bp["line"]
-		        if "condition" in bp:
-		            success = False
-		        else:
-		            success = self._setup_breakpoint(source, line)
-		        b = {"verified": success, "line": line}
-		        breakpoints_set += [b]
-	    self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
+        source = os.path.basename(cmd["arguments"]["source"]["path"])
+        self._clear_breakpoint(source)
+        breakpoints_set = []
+        if "lines" in cmd["arguments"]:
+            for line in cmd["arguments"]["lines"]:
+                success = self._setup_breakpoint(source, line)
+                b = {"verified": success, "line": line}
+                breakpoints_set += [b]
+        if "breakpoints" in cmd["arguments"]:
+            for bp in cmd["arguments"]["breakpoints"]:
+                line = bp["line"]
+                if "condition" in bp:
+                    success = False
+                else:
+                    success = self._setup_breakpoint(source, line)
+                b = {"verified": success, "line": line}
+                breakpoints_set += [b]
+        self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
 
     def _cmd_next(self, cmd):
         self._respond(cmd, True)
@@ -195,7 +199,7 @@ class CDPServer(object):
         current_pc = initial_pc
         cl = self._image.addr2line(initial_pc)
         self._log_write("initial pc: %x, cl: %s" % (initial_pc, cl))
-        while True: 
+        while True:
             self.dev.rxcpu.mode.single_step = 1
             count = 0
             while self.dev.rxcpu.mode.single_step:
@@ -209,7 +213,7 @@ class CDPServer(object):
         cl = self._image.addr2line(current_pc)
         self._log_write("now, pc: %x, cl: \"%s\"" % (current_pc, cl))
         self._event("stopped", {"reason": "step", "threadId": 1})
-	
+
     def _cmd_threads(self, cmd):
         t = {}
         t["id"] = 1
@@ -226,7 +230,7 @@ class CDPServer(object):
         callback = functools.partial(CDPServer._evt_stopped, self)
         self._respond(cmd, True)
         self._monitor.watch()
-        
+
 
     def _cmd_pause(self, cmd):
         self._respond(cmd, True)
@@ -242,10 +246,10 @@ class CDPServer(object):
 
         b = {"stackFrames": [f]}
         self._respond(cmd, True, body = b)
-    
+
     def _collect_scopes(self):
         top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
-        func_name, cu_name, cu_line, source_dir = top_of_stack 
+        func_name, cu_name, cu_line, source_dir = top_of_stack
 
         scopes = []
         if len(self._image._compile_units[cu_name]["variables"]) > 0:
@@ -289,7 +293,7 @@ class CDPServer(object):
         dynamic_scopes = self._collect_scopes()
         for scope in dynamic_scopes:
             self._vt.add_dynamic_scope(scope)
-        
+
         scopes = []
         for s in self._vt.get_scopes():
             scopes += [{"name": s.name, "variablesReference": s.variablesReference, "expensive": True}]
@@ -301,7 +305,11 @@ class CDPServer(object):
         b = {}
         b["variables"] = []
         for child in members.children:
-            o = {"name": child.name}
+            o = {}
+
+            try: o["name"] = child.display_name
+            except: o["name"] = child.name
+
             if hasattr(child, "variablesReference"):
                 o["variablesReference"] = child.variablesReference
                 o["value"] = ""
@@ -311,9 +319,9 @@ class CDPServer(object):
                 try: o["value"] = "%x" % data_value
                 except: o["value"] = str(data_value)
             b["variables"] += [o]
-            
+
         self._respond(cmd, True, body = b)
-            
+
     def _default_cmd(self, cmd):
         self._log_write("unknown command: %s" % cmd["command"])
         self._respond(cmd, False)
@@ -336,7 +344,7 @@ class CDPServer(object):
 
     def _event(self, event, body = None):
         r = {}
-        
+
         r["type"] = "event"
 
         r["seq"] = self._seq
@@ -350,9 +358,9 @@ class CDPServer(object):
 
     def _respond(self, req, success, message = None, body = None, ex=None):
         r = {}
-        
-        r["type"] = "response"
 
+        r["type"] = "response"
+        
         r["seq"] = self._seq
         self._seq += 1
         
@@ -423,19 +431,16 @@ class CDPServer(object):
         cl = len(r)
         txt = "Content-Length: %d%s%s" % (cl, LINE_SEP + LINE_SEP, r)
         
-        self._log_write("out:\n%s\n" % txt)
+        self._log_write("sent: %s\n" % r)
         self.data_out.write(txt)
         self.data_out.flush()
             
     def recv(self):
         h = self.data_in.readline()
-        self._log_write("in:\n%s" % repr(h))
         content_length = int(h.split(" ")[1])
         d = self.data_in.readline()
-        self._log_write("%s" % repr(d))
         d = self.data_in.read(content_length)
-        self._log_write("%s\n" % repr(d))
-        self._log_write("len(d): %d\n" % len(d))
+        self._log_write("rcvd: %s\n" % repr(d))
         try:
             j = json.loads(d)
         except:

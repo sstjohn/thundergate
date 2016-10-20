@@ -18,13 +18,17 @@
 
 int global_variable = 0;
 
-void another_function(int i)
+void leaf_function()
+{
+    global_variable++;
+}
+
+void non_leaf_function(int i)
 {
     int j = 0;
-    while (j < i) {
+    while (j < i) 
         j++;
-    }
-    global_variable++;
+    leaf_function();
 }
 
 int test() 
@@ -32,5 +36,6 @@ int test()
     int i = 0;
     while (i < 0xff)
         i++;
-    return i;
+    non_leaf_function(i);
+    return global_variable;
 }
