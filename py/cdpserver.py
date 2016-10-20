@@ -193,12 +193,7 @@ class CDPServer(object):
                 breakpoints_set += [b]
         self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
 
-    def _cmd_next(self, cmd):
-        self._respond(cmd, True)
-        initial_pc = self.dev.rxcpu.pc
-        current_pc = initial_pc
-        cl = self._image.addr2line(initial_pc)
-        self._log_write("initial pc: %x, cl: %s" % (initial_pc, cl))
+    def __advance_to_next_line(self):
         while True:
             self.dev.rxcpu.mode.single_step = 1
             count = 0
@@ -206,10 +201,17 @@ class CDPServer(object):
                 count += 1
                 if count > 500:
                     raise Exception("single step bit failed to clear")
-                self.msleep(10)
             current_pc = self.dev.rxcpu.pc
             if current_pc in self._image._addresses:
                 break
+        
+    def _cmd_next(self, cmd):
+        self._respond(cmd, True)
+        initial_pc = self.dev.rxcpu.pc
+        current_pc = initial_pc
+        cl = self._image.addr2line(initial_pc)
+        self._log_write("initial pc: %x, cl: %s" % (initial_pc, cl))
+        self.__advance_to_next_line()
         cl = self._image.addr2line(current_pc)
         self._log_write("now, pc: %x, cl: \"%s\"" % (current_pc, cl))
         self._event("stopped", {"reason": "step", "threadId": 1})
@@ -331,15 +333,18 @@ class CDPServer(object):
         sys.stdout.flush()
 
     def _evt_stopped(self):
+        b = {"threadId": 1}
         if self.dev.rxcpu.status.halted:
-            reason = "pause"
+            b["reason"] = "pause"
+            if not self._image.addr2line(self.dev.rxcpu.pc):
+                self.__advance_to_next_line()
         else:
             if self.dev.rxcpu.pc in self._bp_replaced_insn:
-                reason = "breakpoint"
+                b["reason"] = "breakpoint"
                 self.__prepare_resume_from_breakpoint()
             else:
-                reason = "unknown"
-        b = {"reason": reason, "threadId": 1}
+                b["reason"] = "exception"
+                b["text"] = "status: %x" % self.dev.rxcpu.status.word
         self._event("stopped", body = b)
 
     def _event(self, event, body = None):

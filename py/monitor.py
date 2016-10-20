@@ -43,9 +43,9 @@ class ExecutionMonitor(object):
     def _watch(self, callback):
         if self._dev.rxcpu.mode.halt:
             self._dev.rxcpu.mode.halt = 0
-        if self._dev.rxcpu.status.word & 0x7fffffff:
+        if self._dev.rxcpu.status.word & 0x7ff:
             self._dev.rxcpu.status.word = 0xffffffff
-        while not (self._dev.rxcpu.status.word & 0x7FFFFFF):
+        while not (self._dev.rxcpu.status.word & 0x7ff):
             yield_quantum()
         self._watching = False
         print "stopped watching at pc = %x" % self._dev.rxcpu.pc

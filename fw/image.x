@@ -3,21 +3,22 @@ SECTIONS
     .text 0x08008000 : { 
         entry.o(.text)
         *(.text)
-	    /* main.o(.text) */
+        /* main.o(.text) */
     }
 
-    .data ADDR(.text)+SIZEOF(.text) : { 
-        *(.data) 
-    }
-
-    .rodata ADDR(.data)+SIZEOF(.data) : { 
+    .rodata ADDR(.text)+SIZEOF(.text) : { 
         *(.rodata)
-	    *(.rodata.*) 
+        *(.rodata.*) 
     }
 
+    .data ADDR(.rodata)+SIZEOF(.rodata) : { 
+        *(.data) 
+        PROVIDE(_edata = .);
+    }
 
-    .bss ADDR(.rodata)+SIZEOF(.rodata) : { 
+    .bss ADDR(.data)+SIZEOF(.data) : { 
         *(.bss) 
+        PROVIDE(_end = .);
     }
 
     .eh_frame : {

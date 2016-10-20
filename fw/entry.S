@@ -19,7 +19,8 @@
 #include "regdef.h"
 
 .set noreorder
-.extern test
+.extern _edata
+.extern _end
 
 .text
 .globl _start
@@ -37,7 +38,17 @@ _start:
     move    fp,sp
 .cfi_def_cfa_register 30
 begin:
-    and s0,s0,$zero
+    lui s0,%hi(_edata)
+    addi s0,%lo(_edata)
+    lui s1,%hi(_end)
+    addi s1,%lo(_end)
+1:  beq s0,s1,2f
+    nop
+    sw r0,0(s0)
+    addiu s0,s0,4
+    b 1b
+    nop
+2:  and s0,s0,$zero
     ori s0,s0,0xffff
 reset:
     lw s1,(counter)
@@ -75,5 +86,5 @@ failed:
 
 .data 
 .align 4
-counter: .word 0
+counter: .word 0x31337
 test_string: .asciiz "test string"

@@ -17,6 +17,7 @@
  */
 
 int global_variable = 0;
+const int constant_integer = 0x31337;
 
 void leaf_function()
 {
