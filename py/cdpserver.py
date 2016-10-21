@@ -38,6 +38,28 @@ from monitor import ExecutionMonitor
 from datamodel import model_registers, model_memory, get_data_value, GenericModel
 from blocks.cpu import mips_regs
 
+try:
+    from capstone import *
+    from capstone.mips import *
+    if cs_version()[0] < 3:
+        print "[-] capstone outdated - disassembly unavailable"
+        _no_capstone = True
+    else:
+        _no_capstone = False
+
+        md_mode = CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
+        md = Cs(CS_ARCH_MIPS, md_mode)
+        md.detail = True
+        md.skipdata = True
+
+        def _disassemble_word(word):
+            i = struct.pack(">I", word)
+            r = md.disasm(i, 4).next()
+            return "%s %s" % (r.mnemonic, r.op_str)
+except:
+    print "[-] capstone not present - disassembly unavailable"
+    _no_capstone = True
+
 class ScopeModel(GenericModel):
     pass
 
@@ -61,7 +83,7 @@ class Var_Tracker(object):
 
     def add_fixed_scope(self, s):
         if self._fixed_scope_end:
-            raise Exception("fixed scopes cannot be added when dynamic scopes are present")
+            raise Exception("fixed scopes cannot be added while dynamic scopes are present")
         self._add_scope(s)
 
     def _add_scope(self, s):
@@ -107,6 +129,7 @@ class CDPServer(object):
         for c in self._register_model.children:
             if c.name == "rxcpu":
                 s = ScopeModel("mips registers")
+                s2 = ScopeModel("mips state")
                 for r in c.children:
                     if r.name[0] == 'r' and r.name[1:].isdigit():
                         reg_no = int(r.name[1:])
@@ -114,8 +137,37 @@ class CDPServer(object):
                         reg_for_display = GenericModel(r.name, r.parent)
                         reg_for_display.display_name = reg_name
                         s.children += [reg_for_display]
+                    if r.name == "pc":
+                        ss = GenericModel(r.name, r.parent)
+                        ss.display_name = "program counter"
+                        ss.accessor = lambda r=r:self._register_model.accessor(r)
+                        s2.children += [ss]
+                    if r.name == "ir":
+                        ss = GenericModel(r.name, r.parent)
+                        ss.display_name = "instruction register"
+                        ss.accessor = lambda r=r:self._register_model.accessor(r)
+                        s2.children += [ss]
+                        if not _no_capstone:
+                            ss = GenericModel(r.name, r.parent)
+                            ss.display_name = "instruction register (decoded)"
+                            ss.accessor = lambda r=r:_disassemble_word(self._register_model.accessor(r))
+                            s2.children += [ss]
+
+                    if r.name in ["mode", "status"]:
+                        ss = GenericModel(r.name, r.parent)
+                        ss.accessor = lambda r=r:self._register_model.accessor(r)
+                        for b in r.children:
+                            cc = GenericModel(b.name, b.parent)
+                            cc.accessor = lambda b=b:self._register_model.accessor(b)
+                            ss.children += [cc]
+                        s2.children += [ss]
+                
                 s.accessor = self._register_model.accessor
                 self._vt.add_fixed_scope(s)
+                
+                s2.accessor = lambda x: x.accessor()
+                self._vt.add_fixed_scope(s2)
+
         self._breakpoints = {}
         self._bp_replaced_insn = {}
 
@@ -154,9 +206,9 @@ class CDPServer(object):
         program = cmd["arguments"]["program"]
         self._image = Image(program)
         self.dev.rxcpu.reset()
-        self.dev.ma.mode.fast_ath_read_disable = 1
-        self.dev.ma.mode.cpu_pipeline_request_disable = 1
-        self.dev.ma.mode.low_latency_enable = 1
+        #self.dev.ma.mode.fast_ath_read_disable = 1
+        #self.dev.ma.mode.cpu_pipeline_request_disable = 1
+        #self.dev.ma.mode.low_latency_enable = 1
         self.dev.rxcpu.image_load(*self._image.executable)
         self._respond(cmd, True)
 
@@ -171,7 +223,7 @@ class CDPServer(object):
         self._event("initialized")
 
     def _cmd_setExceptionBreakpoints(self, cmd):
-        self._respond(cmd, True)
+        self._respond(cmd, False)
 
     def _cmd_setBreakpoints(self, cmd):
         source = os.path.basename(cmd["arguments"]["source"]["path"])
@@ -207,13 +259,14 @@ class CDPServer(object):
         
     def _cmd_next(self, cmd):
         self._respond(cmd, True)
-        initial_pc = self.dev.rxcpu.pc
-        current_pc = initial_pc
-        cl = self._image.addr2line(initial_pc)
-        self._log_write("initial pc: %x, cl: %s" % (initial_pc, cl))
+        pc = self.dev.rxcpu.pc
+        cl = self._image.addr2line(pc)
+        self._log_write("single step began at pc: %x, cl: %s" % (pc, cl))
         self.__advance_to_next_line()
-        cl = self._image.addr2line(current_pc)
-        self._log_write("now, pc: %x, cl: \"%s\"" % (current_pc, cl))
+        pc = self.dev.rxcpu.pc
+        cl = self._image.addr2line(pc)
+        self._log_write("single step completed at pc: %x, cl: \"%s\"" % (pc, cl))
+        self.__prepare_resume_from_breakpoint()
         self._event("stopped", {"reason": "step", "threadId": 1})
 
     def _cmd_threads(self, cmd):
@@ -229,7 +282,6 @@ class CDPServer(object):
         self._respond(cmd, True)
 
     def _cmd_continue(self, cmd):
-        callback = functools.partial(CDPServer._evt_stopped, self)
         self._respond(cmd, True)
         self._monitor.watch()
 
@@ -334,17 +386,25 @@ class CDPServer(object):
 
     def _evt_stopped(self):
         b = {"threadId": 1}
+        pc = self.dev.rxcpu.pc
         if self.dev.rxcpu.status.halted:
             b["reason"] = "pause"
-            if not self._image.addr2line(self.dev.rxcpu.pc):
+            if not self._image.addr2line(pc):
+                print "halted at unknown pc %x, advancing..." % pc
                 self.__advance_to_next_line()
+                pc = self.dev.rxcpu.pc
+                cl = self._image.addr2line(pc)
+                print "finished halting at pc %x, \"%s\"" % (pc, cl)
+                self.__prepare_resume_from_breakpoint()
         else:
-            if self.dev.rxcpu.pc in self._bp_replaced_insn:
+            if pc in self._bp_replaced_insn:
                 b["reason"] = "breakpoint"
+                print "breakpoint reached at %x (\"%s\")" % (pc, self._image.addr2line(pc))
                 self.__prepare_resume_from_breakpoint()
             else:
                 b["reason"] = "exception"
                 b["text"] = "status: %x" % self.dev.rxcpu.status.word
+                print "stopped on unknown rxcpu exception at %x (\"%s\"), status: %x" % (pc, self._image.addr2line(pc), self.dev.rxcpu.status.word)
         self._event("stopped", body = b)
 
     def _event(self, event, body = None):
@@ -429,7 +489,11 @@ class CDPServer(object):
 
     def __prepare_resume_from_breakpoint(self):
         pc = self.dev.rxcpu.pc
-        self.dev.rxcpu.ir = self._bp_replaced_insn[pc]
+        if pc in self._bp_replaced_insn:
+            assert self.dev.rxcpu.ir == 0xd
+            replacement = self._bp_replaced_insn[pc]
+            print "pc %x is a soft breakpoint, restoring ir with %x" % (pc, replacement) 
+            self.dev.rxcpu.ir = replacement
 
     def send(self, resp):
         r = json.dumps(resp, separators=(",",":"))

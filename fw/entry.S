@@ -48,18 +48,20 @@ begin:
     addiu s0,s0,4
     b 1b
     nop
-2:  and s0,s0,$zero
-    ori s0,s0,0xffff
+2:  and s0,r0,r0
+    and s0,r0,r0
+    and s3,s3,r0
+    ori s3,s3,0xffff
 reset:
     lw s1,(counter)
     addiu s1,1
     sw s1,(counter)
-    jal test
-    nop
-    and s2,s2,$zero
+    //jal test
+    //nop
+    and s2,s2,r0
 loop:
     addiu s2,1
-    beq s0,s2,reset
+    beq s3,s2,reset
     nop
     j loop
     nop

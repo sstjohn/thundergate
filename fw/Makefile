@@ -13,7 +13,7 @@ LIBGCC=$(shell $(CC) -print-libgcc-file-name)
 
 IMAGE=fw.img
 
-CSOURCE=test.c #main.c init.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
+CSOURCE=#test.c #main.c init.c handlers.c nvram.c phy.c util.c beacon.c cloak.c rx.c tx.c lgate.c
 CHEADERS=$(shell ls $(PROJ_ROOT)/include)
 
 ASOURCE=entry.S
