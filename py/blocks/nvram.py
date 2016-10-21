@@ -541,8 +541,8 @@ class nvram(rflip.nvram):
         self.install_bc(nullcode)
 
     def install_bc(self, image):
-	if 0 != (len(image) % 4):
-	    image += ('\x00' * (4 - (len(image) % 4)))
+        if 0 != (len(image) % 4):
+            image += ('\x00' * (4 - (len(image) % 4)))
         image += struct.pack("i", crc32(image))
         iwords = len(image) >> 2
         nvstart = self.eeprom_hdr.bs.bc_nvram_start
@@ -552,5 +552,17 @@ class nvram(rflip.nvram):
         crc = unpack("<I", pack(">i", crc))[0]
         self.eeprom_hdr.bs.crc = crc 
         self._flush_eeprom_header(8, 0xc)
-	return (nvstart, len(image))
+        return (nvstart, len(image))
+
+    def dump_bc(self, fname):
+        f = open(fname, "wb")
+        bc_start = self.eeprom_hdr.bs.bc_nvram_start
+        bc_len = self.eeprom_hdr.bs.bc_words << 2
+        bc_load_addr = self.eeprom_hdr.bs.bc_sram_start
+        bc_data = self.read_block(bc_start, bc_len)
+        
+        f.write(bc_data)
+        f.close()
+        print "bootcode length: %d bytes" % bc_len
+        print "bootcode load addr: %x" % bc_load_addr
 

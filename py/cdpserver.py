@@ -246,6 +246,15 @@ class CDPServer(object):
         self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
 
     def __advance_to_next_line(self):
+        current_pc = self.dev.rxcpu.pc
+        if not current_pc in self._bp_replaced_insn:
+            ir_reg_val = self.dev.rxcpu.ir
+            insn_from_mem = struct.unpack(">I", self.dev.rxcpu.tr_read(current_pc, 1))[0]
+            if ir_reg_val != insn_from_mem:
+                print "ir reg is %x, should be %x, fixing." % (ir_reg_val, insn_from_mem)
+                self.dev.rxcpu.ir = insn_from_mem
+                ir_reg_val = self.dev.rxcpu.ir
+            assert ir_reg_val == insn_from_mem
         while True:
             self.dev.rxcpu.mode.single_step = 1
             count = 0
