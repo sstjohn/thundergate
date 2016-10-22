@@ -69,6 +69,7 @@ class Var_Tracker(object):
         self._scopes = []
         self._fixed_reference_end = None
         self._fixed_scope_end = None
+        self._known_frame_levels = []
 
     def _assign_variablesReference(self, v):
         self._references.append(v)
@@ -84,30 +85,34 @@ class Var_Tracker(object):
     def add_fixed_scope(self, s):
         if self._fixed_scope_end:
             raise Exception("fixed scopes cannot be added while dynamic scopes are present")
-        self._add_scope(s)
+        self._add_scope(s, -1)
 
-    def _add_scope(self, s):
+    def _add_scope(self, s, fl=0):
         print "adding scope %s" % s.name
+        s.fl = fl
         self._assign_variablesReference(s)
         self._scopes += [s]
         for c in s.children:
             c.scope = s
             self._add_variables_references(c)
+        if not fl in self._known_frame_levels:
+            self._known_frame_levels += [fl]
 
-    def add_dynamic_scope(self, s):
+    def add_dynamic_scope(self, s, fl = 0):
         if not self._fixed_scope_end:
             self._fixed_scope_end = len(self._scopes)
             self._fixed_reference_end = len(self._references)
-        self._add_scope(s)
+        self._add_scope(s, fl)
 
     def clear_dynamic_scopes(self):
         self._scopes = self._scopes[:self._fixed_scope_end]
         self._references = self._references[:self._fixed_reference_end]
         self._fixed_scope_end = None
         self._fixed_reference_end = None
+        self._known_frame_levels = []
 
-    def get_scopes(self):
-        return self._scopes
+    def get_scopes(self, fl=0):
+        return [s for s in self._scopes if s.fl == fl or s.fl == -1]
 
     def dereference(self, ref_no):
         return self._references[ref_no - 1]
@@ -301,11 +306,13 @@ class CDPServer(object):
         self.dev.rxcpu.halt()
 
     def _cmd_stackTrace(self, cmd):
-        stack = self.__stack_unwind()
+        self._vt.clear_dynamic_scopes()
+        self._stack = self.__stack_unwind()
         frame_id = 1
         b = {"stackFrames": []}
-        for f in stack:
+        for f in self._stack:
             loc = self._image.loc_at(f["pc"])
+            print "0x%x" % f["pc"]
             source_path = loc[3] + os.sep + loc[1]
             source_name = "fw" + os.sep + loc[1]
             s = {"name": source_name, "path": source_path}
@@ -329,7 +336,7 @@ class CDPServer(object):
         if frame_state is None:
             return frame_states
         return_address = frame_state["r31"]
-        call_site = return_address - 4
+        call_site = return_address - 8
         if 0x8000000 <= call_site and 0x8010000 > call_site:
             frame_state["pc"] = call_site
             if not frame_state["r31"] is None:
@@ -370,14 +377,14 @@ class CDPServer(object):
 
         return new_frame_state
 
-    def _collect_scopes(self):
-        top_of_stack = self._image.loc_at(self.dev.rxcpu.pc)
-        func_name, cu_name, cu_line, source_dir = top_of_stack
+    def _collect_scopes(self, frame):
+        loc = self._image.loc_at(frame["pc"])
+        func_name, cu_name, cu_line, source_dir = loc
 
         scopes = []
         if len(self._image._compile_units[cu_name]["variables"]) > 0:
             global_scope = ScopeModel("global variables")
-            global_scope.children = self._collect_vars(self._image._compile_units[cu_name]["variables"], global_scope)
+            global_scope.children = self._collect_vars(self._image._compile_units[cu_name]["variables"], global_scope, frame)
             global_scope.accessor = lambda x: x.evaluator()
 
             scopes += [global_scope]
@@ -385,21 +392,21 @@ class CDPServer(object):
         if func_name:
             if len(self._image._compile_units[cu_name]["functions"][func_name]["args"]) > 0:
                 argument_scope = ScopeModel("function arguments")
-                argument_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["args"], argument_scope)
+                argument_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["args"], argument_scope, frame)
                 argument_scope.accessor = lambda x: x.evaluator()
 
                 scopes += [argument_scope]
 
             if len(self._image._compile_units[cu_name]["functions"][func_name]["vars"]) > 0:
                 local_scope = ScopeModel("local variables")
-                local_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["vars"], local_scope)
+                local_scope.children = self._collect_vars(self._image._compile_units[cu_name]["functions"][func_name]["vars"], local_scope, frame)
                 local_scope.accessor = lambda x: x.evaluator()
 
                 scopes += [local_scope]
 
         return scopes
 
-    def _collect_vars(self, variables, scope):
+    def _collect_vars(self, variables, scope, frame):
         def _var_pp(v):
             try: return "%x" % v
             except: return str(v)
@@ -407,18 +414,21 @@ class CDPServer(object):
         collected = []
         for v in variables:
             o = GenericModel(v, scope, scope)
-            o.evaluator = lambda v=v: _var_pp(self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"])) 
+            o.evaluator = lambda v=v: _var_pp(self._image.get_expr_evaluator().process_expr(self.dev, variables[v]["location"], frame)) 
             collected += [o]
         return collected
 
     def _cmd_scopes(self, cmd):
-        self._vt.clear_dynamic_scopes()   
-        dynamic_scopes = self._collect_scopes()
-        for scope in dynamic_scopes:
-            self._vt.add_dynamic_scope(scope)
+        
+        frame_id = cmd["arguments"]["frameId"]
+        if not frame_id in self._vt._known_frame_levels:
+            frame = self._stack[frame_id - 1]   
+            dynamic_scopes = self._collect_scopes(frame)
+            for scope in dynamic_scopes:
+                self._vt.add_dynamic_scope(scope, frame_id)
 
         scopes = []
-        for s in self._vt.get_scopes():
+        for s in self._vt.get_scopes(frame_id):
             scopes += [{"name": s.name, "variablesReference": s.variablesReference, "expensive": True}]
         b = {"scopes": scopes}
         self._respond(cmd, True, body = b)
@@ -559,7 +569,6 @@ class CDPServer(object):
     def __prepare_resume_from_breakpoint(self):
         pc = self.dev.rxcpu.pc
         if pc in self._bp_replaced_insn:
-            assert self.dev.rxcpu.ir == 0xd
             replacement = self._bp_replaced_insn[pc]
             print "pc %x is a soft breakpoint, restoring ir with %x" % (pc, replacement) 
             self.dev.rxcpu.ir = replacement

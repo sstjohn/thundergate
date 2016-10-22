@@ -30,13 +30,14 @@ class ExprLiveEval(GenericExprVisitor):
         self._val = 0
         super(ExprLiveEval, self).__init__(image.dwarf.structs)
 
-    def process_expr(self, dev, expr):
+    def process_expr(self, dev, expr, frame):
         self._dev = dev
+        self._frame = frame
         print "processing expr %s" % str(expr)
         assert isinstance(expr, list) and len(expr) > 0
         if isinstance(expr[0], LocationEntry):
-            cur_pc = self._dev.rxcpu.pc
-            fname, cu_name, cu_line_no, cu_comp_dir = self._image.top_frame_at(cur_pc)
+            cur_pc = frame["pc"]
+            fname, cu_name, cu_line_no, cu_comp_dir = self._image.loc_at(cur_pc)
             cu = self._image._compile_units[cu_name]
             cu_base = cu["lpc"]
             selected_expr = _select_from_location_list(cur_pc, cu_base, expr)
@@ -65,10 +66,10 @@ class ExprLiveEval(GenericExprVisitor):
         elif 0x30 <= opcode and opcode < 0x50:
             self._val = opcode - 0x30
         elif 0x50 <= opcode and opcode < 0x70:
-            self._val = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x50))
+            self._val = self._frame["r%d" % (opcode - 0x50)]
         elif 0x70 <= opcode and opcode < 0x90:
             print "val was %x" % self._val
-            b = getattr(self._dev.rxcpu, "r%d" % (opcode - 0x70))
+            b = self._frame["r%d" % (opcode - 0x70)]
             print "register %d contains %x" % ((opcode - 0x70), b)
             if len(args) > 0:
                 assert len(args) == 1
@@ -78,8 +79,8 @@ class ExprLiveEval(GenericExprVisitor):
             v = self._dev.rxcpu.tr_read(b, 1)
             self._val = struct.unpack("!I", v)[0]
         elif 0x91 == opcode:
-            cur_pc = self._dev.rxcpu.pc
-            fname, cu_name, cu_line_no, cu_comp_dir = self._image.top_frame_at(cur_pc)
+            cur_pc = self._frame["pc"]
+            fname, cu_name, cu_line_no, cu_comp_dir = self._image.loc_at(cur_pc)
             frame_base = self._image._compile_units[cu_name]["functions"][fname]["fb"]
             print "frame base is %s" % str(frame_base)
             assert isinstance(frame_base, list) and len(frame_base) > 0
@@ -95,7 +96,7 @@ class ExprLiveEval(GenericExprVisitor):
                 expr = frame_base
             print "frame base expression is %s" % str(expr)
             evaluator = self._image.get_expr_evaluator()
-            fb_value = evaluator.process_expr(self._dev, expr)
+            fb_value = evaluator.process_expr(self._dev, expr, self._frame)
             if isinstance(fb_value, str):
                 self._val = fb_value + " (encountered by frame base evaluator)"
             else:

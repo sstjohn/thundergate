@@ -35,7 +35,10 @@ $(IMAGE): fw.elf
 	$(OBJCOPY) -j .text -j .data -j .rodata -j .bss -O binary fw.elf $(IMAGE)
 
 clean:
-	-rm -f $(OBJECTS) fw.elf fw.img .depend fixed.sym
+	-rm -f *.o fw.elf fw.img .depend fixed.sym
+
+rebuild:
+	$(MAKE) clean && $(MAKE)
 
 depend: .depend
 

@@ -6,7 +6,8 @@
 			"type": "tg",
 			"request": "launch",
 			"program": "${workspaceRoot}/fw/fw.elf",
-			"stopOnEntry": true
+			"stopOnEntry": true,
+			"preLaunchTask": "makeFw"
 		}
 	]
 }
