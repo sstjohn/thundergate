@@ -38,5 +38,5 @@ int test()
     while (i < 0xff)
         i++;
     non_leaf_function(i);
-    return global_variable;
+    return 0;
 }

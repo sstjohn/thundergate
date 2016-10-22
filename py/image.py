@@ -170,21 +170,34 @@ class Image(object):
         self._lowest_known_address = None
         
         location_lists = dw.location_lists()
-        if location_lists is not None:
-            print "location lists:"
-            for e in location_lists.iter_location_lists():
-                print str(e)
-            print
             
-        if dw.has_CFI():
-            print "cfi entries:"
+        
+        cfi = None
+        if dw.has_EH_CFI():
+            cfi = dw.EH_CFI_entries()
+            print "we have EH CFI entries"
+        elif dw.has_CFI():
             cfi = dw.CFI_entries()
+            print "we have CFI entries"
+        
+        else:
+            print "no (EH) CFI"
+
+        if None is not cfi:
+            self._cfa_rule = {}
             for c in cfi:
                 try:
-                    print str(c.get_decoded())
+                    decoded = c.get_decoded()
                 except:
-                    print "(decoding exception)"
-            print
+                    print "CFI decoding exception"
+                    break
+
+                for entry in decoded.table:
+                    assert not entry["pc"] in self._cfa_rule
+                    self._cfa_rule[entry["pc"]] = entry
+
+
+            
         
         for c in dw.iter_CUs():
             functions = {}  
@@ -207,16 +220,13 @@ class Image(object):
                     f["vars"] = {}
                     if 'DW_AT_frame_base' in d.attributes:
                         a = d.attributes['DW_AT_frame_base']
-                        print "frame base attribute: %s" % str(a)
                         if a.form == 'DW_FORM_data4' or a.form == 'DW_FORM_sec_offset':
                             f["fb"] = location_lists.get_location_list_at_offset(a.value)
-                            print "fb attribute: %s" % str(a)
                         else:
                             f["fb"] = a.value
                     
                     for child in d.iter_children():
                         if child.tag == "DW_TAG_formal_parameter":
-                            print "argument DIE: %s" % str(child)
                             name = child.attributes['DW_AT_name'].value
                             v = {}
                             try:
@@ -228,7 +238,6 @@ class Image(object):
                                 v["location"] = []
                             f["args"][name] = v
                         if child.tag == "DW_TAG_variable":
-                            print "local DIE: %s" % str(child)
                             name = child.attributes['DW_AT_name'].value
                             v = {}
                             try:
@@ -242,7 +251,6 @@ class Image(object):
 
                     functions[function_name] = f
                 elif d.tag == 'DW_TAG_variable':
-                    print "variable DIE: %s" % str(d)
                     if d.attributes['DW_AT_decl_file'].value == 1:
                         try:
                             name = d.attributes['DW_AT_name'].value
@@ -271,10 +279,10 @@ class Image(object):
                     (self._lowest_known_address > x["lpc"])):
                 self._lowest_known_address = x["lpc"]
 
+            
         for c in self._compile_units:
             self._compile_units[c]["lines"] = {}
             for line in self._compile_units[c]["line_program"]:
-                print str(line)
                 state = line.state
                 if state is not None and not (state.end_sequence or state.basic_block or state.epilogue_begin or state.prologue_end):
                     cl = "%s+%d" % (c, state.line)
@@ -283,12 +291,17 @@ class Image(object):
                     self._addresses[state.address] = cl
                     try: self._compile_units[c]["lines"][state.line] += [state.address]
                     except: self._compile_units[c]["lines"][state.line] = [state.address]
+        
+        if not cfi is None:
+            print "CFA table:"
+            for pc in sorted(self._cfa_rule.keys()):
+                print "%x: %s\t\t(%s)" % (pc, str(self._cfa_rule[pc]), self.addr2line(pc))
 
     def addr2line(self, addr):
         try: return self._addresses[addr]
         except: return ''
 
-    def top_frame_at(self, addr):
+    def loc_at(self, addr):
         line = self.addr2line(addr)
         while '' == line and addr >= self._lowest_known_address:
             addr -= 4

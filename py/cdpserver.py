@@ -128,8 +128,8 @@ class CDPServer(object):
         self._vt.add_fixed_scope(self._memory_model)
         for c in self._register_model.children:
             if c.name == "rxcpu":
-                s = ScopeModel("mips registers")
-                s2 = ScopeModel("mips state")
+                s = ScopeModel("rxcpu registers")
+                s2 = ScopeModel("rxcpu state")
                 for r in c.children:
                     if r.name[0] == 'r' and r.name[1:].isdigit():
                         reg_no = int(r.name[1:])
@@ -246,9 +246,14 @@ class CDPServer(object):
         self._respond(cmd, True, body = {"breakpoints": breakpoints_set})
 
     def __advance_to_next_line(self):
-        current_pc = self.dev.rxcpu.pc
-
         while True:
+            self.dev.rxcpu.mode.single_step = 1
+            count = 0
+            while self.dev.rxcpu.mode.single_step:
+                count += 1
+                if count > 500:
+                    raise Exception("single step bit failed to clear")
+            current_pc = self.dev.rxcpu.pc
             if not current_pc in self._bp_replaced_insn:
                 ir_reg_val = self.dev.rxcpu.ir
                 insn_from_mem = struct.unpack(">I", self.dev.rxcpu.tr_read(current_pc, 1))[0]
@@ -259,13 +264,6 @@ class CDPServer(object):
                 assert ir_reg_val == insn_from_mem
             else:
                 self.__prepare_resume_from_breakpoint()
-            self.dev.rxcpu.mode.single_step = 1
-            count = 0
-            while self.dev.rxcpu.mode.single_step:
-                count += 1
-                if count > 500:
-                    raise Exception("single step bit failed to clear")
-            current_pc = self.dev.rxcpu.pc
             if current_pc in self._image._addresses:
                 break
         
@@ -303,18 +301,77 @@ class CDPServer(object):
         self.dev.rxcpu.halt()
 
     def _cmd_stackTrace(self, cmd):
-        top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
-        frame_name, source_name, source_line, source_dir = top_of_stack
-        source_path = source_dir + os.sep + source_name
-        source_name = "fw" + os.sep + source_name
-        s = {"name": source_name, "path": source_path}
-        f = {"id": 1, "name": frame_name, "line": int(source_line), "column": 1, "source": s}
-
-        b = {"stackFrames": [f]}
+        stack = self.__stack_unwind()
+        frame_id = 1
+        b = {"stackFrames": []}
+        for f in stack:
+            loc = self._image.loc_at(f["pc"])
+            source_path = loc[3] + os.sep + loc[1]
+            source_name = "fw" + os.sep + loc[1]
+            s = {"name": source_name, "path": source_path}
+            f = {"id": frame_id, "name": loc[0], "line": int(loc[2]), "column": 1, "source": s}
+            b["stackFrames"] += [f]
+            frame_id += 1
         self._respond(cmd, True, body = b)
 
+    def __stack_unwind(self):
+        frame_state_attrs = ["r%d" % x for x in range(32)] + ["pc"]
+        frame_state = {}
+        for a in frame_state_attrs:
+            frame_state[a] = getattr(self.dev.rxcpu, a)
+        if 0x8008000 <= frame_state["pc"] and 0x8008010 > frame_state["pc"]:
+            return [frame_state]
+        else:
+            return self.__unwind_stack_from([frame_state])
+
+    def __unwind_stack_from(self, frame_states):
+        frame_state = self.__restore_cf(frame_states[-1])
+        if frame_state is None:
+            return frame_states
+        return_address = frame_state["r31"]
+        call_site = return_address - 4
+        if 0x8000000 <= call_site and 0x8010000 > call_site:
+            frame_state["pc"] = call_site
+            if not frame_state["r31"] is None:
+                return self.__unwind_stack_from(frame_states + [frame_state])
+            else:
+                return frame_states + [frame_state]
+        else: 
+            return frame_states + [frame_state]
+
+    def __find_cfa_tbl_line_for(self, pc):
+        result = None
+        for entry in sorted(self._image._cfa_rule.keys(), reverse=True):
+            if pc >= entry and entry != 0:
+                result = self._image._cfa_rule[entry]
+                break
+        return result
+
+    def __restore_cf(self, frame_state):
+        new_frame_state = frame_state.copy()
+        pc = frame_state["pc"]
+        tbl_line = self.__find_cfa_tbl_line_for(pc)
+        if tbl_line is None:
+            return None
+        cfa_rule = tbl_line["cfa"]
+        if not cfa_rule.expr is None:
+            raise Exception("DWARF expression unhandled in CFA")
+        
+        cfa = frame_state["r%d" % cfa_rule.reg]
+        cfa += cfa_rule.offset
+        for reg in tbl_line:
+            if reg in ["cfa", "pc"]: continue
+            reg_rule = tbl_line[reg]
+            if reg_rule.type != 'OFFSET':
+                raise Exception("DWARF register rule type %s unhandled" % reg_rule.type)
+            reg_val_addr = cfa + reg_rule.arg
+            reg_val = struct.unpack(">I", self.dev.rxcpu.tr_read(reg_val_addr, 1))[0]
+            new_frame_state["r%d" % reg] = reg_val
+
+        return new_frame_state
+
     def _collect_scopes(self):
-        top_of_stack = self._image.top_frame_at(self.dev.rxcpu.pc)
+        top_of_stack = self._image.loc_at(self.dev.rxcpu.pc)
         func_name, cu_name, cu_line, source_dir = top_of_stack
 
         scopes = []

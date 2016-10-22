@@ -21,22 +21,16 @@
 .set noreorder
 .extern _edata
 .extern _end
-
+.extern test
 .text
-.globl _start
-.cfi_startproc
-.ent _start
-.type _start, @function
-_start:
-.frame fp,16,ra
+    andi    sp,r0,0
+    lui     sp,0x801
+    andi    ra,r0,0
+
     addiu   sp,sp,-16
-.cfi_def_cfa_offset 16
     sw      ra,12(sp)
-.cfi_offset 31,-4
     sw      fp,8(sp)
-.cfi_offset 30, -8
     move    fp,sp
-.cfi_def_cfa_register 30
 begin:
     lui s0,%hi(_edata)
     addi s0,%lo(_edata)
@@ -48,22 +42,9 @@ begin:
     addiu s0,s0,4
     b 1b
     nop
-2:  and s0,r0,r0
-    and s0,r0,r0
-    and s3,s3,r0
-    ori s3,s3,0xffff
-reset:
-    lw s1,(counter)
-    addiu s1,1
-    sw s1,(counter)
-    //jal test
-    //nop
-    and s2,s2,r0
-loop:
-    addiu s2,1
-    beq s3,s2,reset
-    nop
-    j loop
+2:  jal test
+    ori v0,r0,1
+    beqz v0,2b
     nop
 failed:
 .set noat
@@ -72,21 +53,6 @@ failed:
     ori $1,$1,0xDEAD
     nop
     break
-    nop
-    move sp,fp
-.cfi_def_cfa_register 29
-    lw ra,12(sp)
-.cfi_restore 31
-    lw fp,8(sp)
-.cfi_restore 30
-    addiu sp,sp,16
-.cfi_def_cfa_offset 0
-    j ra
-    nop
-.cfi_endproc
-.end _start
-
+    
 .data 
 .align 4
-counter: .word 0x31337
-test_string: .asciiz "test string"
