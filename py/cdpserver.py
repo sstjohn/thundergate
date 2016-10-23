@@ -82,10 +82,10 @@ class Var_Tracker(object):
                 c.scope = v.scope
                 self._add_variables_references(c)
 
-    def add_fixed_scope(self, s):
+    def add_fixed_scope(self, s, fl=-1):
         if self._fixed_scope_end:
             raise Exception("fixed scopes cannot be added while dynamic scopes are present")
-        self._add_scope(s, -1)
+        self._add_scope(s, fl)
 
     def _add_scope(self, s, fl=0):
         print "adding scope %s" % s.name
@@ -168,7 +168,7 @@ class CDPServer(object):
                         s2.children += [ss]
                 
                 s.accessor = self._register_model.accessor
-                self._vt.add_fixed_scope(s)
+                self._vt.add_fixed_scope(s, fl=1)
                 
                 s2.accessor = lambda x: x.accessor()
                 self._vt.add_fixed_scope(s2)
@@ -366,6 +366,7 @@ class CDPServer(object):
         
         cfa = frame_state["r%d" % cfa_rule.reg]
         cfa += cfa_rule.offset
+        new_frame_state["r29"] = cfa
         for reg in tbl_line:
             if reg in ["cfa", "pc"]: continue
             reg_rule = tbl_line[reg]
