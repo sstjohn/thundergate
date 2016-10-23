@@ -16,36 +16,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* #include "fw.h" */
-
-int global = 0;
+#include "fw.h"
 
 void main() 
-{
-	int local = 0;
-	
-    while (1) {
-		local++;
-		if (0 == local % 4) {
-			local = 0; 
-			global++;
-			if (0 == global % 16) {
-				global = 0;
-			}
-		}	
+{	
+	while (1) {
+		if (grc.rxcpu_event.emac) {
+			check_link();
+		}
+		if (grc.rxcpu_event.timer) {
+			beacon();
+		}
+		if (grc.rxcpu_event.rdiq) {
+			rx();
+		}
+		if (grc.rxcpu_event.sw_event_0) {
+			lgate_reply();
+		}
 	}
-	/*
-	if (grc.rxcpu_event.emac) {
-		check_link();
-	}
-        if (grc.rxcpu_event.timer) {
-		beacon();
-        }
-	if (grc.rxcpu_event.rdiq) {
-		rx();
-	}
-	if (grc.rxcpu_event.sw_event_0) {
-		lgate_reply();
-	}
-	*/
 } 

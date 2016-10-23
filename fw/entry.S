@@ -21,7 +21,7 @@
 .set noreorder
 .extern _edata
 .extern _end
-.extern test
+
 .text
     andi    sp,r0,0
     lui     sp,0x801
@@ -42,7 +42,7 @@ begin:
     addiu s0,s0,4
     b 1b
     nop
-2:  jal test
+2:  jal init
     ori v0,r0,1
     beqz v0,2b
     nop

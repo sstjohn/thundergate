@@ -171,7 +171,7 @@ class CDPServer(object):
                 self._vt.add_fixed_scope(s, fl=1)
                 
                 s2.accessor = lambda x: x.accessor()
-                self._vt.add_fixed_scope(s2)
+                self._vt.add_fixed_scope(s2, fl=1)
 
         self._breakpoints = {}
         self._bp_replaced_insn = {}

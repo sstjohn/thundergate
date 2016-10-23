@@ -194,7 +194,12 @@ class Image(object):
                     break
 
                 for entry in decoded.table:
-                    assert not entry["pc"] in self._cfa_rule
+                    if entry["pc"] in self._cfa_rule:
+                        print "duplicate cfa rule found at pc %x" % entry["pc"]
+                        print "\t%s" % str(self._cfa_rule[entry["pc"]])
+                        print "\t%s" % str(entry)
+                        print
+                    #assert (not entry["pc"] in self._cfa_rule) or (self._cfa_rule[entry["pc"]] == entry)
                     self._cfa_rule[entry["pc"]] = entry
 
 
@@ -208,6 +213,8 @@ class Image(object):
 
             for d in td.iter_children():
                 if d.tag == 'DW_TAG_subprogram':
+                    if 'DW_AT_declaration' in d.attributes:
+                        continue
                     lpc = d.attributes['DW_AT_low_pc'].value
                     hpc = d.attributes['DW_AT_high_pc'].value
                     if hpc < lpc:

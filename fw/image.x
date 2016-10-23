@@ -3,7 +3,7 @@ SECTIONS
     .text 0x08008000 : { 
         entry.o(.text)
         *(.text)
-        /* main.o(.text) */
+        main.o(.text)
     }
 
     .rodata ADDR(.text)+SIZEOF(.text) : { 
