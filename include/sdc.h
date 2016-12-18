@@ -30,8 +30,8 @@ struct sdc_mode {
 };
 
 struct sdc_pre_dma_command_exchange {
-    u32 pass :1;
-    u32 skip :1;
+    u32 pass_flag :1;
+    u32 skip_flag :1;
     u32 end_of_frag :1;
     u32 reserved :13;
     u32 head_txmbuf_ptr :8;

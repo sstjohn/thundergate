@@ -29,7 +29,7 @@
 #define uint16_t __UINT16_TYPE__
 #define uint32_t __UINT32_TYPE__
 #define uint64_t __UINT64_TYPE__
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(CTYPESGEN)
 #include <stdint-gcc.h>
 #endif
 

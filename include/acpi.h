@@ -21,7 +21,7 @@
 
 #include "utypes.h"
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(CTYPESGEN)
 #define __attribute__(x)
 #define ANYSIZE_ARRAY 1
 #pragma pack(push, 1)
