@@ -37,3 +37,7 @@ win/**/*.VC.opendb
 **/*~
 **/__pycache__/
 env/
+
+# mips-elf cross-toolchain (misc/build-toolchain.sh)
+/.toolchain-build/
+/toolchain/

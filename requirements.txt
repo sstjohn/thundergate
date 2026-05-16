@@ -1,0 +1,18 @@
+# ThunderGate Python 3 dependencies — install with: pip install -r requirements.txt
+#
+# The toolkit runs from source (py/main.py); these are its third-party deps
+# after the Python 2 -> 3 modernization.
+#
+# Requires Python 3.13+ (3.13 or 3.14 — older versions are end-of-life).
+
+# Core runtime
+capstone>=4          # MIPS disassembly (py/blocks/cpu.py)
+bidict               # bidirectional maps (py/reutils.py)
+pyelftools           # ELF / DWARF parsing (py/image.py)
+
+# GUI and debug bridge
+wxpython>=4          # py/gui/ — wxPython 4 (Phoenix)
+debugpy              # py/cdpserver.py — replaces the dead ptvsd
+
+# Build-time only — regenerates py/tglib.py from include/*.h
+ctypesgen
