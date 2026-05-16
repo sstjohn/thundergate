@@ -19,7 +19,7 @@
 import struct
 import select
 import os
-import clib as c
+import cabi as c
 import fcntl
 from tunlib import *
 import tty

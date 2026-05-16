@@ -42,7 +42,7 @@ sys_name = platform.system()
 if sys_name == "Linux":
     import fcntl
     
-    import clib as c
+    import cabi as c
     from tunlib import *
     from linux import TapLinuxInterface
     TDInt = TapLinuxInterface

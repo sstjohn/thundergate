@@ -18,7 +18,7 @@
 
 import os
 import struct
-import clib as c
+import cabi as c
 import mm
 from interfaces.sysfs import SysfsInterface
 

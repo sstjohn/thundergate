@@ -18,7 +18,7 @@
 
 import os
 from fcntl import ioctl
-import clib as c
+import cabi as c
 import struct
 from mm.linux_io import IOMemMgr
 

@@ -29,7 +29,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
-import clib as c
+import cabi as c
 from tunlib import (IFF_TAP, IFF_NO_PI, TUNSETIFF)
 
 class TapLinuxInterface(object):

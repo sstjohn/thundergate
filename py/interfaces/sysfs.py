@@ -18,7 +18,7 @@
 
 import os
 import struct
-import clib as c
+import cabi as c
 from mm.linux import LinuxMemMgr
 
 class SysfsInterface(object):
