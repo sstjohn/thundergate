@@ -9090,7 +9090,7 @@ struct_anon_63.__slots__ = [
     'cache_line_sz',
 ]
 struct_anon_63._fields_ = [
-    ('bist', u8, 8),
+    ('bist', u32, 8),
     ('hdr_type', u32, 8),
     ('lat_timer', u32, 8),
     ('cache_line_sz', u32, 8),

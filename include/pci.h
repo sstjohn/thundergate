@@ -170,7 +170,7 @@ struct pci_regs {
     };
     struct pci_class_code_rev_id class_code_rev_id;
     struct {
-        u8 bist :8;
+        u32 bist :8;
         u32 hdr_type :8;
         u32 lat_timer :8;
         u32 cache_line_sz :8;
