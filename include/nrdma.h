@@ -254,7 +254,7 @@ struct nrdma_regs {
 	struct nrdma_reserved_control reserved_control; 
 	struct nrdma_flow_reserved_control flow_reserved_control; 
 	struct nrdma_corruption_enable_control corruption_enable_control; 
-	struct ofs_7c;
+	u32 ofs_7c;
 };
 
 #endif

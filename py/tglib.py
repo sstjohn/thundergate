@@ -1,106 +1,149 @@
-'''Wrapper for acpi.h
+r"""Wrapper for acpi.h
 
 Generated with:
-/usr/local/bin/ctypesgen.py -I/home/saul/thundergate/include -o tglib.py --no-macros /home/saul/thundergate/include/acpi.h /home/saul/thundergate/include/asf.h /home/saul/thundergate/include/bd.h /home/saul/thundergate/include/bdrdma.h /home/saul/thundergate/include/bufman.h /home/saul/thundergate/include/cfg_port.h /home/saul/thundergate/include/cpmu.h /home/saul/thundergate/include/cpu.h /home/saul/thundergate/include/cr_port.h /home/saul/thundergate/include/dmac.h /home/saul/thundergate/include/dma.h /home/saul/thundergate/include/emac.h /home/saul/thundergate/include/frame.h /home/saul/thundergate/include/ftq.h /home/saul/thundergate/include/gencomm.h /home/saul/thundergate/include/grc.h /home/saul/thundergate/include/hc.h /home/saul/thundergate/include/ma.h /home/saul/thundergate/include/mbox.h /home/saul/thundergate/include/mbuf.h /home/saul/thundergate/include/msi.h /home/saul/thundergate/include/nrdma.h /home/saul/thundergate/include/nvram.h /home/saul/thundergate/include/otp.h /home/saul/thundergate/include/pcie_alt.h /home/saul/thundergate/include/pcie.h /home/saul/thundergate/include/pci.h /home/saul/thundergate/include/proto.h /home/saul/thundergate/include/rbdc.h /home/saul/thundergate/include/rbdi.h /home/saul/thundergate/include/rbdrules.h /home/saul/thundergate/include/rcb.h /home/saul/thundergate/include/rdc.h /home/saul/thundergate/include/rdi.h /home/saul/thundergate/include/rdma.h /home/saul/thundergate/include/regdef.h /home/saul/thundergate/include/rlp.h /home/saul/thundergate/include/rss.h /home/saul/thundergate/include/rtsdi.h /home/saul/thundergate/include/sbdc.h /home/saul/thundergate/include/sbdi.h /home/saul/thundergate/include/sbds.h /home/saul/thundergate/include/sdc.h /home/saul/thundergate/include/sdi.h /home/saul/thundergate/include/stats.h /home/saul/thundergate/include/status_block.h /home/saul/thundergate/include/tcp_seg_ctrl.h /home/saul/thundergate/include/utypes.h /home/saul/thundergate/include/wdma.h
+.venv/bin/ctypesgen -I include --no-macro-warnings -o py/tglib.py include/acpi.h include/asf.h include/bd.h include/bdrdma.h include/bufman.h include/cfg_port.h include/cpmu.h include/cpu.h include/cr_port.h include/dma.h include/dmac.h include/emac.h include/frame.h include/ftq.h include/gencomm.h include/grc.h include/hc.h include/ma.h include/mbox.h include/mbuf.h include/msi.h include/nrdma.h include/nvram.h include/otp.h include/pci.h include/pcie_alt.h include/pcie.h include/proto.h include/rbdc.h include/rbdi.h include/rbdrules.h include/rcb.h include/rdc.h include/rdi.h include/rdma.h include/regdef.h include/rlp.h include/rss.h include/rtsdi.h include/sbdc.h include/sbdi.h include/sbds.h include/sdc.h include/sdi.h include/stats.h include/status_block.h include/tcp_seg_ctrl.h include/utypes.h include/wdma.h
 
 Do not modify this file.
-'''
+"""
 
-__docformat__ =  'restructuredtext'
+__docformat__ = "restructuredtext"
 
-# Begin preamble
+# Begin preamble for Python
 
-import ctypes, os, sys
-from ctypes import *
+import ctypes
+import sys
+from ctypes import *  # noqa: F401, F403
 
-_int_types = (c_int16, c_int32)
-if hasattr(ctypes, 'c_int64'):
-    # Some builds of ctypes apparently do not have c_int64
+_int_types = (ctypes.c_int16, ctypes.c_int32)
+if hasattr(ctypes, "c_int64"):
+    # Some builds of ctypes apparently do not have ctypes.c_int64
     # defined; it's a pretty good bet that these builds do not
     # have 64-bit pointers.
-    _int_types += (c_int64,)
+    _int_types += (ctypes.c_int64,)
 for t in _int_types:
-    if sizeof(t) == sizeof(c_size_t):
+    if ctypes.sizeof(t) == ctypes.sizeof(ctypes.c_size_t):
         c_ptrdiff_t = t
 del t
 del _int_types
 
-class c_void(Structure):
-    # c_void_p is a buggy return type, converting to int, so
-    # POINTER(None) == c_void_p is actually written as
-    # POINTER(c_void), so it can be treated as a real pointer.
-    _fields_ = [('dummy', c_int)]
 
-def POINTER(obj):
-    p = ctypes.POINTER(obj)
-
-    # Convert None to a real NULL pointer to work around bugs
-    # in how ctypes handles None on 64-bit platforms
-    if not isinstance(p.from_param, classmethod):
-        def from_param(cls, x):
-            if x is None:
-                return cls()
-            else:
-                return x
-        p.from_param = classmethod(from_param)
-
-    return p
 
 class UserString:
     def __init__(self, seq):
-        if isinstance(seq, basestring):
+        if isinstance(seq, bytes):
             self.data = seq
         elif isinstance(seq, UserString):
             self.data = seq.data[:]
         else:
-            self.data = str(seq)
-    def __str__(self): return str(self.data)
-    def __repr__(self): return repr(self.data)
-    def __int__(self): return int(self.data)
-    def __long__(self): return long(self.data)
-    def __float__(self): return float(self.data)
-    def __complex__(self): return complex(self.data)
-    def __hash__(self): return hash(self.data)
+            self.data = str(seq).encode()
 
-    def __cmp__(self, string):
+    def __bytes__(self):
+        return self.data
+
+    def __str__(self):
+        return self.data.decode()
+
+    def __repr__(self):
+        return repr(self.data)
+
+    def __int__(self):
+        return int(self.data.decode())
+
+    def __long__(self):
+        return int(self.data.decode())
+
+    def __float__(self):
+        return float(self.data.decode())
+
+    def __complex__(self):
+        return complex(self.data.decode())
+
+    def __hash__(self):
+        return hash(self.data)
+
+    def __le__(self, string):
         if isinstance(string, UserString):
-            return cmp(self.data, string.data)
+            return self.data <= string.data
         else:
-            return cmp(self.data, string)
+            return self.data <= string
+
+    def __lt__(self, string):
+        if isinstance(string, UserString):
+            return self.data < string.data
+        else:
+            return self.data < string
+
+    def __ge__(self, string):
+        if isinstance(string, UserString):
+            return self.data >= string.data
+        else:
+            return self.data >= string
+
+    def __gt__(self, string):
+        if isinstance(string, UserString):
+            return self.data > string.data
+        else:
+            return self.data > string
+
+    def __eq__(self, string):
+        if isinstance(string, UserString):
+            return self.data == string.data
+        else:
+            return self.data == string
+
+    def __ne__(self, string):
+        if isinstance(string, UserString):
+            return self.data != string.data
+        else:
+            return self.data != string
+
     def __contains__(self, char):
         return char in self.data
 
-    def __len__(self): return len(self.data)
-    def __getitem__(self, index): return self.__class__(self.data[index])
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        return self.__class__(self.data[index])
+
     def __getslice__(self, start, end):
-        start = max(start, 0); end = max(end, 0)
+        start = max(start, 0)
+        end = max(end, 0)
         return self.__class__(self.data[start:end])
 
     def __add__(self, other):
         if isinstance(other, UserString):
             return self.__class__(self.data + other.data)
-        elif isinstance(other, basestring):
+        elif isinstance(other, bytes):
             return self.__class__(self.data + other)
         else:
-            return self.__class__(self.data + str(other))
+            return self.__class__(self.data + str(other).encode())
+
     def __radd__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, bytes):
             return self.__class__(other + self.data)
         else:
-            return self.__class__(str(other) + self.data)
+            return self.__class__(str(other).encode() + self.data)
+
     def __mul__(self, n):
-        return self.__class__(self.data*n)
+        return self.__class__(self.data * n)
+
     __rmul__ = __mul__
+
     def __mod__(self, args):
         return self.__class__(self.data % args)
 
     # the following methods are defined in alphabetical order:
-    def capitalize(self): return self.__class__(self.data.capitalize())
+    def capitalize(self):
+        return self.__class__(self.data.capitalize())
+
     def center(self, width, *args):
         return self.__class__(self.data.center(width, *args))
-    def count(self, sub, start=0, end=sys.maxint):
+
+    def count(self, sub, start=0, end=sys.maxsize):
         return self.data.count(sub, start, end)
-    def decode(self, encoding=None, errors=None): # XXX improve this?
+
+    def decode(self, encoding=None, errors=None):  # XXX improve this?
         if encoding:
             if errors:
                 return self.__class__(self.data.decode(encoding, errors))
@@ -108,7 +151,8 @@ class UserString:
                 return self.__class__(self.data.decode(encoding))
         else:
             return self.__class__(self.data.decode())
-    def encode(self, encoding=None, errors=None): # XXX improve this?
+
+    def encode(self, encoding=None, errors=None):  # XXX improve this?
         if encoding:
             if errors:
                 return self.__class__(self.data.encode(encoding, errors))
@@ -116,55 +160,109 @@ class UserString:
                 return self.__class__(self.data.encode(encoding))
         else:
             return self.__class__(self.data.encode())
-    def endswith(self, suffix, start=0, end=sys.maxint):
+
+    def endswith(self, suffix, start=0, end=sys.maxsize):
         return self.data.endswith(suffix, start, end)
+
     def expandtabs(self, tabsize=8):
         return self.__class__(self.data.expandtabs(tabsize))
-    def find(self, sub, start=0, end=sys.maxint):
+
+    def find(self, sub, start=0, end=sys.maxsize):
         return self.data.find(sub, start, end)
-    def index(self, sub, start=0, end=sys.maxint):
+
+    def index(self, sub, start=0, end=sys.maxsize):
         return self.data.index(sub, start, end)
-    def isalpha(self): return self.data.isalpha()
-    def isalnum(self): return self.data.isalnum()
-    def isdecimal(self): return self.data.isdecimal()
-    def isdigit(self): return self.data.isdigit()
-    def islower(self): return self.data.islower()
-    def isnumeric(self): return self.data.isnumeric()
-    def isspace(self): return self.data.isspace()
-    def istitle(self): return self.data.istitle()
-    def isupper(self): return self.data.isupper()
-    def join(self, seq): return self.data.join(seq)
+
+    def isalpha(self):
+        return self.data.isalpha()
+
+    def isalnum(self):
+        return self.data.isalnum()
+
+    def isdecimal(self):
+        return self.data.isdecimal()
+
+    def isdigit(self):
+        return self.data.isdigit()
+
+    def islower(self):
+        return self.data.islower()
+
+    def isnumeric(self):
+        return self.data.isnumeric()
+
+    def isspace(self):
+        return self.data.isspace()
+
+    def istitle(self):
+        return self.data.istitle()
+
+    def isupper(self):
+        return self.data.isupper()
+
+    def join(self, seq):
+        return self.data.join(seq)
+
     def ljust(self, width, *args):
         return self.__class__(self.data.ljust(width, *args))
-    def lower(self): return self.__class__(self.data.lower())
-    def lstrip(self, chars=None): return self.__class__(self.data.lstrip(chars))
+
+    def lower(self):
+        return self.__class__(self.data.lower())
+
+    def lstrip(self, chars=None):
+        return self.__class__(self.data.lstrip(chars))
+
     def partition(self, sep):
         return self.data.partition(sep)
+
     def replace(self, old, new, maxsplit=-1):
         return self.__class__(self.data.replace(old, new, maxsplit))
-    def rfind(self, sub, start=0, end=sys.maxint):
+
+    def rfind(self, sub, start=0, end=sys.maxsize):
         return self.data.rfind(sub, start, end)
-    def rindex(self, sub, start=0, end=sys.maxint):
+
+    def rindex(self, sub, start=0, end=sys.maxsize):
         return self.data.rindex(sub, start, end)
+
     def rjust(self, width, *args):
         return self.__class__(self.data.rjust(width, *args))
+
     def rpartition(self, sep):
         return self.data.rpartition(sep)
-    def rstrip(self, chars=None): return self.__class__(self.data.rstrip(chars))
+
+    def rstrip(self, chars=None):
+        return self.__class__(self.data.rstrip(chars))
+
     def split(self, sep=None, maxsplit=-1):
         return self.data.split(sep, maxsplit)
+
     def rsplit(self, sep=None, maxsplit=-1):
         return self.data.rsplit(sep, maxsplit)
-    def splitlines(self, keepends=0): return self.data.splitlines(keepends)
-    def startswith(self, prefix, start=0, end=sys.maxint):
+
+    def splitlines(self, keepends=0):
+        return self.data.splitlines(keepends)
+
+    def startswith(self, prefix, start=0, end=sys.maxsize):
         return self.data.startswith(prefix, start, end)
-    def strip(self, chars=None): return self.__class__(self.data.strip(chars))
-    def swapcase(self): return self.__class__(self.data.swapcase())
-    def title(self): return self.__class__(self.data.title())
+
+    def strip(self, chars=None):
+        return self.__class__(self.data.strip(chars))
+
+    def swapcase(self):
+        return self.__class__(self.data.swapcase())
+
+    def title(self):
+        return self.__class__(self.data.title())
+
     def translate(self, *args):
         return self.__class__(self.data.translate(*args))
-    def upper(self): return self.__class__(self.data.upper())
-    def zfill(self, width): return self.__class__(self.data.zfill(width))
+
+    def upper(self):
+        return self.__class__(self.data.upper())
+
+    def zfill(self, width):
+        return self.__class__(self.data.zfill(width))
+
 
 class MutableString(UserString):
     """mutable string objects
@@ -181,53 +279,66 @@ class MutableString(UserString):
     errors that would be very hard to track down.
 
     A faster and better solution is to rewrite your program using lists."""
+
     def __init__(self, string=""):
         self.data = string
+
     def __hash__(self):
         raise TypeError("unhashable type (it is mutable)")
+
     def __setitem__(self, index, sub):
         if index < 0:
             index += len(self.data)
-        if index < 0 or index >= len(self.data): raise IndexError
-        self.data = self.data[:index] + sub + self.data[index+1:]
+        if index < 0 or index >= len(self.data):
+            raise IndexError
+        self.data = self.data[:index] + sub + self.data[index + 1 :]
+
     def __delitem__(self, index):
         if index < 0:
             index += len(self.data)
-        if index < 0 or index >= len(self.data): raise IndexError
-        self.data = self.data[:index] + self.data[index+1:]
+        if index < 0 or index >= len(self.data):
+            raise IndexError
+        self.data = self.data[:index] + self.data[index + 1 :]
+
     def __setslice__(self, start, end, sub):
-        start = max(start, 0); end = max(end, 0)
+        start = max(start, 0)
+        end = max(end, 0)
         if isinstance(sub, UserString):
-            self.data = self.data[:start]+sub.data+self.data[end:]
-        elif isinstance(sub, basestring):
-            self.data = self.data[:start]+sub+self.data[end:]
+            self.data = self.data[:start] + sub.data + self.data[end:]
+        elif isinstance(sub, bytes):
+            self.data = self.data[:start] + sub + self.data[end:]
         else:
-            self.data =  self.data[:start]+str(sub)+self.data[end:]
+            self.data = self.data[:start] + str(sub).encode() + self.data[end:]
+
     def __delslice__(self, start, end):
-        start = max(start, 0); end = max(end, 0)
+        start = max(start, 0)
+        end = max(end, 0)
         self.data = self.data[:start] + self.data[end:]
+
     def immutable(self):
         return UserString(self.data)
+
     def __iadd__(self, other):
         if isinstance(other, UserString):
             self.data += other.data
-        elif isinstance(other, basestring):
+        elif isinstance(other, bytes):
             self.data += other
         else:
-            self.data += str(other)
+            self.data += str(other).encode()
         return self
+
     def __imul__(self, n):
         self.data *= n
         return self
 
-class String(MutableString, Union):
 
-    _fields_ = [('raw', POINTER(c_char)),
-                ('data', c_char_p)]
+class String(MutableString, ctypes.Union):
 
-    def __init__(self, obj=""):
-        if isinstance(obj, (str, unicode, UserString)):
-            self.data = str(obj)
+    _fields_ = [("raw", ctypes.POINTER(ctypes.c_char)), ("data", ctypes.c_char_p)]
+
+    def __init__(self, obj=b""):
+        if isinstance(obj, (bytes, UserString)):
+            self.data = bytes(obj)
         else:
             self.raw = obj
 
@@ -237,35 +348,46 @@ class String(MutableString, Union):
     def from_param(cls, obj):
         # Convert None or 0
         if obj is None or obj == 0:
-            return cls(POINTER(c_char)())
+            return cls(ctypes.POINTER(ctypes.c_char)())
 
         # Convert from String
         elif isinstance(obj, String):
             return obj
 
-        # Convert from str
-        elif isinstance(obj, str):
+        # Convert from bytes
+        elif isinstance(obj, bytes):
             return cls(obj)
 
+        # Convert from str
+        elif isinstance(obj, str):
+            return cls(obj.encode())
+
         # Convert from c_char_p
-        elif isinstance(obj, c_char_p):
+        elif isinstance(obj, ctypes.c_char_p):
             return obj
 
-        # Convert from POINTER(c_char)
-        elif isinstance(obj, POINTER(c_char)):
+        # Convert from POINTER(ctypes.c_char)
+        elif isinstance(obj, ctypes.POINTER(ctypes.c_char)):
             return obj
 
         # Convert from raw pointer
         elif isinstance(obj, int):
-            return cls(cast(obj, POINTER(c_char)))
+            return cls(ctypes.cast(obj, ctypes.POINTER(ctypes.c_char)))
+
+        # Convert from ctypes.c_char array
+        elif isinstance(obj, ctypes.c_char * len(obj)):
+            return obj
 
         # Convert from object
         else:
             return String.from_param(obj._as_parameter_)
+
     from_param = classmethod(from_param)
+
 
 def ReturnString(obj, func=None, arguments=None):
     return String.from_param(obj)
+
 
 # As of ctypes 1.0, ctypes does not support custom error-checking
 # functions on callbacks, nor does it support custom datatypes on
@@ -273,32 +395,47 @@ def ReturnString(obj, func=None, arguments=None):
 # primitive datatypes.
 #
 # Non-primitive return values wrapped with UNCHECKED won't be
-# typechecked, and will be converted to c_void_p.
+# typechecked, and will be converted to ctypes.c_void_p.
 def UNCHECKED(type):
-    if (hasattr(type, "_type_") and isinstance(type._type_, str)
-        and type._type_ != "P"):
+    if hasattr(type, "_type_") and isinstance(type._type_, str) and type._type_ != "P":
         return type
     else:
-        return c_void_p
+        return ctypes.c_void_p
+
 
 # ctypes doesn't have direct support for variadic functions, so we have to write
 # our own wrapper class
 class _variadic_function(object):
-    def __init__(self,func,restype,argtypes):
-        self.func=func
-        self.func.restype=restype
-        self.argtypes=argtypes
+    def __init__(self, func, restype, argtypes, errcheck):
+        self.func = func
+        self.func.restype = restype
+        self.argtypes = argtypes
+        if errcheck:
+            self.func.errcheck = errcheck
+
     def _as_parameter_(self):
         # So we can pass this variadic function as a function pointer
         return self.func
-    def __call__(self,*args):
-        fixed_args=[]
-        i=0
+
+    def __call__(self, *args):
+        fixed_args = []
+        i = 0
         for argtype in self.argtypes:
             # Typecheck what we can
             fixed_args.append(argtype.from_param(args[i]))
-            i+=1
-        return self.func(*fixed_args+list(args[i:]))
+            i += 1
+        return self.func(*fixed_args + list(args[i:]))
+
+
+def ord_if_char(value):
+    """
+    Simple helper used for casts to simple builtin types:  if the argument is a
+    string type, it will be converted to it's ordinal value.
+
+    This function will raise an exception if the argument is string with more
+    than one characters.
+    """
+    return ord(value) if (isinstance(value, bytes) or isinstance(value, str)) else value
 
 # End preamble
 
@@ -307,6 +444,9 @@ _libdirs = []
 
 # Begin loader
 
+"""
+Load libraries - appropriately for all our supported platforms
+"""
 # ----------------------------------------------------------------------------
 # Copyright (c) 2008 David James
 # Copyright (c) 2006-2008 Alex Holkner
@@ -341,77 +481,158 @@ _libdirs = []
 # POSSIBILITY OF SUCH DAMAGE.
 # ----------------------------------------------------------------------------
 
-import os.path, re, sys, glob
 import ctypes
 import ctypes.util
+import glob
+import os.path
+import platform
+import re
+import sys
+
 
 def _environ_path(name):
+    """Split an environment variable into a path-like list elements"""
     if name in os.environ:
         return os.environ[name].split(":")
-    else:
-        return []
+    return []
 
-class LibraryLoader(object):
+
+class LibraryLoader:
+    """
+    A base class For loading of libraries ;-)
+    Subclasses load libraries for specific platforms.
+    """
+
+    # library names formatted specifically for platforms
+    name_formats = ["%s"]
+
+    class Lookup:
+        """Looking up calling conventions for a platform"""
+
+        mode = ctypes.DEFAULT_MODE
+
+        def __init__(self, path):
+            super(LibraryLoader.Lookup, self).__init__()
+            self.access = dict(cdecl=ctypes.CDLL(path, self.mode))
+
+        def get(self, name, calling_convention="cdecl"):
+            """Return the given name according to the selected calling convention"""
+            if calling_convention not in self.access:
+                raise LookupError(
+                    "Unknown calling convention '{}' for function '{}'".format(
+                        calling_convention, name
+                    )
+                )
+            return getattr(self.access[calling_convention], name)
+
+        def has(self, name, calling_convention="cdecl"):
+            """Return True if this given calling convention finds the given 'name'"""
+            if calling_convention not in self.access:
+                return False
+            return hasattr(self.access[calling_convention], name)
+
+        def __getattr__(self, name):
+            return getattr(self.access["cdecl"], name)
+
     def __init__(self):
-        self.other_dirs=[]
+        self.other_dirs = []
 
-    def load_library(self,libname):
+    def __call__(self, libname):
         """Given the name of a library, load it."""
         paths = self.getpaths(libname)
 
         for path in paths:
-            if os.path.exists(path):
-                return self.load(path)
+            # noinspection PyBroadException
+            try:
+                return self.Lookup(path)
+            except Exception:  # pylint: disable=broad-except
+                pass
 
-        raise ImportError("%s not found." % libname)
+        raise ImportError("Could not load %s." % libname)
 
-    def load(self,path):
-        """Given a path to a library, load it."""
-        try:
-            # Darwin requires dlopen to be called with mode RTLD_GLOBAL instead
-            # of the default RTLD_LOCAL.  Without this, you end up with
-            # libraries not being loadable, resulting in "Symbol not found"
-            # errors
-            if sys.platform == 'darwin':
-                return ctypes.CDLL(path, ctypes.RTLD_GLOBAL)
-            else:
-                return ctypes.cdll.LoadLibrary(path)
-        except OSError as e:
-            raise ImportError(e)
-
-    def getpaths(self,libname):
+    def getpaths(self, libname):
         """Return a list of paths where the library might be found."""
         if os.path.isabs(libname):
             yield libname
-
         else:
+            # search through a prioritized series of locations for the library
+
+            # we first search any specific directories identified by user
+            for dir_i in self.other_dirs:
+                for fmt in self.name_formats:
+                    # dir_i should be absolute already
+                    yield os.path.join(dir_i, fmt % libname)
+
+            # check if this code is even stored in a physical file
+            try:
+                this_file = __file__
+            except NameError:
+                this_file = None
+
+            # then we search the directory where the generated python interface is stored
+            if this_file is not None:
+                for fmt in self.name_formats:
+                    yield os.path.abspath(os.path.join(os.path.dirname(__file__), fmt % libname))
+
+            # now, use the ctypes tools to try to find the library
+            for fmt in self.name_formats:
+                path = ctypes.util.find_library(fmt % libname)
+                if path:
+                    yield path
+
+            # then we search all paths identified as platform-specific lib paths
             for path in self.getplatformpaths(libname):
                 yield path
 
-            path = ctypes.util.find_library(libname)
-            if path: yield path
+            # Finally, we'll try the users current working directory
+            for fmt in self.name_formats:
+                yield os.path.abspath(os.path.join(os.path.curdir, fmt % libname))
 
-    def getplatformpaths(self, libname):
+    def getplatformpaths(self, _libname):  # pylint: disable=no-self-use
+        """Return all the library paths available in this platform"""
         return []
+
 
 # Darwin (Mac OS X)
 
-class DarwinLibraryLoader(LibraryLoader):
-    name_formats = ["lib%s.dylib", "lib%s.so", "lib%s.bundle", "%s.dylib",
-                "%s.so", "%s.bundle", "%s"]
 
-    def getplatformpaths(self,libname):
+class DarwinLibraryLoader(LibraryLoader):
+    """Library loader for MacOS"""
+
+    name_formats = [
+        "lib%s.dylib",
+        "lib%s.so",
+        "lib%s.bundle",
+        "%s.dylib",
+        "%s.so",
+        "%s.bundle",
+        "%s",
+    ]
+
+    class Lookup(LibraryLoader.Lookup):
+        """
+        Looking up library files for this platform (Darwin aka MacOS)
+        """
+
+        # Darwin requires dlopen to be called with mode RTLD_GLOBAL instead
+        # of the default RTLD_LOCAL.  Without this, you end up with
+        # libraries not being loadable, resulting in "Symbol not found"
+        # errors
+        mode = ctypes.RTLD_GLOBAL
+
+    def getplatformpaths(self, libname):
         if os.path.pathsep in libname:
             names = [libname]
         else:
-            names = [format % libname for format in self.name_formats]
+            names = [fmt % libname for fmt in self.name_formats]
 
-        for dir in self.getdirs(libname):
+        for directory in self.getdirs(libname):
             for name in names:
-                yield os.path.join(dir,name)
+                yield os.path.join(directory, name)
 
-    def getdirs(self,libname):
-        '''Implements the dylib search as specified in Apple documentation:
+    @staticmethod
+    def getdirs(libname):
+        """Implements the dylib search as specified in Apple documentation:
 
         http://developer.apple.com/documentation/DeveloperTools/Conceptual/
             DynamicLibraries/Articles/DynamicLibraryUsageGuidelines.html
@@ -419,38 +640,93 @@ class DarwinLibraryLoader(LibraryLoader):
         Before commencing the standard search, the method first checks
         the bundle's ``Frameworks`` directory if the application is running
         within a bundle (OS X .app).
-        '''
+        """
 
         dyld_fallback_library_path = _environ_path("DYLD_FALLBACK_LIBRARY_PATH")
         if not dyld_fallback_library_path:
-            dyld_fallback_library_path = [os.path.expanduser('~/lib'),
-                                          '/usr/local/lib', '/usr/lib']
+            dyld_fallback_library_path = [
+                os.path.expanduser("~/lib"),
+                "/usr/local/lib",
+                "/usr/lib",
+            ]
 
         dirs = []
 
-        if '/' in libname:
+        if "/" in libname:
             dirs.extend(_environ_path("DYLD_LIBRARY_PATH"))
         else:
             dirs.extend(_environ_path("LD_LIBRARY_PATH"))
             dirs.extend(_environ_path("DYLD_LIBRARY_PATH"))
+            dirs.extend(_environ_path("LD_RUN_PATH"))
 
-        dirs.extend(self.other_dirs)
-        dirs.append(".")
-
-        if hasattr(sys, 'frozen') and sys.frozen == 'macosx_app':
-            dirs.append(os.path.join(
-                os.environ['RESOURCEPATH'],
-                '..',
-                'Frameworks'))
+        if hasattr(sys, "frozen") and getattr(sys, "frozen") == "macosx_app":
+            dirs.append(os.path.join(os.environ["RESOURCEPATH"], "..", "Frameworks"))
 
         dirs.extend(dyld_fallback_library_path)
 
         return dirs
 
+
 # Posix
 
+
 class PosixLibraryLoader(LibraryLoader):
+    """Library loader for POSIX-like systems (including Linux)"""
+
     _ld_so_cache = None
+
+    _include = re.compile(r"^\s*include\s+(?P<pattern>.*)")
+
+    name_formats = ["lib%s.so", "%s.so", "%s"]
+
+    class _Directories(dict):
+        """Deal with directories"""
+
+        def __init__(self):
+            dict.__init__(self)
+            self.order = 0
+
+        def add(self, directory):
+            """Add a directory to our current set of directories"""
+            if len(directory) > 1:
+                directory = directory.rstrip(os.path.sep)
+            # only adds and updates order if exists and not already in set
+            if not os.path.exists(directory):
+                return
+            order = self.setdefault(directory, self.order)
+            if order == self.order:
+                self.order += 1
+
+        def extend(self, directories):
+            """Add a list of directories to our set"""
+            for a_dir in directories:
+                self.add(a_dir)
+
+        def ordered(self):
+            """Sort the list of directories"""
+            return (i[0] for i in sorted(self.items(), key=lambda d: d[1]))
+
+    def _get_ld_so_conf_dirs(self, conf, dirs):
+        """
+        Recursive function to help parse all ld.so.conf files, including proper
+        handling of the `include` directive.
+        """
+
+        try:
+            with open(conf) as fileobj:
+                for dirname in fileobj:
+                    dirname = dirname.strip()
+                    if not dirname:
+                        continue
+
+                    match = self._include.match(dirname)
+                    if not match:
+                        dirs.add(dirname)
+                    else:
+                        for dir2 in glob.glob(match.group("pattern")):
+                            self._get_ld_so_conf_dirs(dir2, dirs)
+        except IOError:
+            pass
 
     def _create_ld_so_cache(self):
         # Recreate search path followed by ld.so.  This is going to be
@@ -460,40 +736,63 @@ class PosixLibraryLoader(LibraryLoader):
         #
         # We assume the DT_RPATH and DT_RUNPATH binary sections are omitted.
 
-        directories = []
-        for name in ("LD_LIBRARY_PATH",
-                     "SHLIB_PATH", # HPUX
-                     "LIBPATH", # OS/2, AIX
-                     "LIBRARY_PATH", # BE/OS
-                    ):
+        directories = self._Directories()
+        for name in (
+            "LD_LIBRARY_PATH",
+            "SHLIB_PATH",  # HP-UX
+            "LIBPATH",  # OS/2, AIX
+            "LIBRARY_PATH",  # BE/OS
+        ):
             if name in os.environ:
                 directories.extend(os.environ[name].split(os.pathsep))
-        directories.extend(self.other_dirs)
-        directories.append(".")
 
-        try: directories.extend([dir.strip() for dir in open('/etc/ld.so.conf')])
-        except IOError: pass
+        self._get_ld_so_conf_dirs("/etc/ld.so.conf", directories)
 
-        directories.extend(['/lib', '/usr/lib', '/lib64', '/usr/lib64'])
+        bitage = platform.architecture()[0]
+
+        unix_lib_dirs_list = []
+        if bitage.startswith("64"):
+            # prefer 64 bit if that is our arch
+            unix_lib_dirs_list += ["/lib64", "/usr/lib64"]
+
+        # must include standard libs, since those paths are also used by 64 bit
+        # installs
+        unix_lib_dirs_list += ["/lib", "/usr/lib"]
+        if sys.platform.startswith("linux"):
+            # Try and support multiarch work in Ubuntu
+            # https://wiki.ubuntu.com/MultiarchSpec
+            if bitage.startswith("32"):
+                # Assume Intel/AMD x86 compat
+                unix_lib_dirs_list += ["/lib/i386-linux-gnu", "/usr/lib/i386-linux-gnu"]
+            elif bitage.startswith("64"):
+                # Assume Intel/AMD x86 compatible
+                unix_lib_dirs_list += [
+                    "/lib/x86_64-linux-gnu",
+                    "/usr/lib/x86_64-linux-gnu",
+                ]
+            else:
+                # guess...
+                unix_lib_dirs_list += glob.glob("/lib/*linux-gnu")
+        directories.extend(unix_lib_dirs_list)
 
         cache = {}
-        lib_re = re.compile(r'lib(.*)\.s[ol]')
-        ext_re = re.compile(r'\.s[ol]$')
-        for dir in directories:
+        lib_re = re.compile(r"lib(.*)\.s[ol]")
+        # ext_re = re.compile(r"\.s[ol]$")
+        for our_dir in directories.ordered():
             try:
-                for path in glob.glob("%s/*.s[ol]*" % dir):
+                for path in glob.glob("%s/*.s[ol]*" % our_dir):
                     file = os.path.basename(path)
 
                     # Index by filename
-                    if file not in cache:
-                        cache[file] = path
+                    cache_i = cache.setdefault(file, set())
+                    cache_i.add(path)
 
                     # Index by library name
                     match = lib_re.match(file)
                     if match:
                         library = match.group(1)
-                        if library not in cache:
-                            cache[library] = path
+                        cache_i = cache.setdefault(library, set())
+                        cache_i.add(path)
             except OSError:
                 pass
 
@@ -503,63 +802,29 @@ class PosixLibraryLoader(LibraryLoader):
         if self._ld_so_cache is None:
             self._create_ld_so_cache()
 
-        result = self._ld_so_cache.get(libname)
-        if result: yield result
+        result = self._ld_so_cache.get(libname, set())
+        for i in result:
+            # we iterate through all found paths for library, since we may have
+            # actually found multiple architectures or other library types that
+            # may not load
+            yield i
 
-        path = ctypes.util.find_library(libname)
-        if path: yield os.path.join("/lib",path)
 
 # Windows
 
-class _WindowsLibrary(object):
-    def __init__(self, path):
-        self.cdll = ctypes.cdll.LoadLibrary(path)
-        self.windll = ctypes.windll.LoadLibrary(path)
-
-    def __getattr__(self, name):
-        try: return getattr(self.cdll,name)
-        except AttributeError:
-            try: return getattr(self.windll,name)
-            except AttributeError:
-                raise
 
 class WindowsLibraryLoader(LibraryLoader):
-    name_formats = ["%s.dll", "lib%s.dll", "%slib.dll"]
+    """Library loader for Microsoft Windows"""
 
-    def load_library(self, libname):
-        try:
-            result = LibraryLoader.load_library(self, libname)
-        except ImportError:
-            result = None
-            if os.path.sep not in libname:
-                for name in self.name_formats:
-                    try:
-                        result = getattr(ctypes.cdll, name % libname)
-                        if result:
-                            break
-                    except WindowsError:
-                        result = None
-            if result is None:
-                try:
-                    result = getattr(ctypes.cdll, libname)
-                except WindowsError:
-                    result = None
-            if result is None:
-                raise ImportError("%s not found." % libname)
-        return result
+    name_formats = ["%s.dll", "lib%s.dll", "%slib.dll", "%s"]
 
-    def load(self, path):
-        return _WindowsLibrary(path)
+    class Lookup(LibraryLoader.Lookup):
+        """Lookup class for Windows libraries..."""
 
-    def getplatformpaths(self, libname):
-        if os.path.sep not in libname:
-            for name in self.name_formats:
-                dll_in_current_dir = os.path.abspath(name % libname)
-                if os.path.exists(dll_in_current_dir):
-                    yield dll_in_current_dir
-                path = ctypes.util.find_library(name % libname)
-                if path:
-                    yield path
+        def __init__(self, path):
+            super(WindowsLibraryLoader.Lookup, self).__init__(path)
+            self.access["stdcall"] = ctypes.windll.LoadLibrary(path)
+
 
 # Platform switching
 
@@ -567,17 +832,26 @@ class WindowsLibraryLoader(LibraryLoader):
 # the Ctypesgen maintainers.
 
 loaderclass = {
-    "darwin":   DarwinLibraryLoader,
-    "cygwin":   WindowsLibraryLoader,
-    "win32":    WindowsLibraryLoader
+    "darwin": DarwinLibraryLoader,
+    "cygwin": WindowsLibraryLoader,
+    "win32": WindowsLibraryLoader,
+    "msys": WindowsLibraryLoader,
 }
 
-loader = loaderclass.get(sys.platform, PosixLibraryLoader)()
+load_library = loaderclass.get(sys.platform, PosixLibraryLoader)()
+
 
 def add_library_search_dirs(other_dirs):
-    loader.other_dirs = other_dirs
+    """
+    Add libraries to search paths.
+    If library paths are relative, convert them to absolute with respect to this
+    file's directory
+    """
+    for path in other_dirs:
+        if not os.path.isabs(path):
+            path = os.path.abspath(path)
+        load_library.other_dirs.append(path)
 
-load_library = loader.load_library
 
 del loaderclass
 
@@ -589,18 +863,19 @@ add_library_search_dirs([])
 
 # No modules
 
-u8 = c_uint8 # /home/saul/thundergate/include/utypes.h: 36
+u8 = c_ubyte# /Users/saul/src/thundergate/include/utypes.h: 36
 
-u16 = c_uint16 # /home/saul/thundergate/include/utypes.h: 37
+u16 = c_ushort# /Users/saul/src/thundergate/include/utypes.h: 37
 
-u32 = c_uint32 # /home/saul/thundergate/include/utypes.h: 38
+u32 = c_uint# /Users/saul/src/thundergate/include/utypes.h: 38
 
-u64 = c_uint64 # /home/saul/thundergate/include/utypes.h: 39
+u64 = c_ulonglong# /Users/saul/src/thundergate/include/utypes.h: 39
 
-# /home/saul/thundergate/include/acpi.h: 32
+# /Users/saul/src/thundergate/include/acpi.h: 32
 class struct_dmar_tbl_hdr(Structure):
     pass
 
+struct_dmar_tbl_hdr._pack_ = 1
 struct_dmar_tbl_hdr.__slots__ = [
     'sig',
     'length',
@@ -616,24 +891,25 @@ struct_dmar_tbl_hdr.__slots__ = [
     'reserved',
 ]
 struct_dmar_tbl_hdr._fields_ = [
-    ('sig', c_char * 4),
+    ('sig', c_char * int(4)),
     ('length', u32),
     ('rev', u8),
     ('cksum', u8),
-    ('oemid', c_char * 6),
-    ('oemtableid', c_char * 8),
+    ('oemid', c_char * int(6)),
+    ('oemtableid', c_char * int(8)),
     ('oem_rev', u32),
-    ('creator_id', c_char * 4),
+    ('creator_id', c_char * int(4)),
     ('creator_rev', u32),
     ('host_addr_width', u8),
     ('flags', u8),
-    ('reserved', c_char * 10),
+    ('reserved', c_char * int(10)),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 53
+# /Users/saul/src/thundergate/include/acpi.h: 53
 class struct_anon_1(Structure):
     pass
 
+struct_anon_1._pack_ = 1
 struct_anon_1.__slots__ = [
     'device',
     'function',
@@ -643,10 +919,11 @@ struct_anon_1._fields_ = [
     ('function', u8),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 47
+# /Users/saul/src/thundergate/include/acpi.h: 47
 class struct_dmar_dev_scope(Structure):
     pass
 
+struct_dmar_dev_scope._pack_ = 1
 struct_dmar_dev_scope.__slots__ = [
     'type',
     'length',
@@ -661,13 +938,14 @@ struct_dmar_dev_scope._fields_ = [
     ('reserved', u16),
     ('enum_id', u8),
     ('start_bus_number', u8),
-    ('path', struct_anon_1 * 1),
+    ('path', struct_anon_1 * int(1)),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 59
+# /Users/saul/src/thundergate/include/acpi.h: 59
 class struct_dmar_drhd(Structure):
     pass
 
+struct_dmar_drhd._pack_ = 1
 struct_dmar_drhd.__slots__ = [
     'type',
     'length',
@@ -685,10 +963,11 @@ struct_dmar_drhd._fields_ = [
     ('base_address', u64),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 68
+# /Users/saul/src/thundergate/include/acpi.h: 68
 class struct_dmar_rmrr(Structure):
     pass
 
+struct_dmar_rmrr._pack_ = 1
 struct_dmar_rmrr.__slots__ = [
     'type',
     'length',
@@ -708,10 +987,11 @@ struct_dmar_rmrr._fields_ = [
     ('limit_addr', u64),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 78
+# /Users/saul/src/thundergate/include/acpi.h: 78
 class struct_dmar_atsr(Structure):
     pass
 
+struct_dmar_atsr._pack_ = 1
 struct_dmar_atsr.__slots__ = [
     'type',
     'length',
@@ -726,13 +1006,14 @@ struct_dmar_atsr._fields_ = [
     ('flags', u8),
     ('reserved', u8),
     ('seg_no', u16),
-    ('dev_scope', struct_dmar_dev_scope * 1),
+    ('dev_scope', struct_dmar_dev_scope * int(1)),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 87
+# /Users/saul/src/thundergate/include/acpi.h: 87
 class struct_dmar_rhsa(Structure):
     pass
 
+struct_dmar_rhsa._pack_ = 1
 struct_dmar_rhsa.__slots__ = [
     'type',
     'length',
@@ -748,10 +1029,11 @@ struct_dmar_rhsa._fields_ = [
     ('proximity_domain', u32),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 95
+# /Users/saul/src/thundergate/include/acpi.h: 95
 class struct_dmar_andd(Structure):
     pass
 
+struct_dmar_andd._pack_ = 1
 struct_dmar_andd.__slots__ = [
     'type',
     'length',
@@ -762,15 +1044,16 @@ struct_dmar_andd.__slots__ = [
 struct_dmar_andd._fields_ = [
     ('type', u16),
     ('length', u16),
-    ('reserved', u8 * 3),
+    ('reserved', u8 * int(3)),
     ('acpi_dev_no', u8),
-    ('object_name', c_char * 0),
+    ('object_name', c_char * int(0)),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 103
+# /Users/saul/src/thundergate/include/acpi.h: 103
 class struct_acpi_sdt_hdr(Structure):
     pass
 
+struct_acpi_sdt_hdr._pack_ = 1
 struct_acpi_sdt_hdr.__slots__ = [
     'sig',
     'length',
@@ -783,34 +1066,36 @@ struct_acpi_sdt_hdr.__slots__ = [
     'creator_rev',
 ]
 struct_acpi_sdt_hdr._fields_ = [
-    ('sig', c_char * 4),
+    ('sig', c_char * int(4)),
     ('length', u32),
     ('rev', u8),
     ('cksum', u8),
-    ('oemid', c_char * 6),
-    ('oemtableid', c_char * 8),
+    ('oemid', c_char * int(6)),
+    ('oemtableid', c_char * int(8)),
     ('oem_rev', u32),
     ('creator_id', u32),
     ('creator_rev', u32),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 115
+# /Users/saul/src/thundergate/include/acpi.h: 115
 class struct_xsdt(Structure):
     pass
 
+struct_xsdt._pack_ = 1
 struct_xsdt.__slots__ = [
     'h',
     'sdt',
 ]
 struct_xsdt._fields_ = [
     ('h', struct_acpi_sdt_hdr),
-    ('sdt', POINTER(struct_acpi_sdt_hdr) * 0),
+    ('sdt', POINTER(struct_acpi_sdt_hdr) * int(0)),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 120
+# /Users/saul/src/thundergate/include/acpi.h: 120
 class struct_rsdp_t(Structure):
     pass
 
+struct_rsdp_t._pack_ = 1
 struct_rsdp_t.__slots__ = [
     'sig',
     'cksum',
@@ -819,17 +1104,18 @@ struct_rsdp_t.__slots__ = [
     'rsdt_address',
 ]
 struct_rsdp_t._fields_ = [
-    ('sig', c_char * 8),
+    ('sig', c_char * int(8)),
     ('cksum', u8),
-    ('oemid', c_char * 6),
+    ('oemid', c_char * int(6)),
     ('rev', u8),
     ('rsdt_address', u32),
 ]
 
-# /home/saul/thundergate/include/acpi.h: 128
+# /Users/saul/src/thundergate/include/acpi.h: 128
 class struct_rsdp2_t(Structure):
     pass
 
+struct_rsdp2_t._pack_ = 1
 struct_rsdp2_t.__slots__ = [
     'sig',
     'cksum',
@@ -842,21 +1128,22 @@ struct_rsdp2_t.__slots__ = [
     'reserved',
 ]
 struct_rsdp2_t._fields_ = [
-    ('sig', c_char * 8),
+    ('sig', c_char * int(8)),
     ('cksum', u8),
-    ('oemid', c_char * 6),
+    ('oemid', c_char * int(6)),
     ('rev', u8),
     ('rsdt_address', u32),
     ('length', u32),
     ('xsdt_address', u64),
     ('extended_cksum', u8),
-    ('reserved', u8 * 3),
+    ('reserved', u8 * int(3)),
 ]
 
-# /home/saul/thundergate/include/asf.h: 24
+# /Users/saul/src/thundergate/include/asf.h: 24
 class struct_asf_control(Structure):
     pass
 
+struct_asf_control._pack_ = 1
 struct_asf_control.__slots__ = [
     'smb_early_attention',
     'smb_enable_addr_0',
@@ -896,10 +1183,11 @@ struct_asf_control._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/asf.h: 44
+# /Users/saul/src/thundergate/include/asf.h: 44
 class struct_asf_smbus_input(Structure):
     pass
 
+struct_asf_smbus_input._pack_ = 1
 struct_asf_smbus_input.__slots__ = [
     'reserved',
     'smb_input_status',
@@ -917,10 +1205,11 @@ struct_asf_smbus_input._fields_ = [
     ('data_input', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 53
+# /Users/saul/src/thundergate/include/asf.h: 53
 class struct_asf_smbus_output(Structure):
     pass
 
+struct_asf_smbus_output._pack_ = 1
 struct_asf_smbus_output.__slots__ = [
     'reserved',
     'clock_input',
@@ -956,10 +1245,11 @@ struct_asf_smbus_output._fields_ = [
     ('data_output', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 71
+# /Users/saul/src/thundergate/include/asf.h: 71
 class struct_asf_watchdog_timer(Structure):
     pass
 
+struct_asf_watchdog_timer._pack_ = 1
 struct_asf_watchdog_timer.__slots__ = [
     'reserved',
     'count',
@@ -969,10 +1259,11 @@ struct_asf_watchdog_timer._fields_ = [
     ('count', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 76
+# /Users/saul/src/thundergate/include/asf.h: 76
 class struct_asf_heartbeat_timer(Structure):
     pass
 
+struct_asf_heartbeat_timer._pack_ = 1
 struct_asf_heartbeat_timer.__slots__ = [
     'reserved',
     'count',
@@ -982,10 +1273,11 @@ struct_asf_heartbeat_timer._fields_ = [
     ('count', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 81
+# /Users/saul/src/thundergate/include/asf.h: 81
 class struct_asf_poll_timer(Structure):
     pass
 
+struct_asf_poll_timer._pack_ = 1
 struct_asf_poll_timer.__slots__ = [
     'reserved',
     'count',
@@ -995,10 +1287,11 @@ struct_asf_poll_timer._fields_ = [
     ('count', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 86
+# /Users/saul/src/thundergate/include/asf.h: 86
 class struct_asf_poll_legacy_timer(Structure):
     pass
 
+struct_asf_poll_legacy_timer._pack_ = 1
 struct_asf_poll_legacy_timer.__slots__ = [
     'reserved',
     'count',
@@ -1008,10 +1301,11 @@ struct_asf_poll_legacy_timer._fields_ = [
     ('count', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 91
+# /Users/saul/src/thundergate/include/asf.h: 91
 class struct_asf_retransmission_timer(Structure):
     pass
 
+struct_asf_retransmission_timer._pack_ = 1
 struct_asf_retransmission_timer.__slots__ = [
     'reserved',
     'count',
@@ -1021,10 +1315,11 @@ struct_asf_retransmission_timer._fields_ = [
     ('count', u32, 8),
 ]
 
-# /home/saul/thundergate/include/asf.h: 96
+# /Users/saul/src/thundergate/include/asf.h: 96
 class struct_asf_time_stamp_counter(Structure):
     pass
 
+struct_asf_time_stamp_counter._pack_ = 1
 struct_asf_time_stamp_counter.__slots__ = [
     'count',
 ]
@@ -1032,10 +1327,11 @@ struct_asf_time_stamp_counter._fields_ = [
     ('count', u32),
 ]
 
-# /home/saul/thundergate/include/asf.h: 100
+# /Users/saul/src/thundergate/include/asf.h: 100
 class struct_asf_smbus_driver_select(Structure):
     pass
 
+struct_asf_smbus_driver_select._pack_ = 1
 struct_asf_smbus_driver_select.__slots__ = [
     'enable_smbus_stretching',
     'reserved',
@@ -1057,10 +1353,11 @@ struct_asf_smbus_driver_select._fields_ = [
     ('reserved2', u32, 16),
 ]
 
-# /home/saul/thundergate/include/asf.h: 111
+# /Users/saul/src/thundergate/include/asf.h: 111
 class struct_asf_regs(Structure):
     pass
 
+struct_asf_regs._pack_ = 1
 struct_asf_regs.__slots__ = [
     'control',
     'smbus_input',
@@ -1086,14 +1383,85 @@ struct_asf_regs._fields_ = [
     ('smbus_driver_select', struct_asf_smbus_driver_select),
 ]
 
-# /home/saul/thundergate/include/bd.h: 24
+# /Users/saul/src/thundergate/include/bd.h: 26
+class struct_anon_2(Structure):
+    pass
+
+struct_anon_2._pack_ = 1
+struct_anon_2.__slots__ = [
+    'l4_cksum_offload',
+    'ip_cksum_offload',
+    'packet_end',
+    'jumbo_frame',
+    'hdrlen_2',
+    'snap',
+    'vlan_tag',
+    'coalesce_now',
+    'cpu_pre_dma',
+    'cpu_post_dma',
+    'hdrlen_3',
+    'hdrlen_4',
+    'hdrlen_5',
+    'hdrlen_6',
+    'hdrlen_7',
+    'no_crc',
+]
+struct_anon_2._fields_ = [
+    ('l4_cksum_offload', u16, 1),
+    ('ip_cksum_offload', u16, 1),
+    ('packet_end', u16, 1),
+    ('jumbo_frame', u16, 1),
+    ('hdrlen_2', u16, 1),
+    ('snap', u16, 1),
+    ('vlan_tag', u16, 1),
+    ('coalesce_now', u16, 1),
+    ('cpu_pre_dma', u16, 1),
+    ('cpu_post_dma', u16, 1),
+    ('hdrlen_3', u16, 1),
+    ('hdrlen_4', u16, 1),
+    ('hdrlen_5', u16, 1),
+    ('hdrlen_6', u16, 1),
+    ('hdrlen_7', u16, 1),
+    ('no_crc', u16, 1),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 25
+class union_anon_3(Union):
+    pass
+
+union_anon_3._pack_ = 1
+union_anon_3.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_3._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_3._fields_ = [
+    ('unnamed_1', struct_anon_2),
+    ('word', u16),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 24
 class struct_sbd_flags(Structure):
     pass
 
-# /home/saul/thundergate/include/bd.h: 69
+struct_sbd_flags._pack_ = 1
+struct_sbd_flags.__slots__ = [
+    'unnamed_1',
+]
+struct_sbd_flags._anonymous_ = [
+    'unnamed_1',
+]
+struct_sbd_flags._fields_ = [
+    ('unnamed_1', union_anon_3),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 69
 class struct_sbd(Structure):
     pass
 
+struct_sbd._pack_ = 1
 struct_sbd.__slots__ = [
     'addr_hi',
     'addr_low',
@@ -1113,18 +1481,155 @@ struct_sbd._fields_ = [
     ('hdrlen_0_1', u16, 2),
 ]
 
-# /home/saul/thundergate/include/bd.h: 91
+# /Users/saul/src/thundergate/include/bd.h: 93
+class struct_anon_4(Structure):
+    pass
+
+struct_anon_4._pack_ = 1
+struct_anon_4.__slots__ = [
+    'is_ipv6',
+    'is_tcp',
+    'l4_checksum_correct',
+    'ip_checksum_correct',
+    'reserved',
+    'has_error',
+    'rss_hash_type',
+    'has_vlan_tag',
+    'reserved2',
+    'reserved3',
+    'rss_hash_valid',
+    'packet_end',
+    'reserved4',
+    'reserved5',
+]
+struct_anon_4._fields_ = [
+    ('is_ipv6', u16, 1),
+    ('is_tcp', u16, 1),
+    ('l4_checksum_correct', u16, 1),
+    ('ip_checksum_correct', u16, 1),
+    ('reserved', u16, 1),
+    ('has_error', u16, 1),
+    ('rss_hash_type', u16, 3),
+    ('has_vlan_tag', u16, 1),
+    ('reserved2', u16, 1),
+    ('reserved3', u16, 1),
+    ('rss_hash_valid', u16, 1),
+    ('packet_end', u16, 1),
+    ('reserved4', u16, 1),
+    ('reserved5', u16, 1),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 92
+class union_anon_5(Union):
+    pass
+
+union_anon_5._pack_ = 1
+union_anon_5.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_5._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_5._fields_ = [
+    ('unnamed_1', struct_anon_4),
+    ('word', u16),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 91
 class struct_rbd_flags(Structure):
     pass
 
-# /home/saul/thundergate/include/bd.h: 113
+struct_rbd_flags._pack_ = 1
+struct_rbd_flags.__slots__ = [
+    'unnamed_1',
+]
+struct_rbd_flags._anonymous_ = [
+    'unnamed_1',
+]
+struct_rbd_flags._fields_ = [
+    ('unnamed_1', union_anon_5),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 115
+class struct_anon_6(Structure):
+    pass
+
+struct_anon_6._pack_ = 1
+struct_anon_6.__slots__ = [
+    'reserved1',
+    'reserved2',
+    'reserved3',
+    'reserved4',
+    'reserved5',
+    'reserved6',
+    'reserved7',
+    'giant_packet',
+    'trunc_no_res',
+    'len_less_64',
+    'mac_abort',
+    'dribble_nibble',
+    'phy_decode_error',
+    'link_lost',
+    'collision',
+    'bad_crc',
+]
+struct_anon_6._fields_ = [
+    ('reserved1', u16, 1),
+    ('reserved2', u16, 1),
+    ('reserved3', u16, 1),
+    ('reserved4', u16, 1),
+    ('reserved5', u16, 1),
+    ('reserved6', u16, 1),
+    ('reserved7', u16, 1),
+    ('giant_packet', u16, 1),
+    ('trunc_no_res', u16, 1),
+    ('len_less_64', u16, 1),
+    ('mac_abort', u16, 1),
+    ('dribble_nibble', u16, 1),
+    ('phy_decode_error', u16, 1),
+    ('link_lost', u16, 1),
+    ('collision', u16, 1),
+    ('bad_crc', u16, 1),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 114
+class union_anon_7(Union):
+    pass
+
+union_anon_7._pack_ = 1
+union_anon_7.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_7._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_7._fields_ = [
+    ('unnamed_1', struct_anon_6),
+    ('word', u16),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 113
 class struct_rbd_error_flags(Structure):
     pass
 
-# /home/saul/thundergate/include/bd.h: 137
+struct_rbd_error_flags._pack_ = 1
+struct_rbd_error_flags.__slots__ = [
+    'unnamed_1',
+]
+struct_rbd_error_flags._anonymous_ = [
+    'unnamed_1',
+]
+struct_rbd_error_flags._fields_ = [
+    ('unnamed_1', union_anon_7),
+]
+
+# /Users/saul/src/thundergate/include/bd.h: 137
 class struct_rbd(Structure):
     pass
 
+struct_rbd._pack_ = 1
 struct_rbd.__slots__ = [
     'addr_hi',
     'addr_low',
@@ -1154,10 +1659,11 @@ struct_rbd._fields_ = [
     ('opaque', u32),
 ]
 
-# /home/saul/thundergate/include/bd.h: 152
+# /Users/saul/src/thundergate/include/bd.h: 152
 class struct_rbd_ex(Structure):
     pass
 
+struct_rbd_ex._pack_ = 1
 struct_rbd_ex.__slots__ = [
     'addr1_hi',
     'addr1_low',
@@ -1207,10 +1713,11 @@ struct_rbd_ex._fields_ = [
     ('opaque', u32),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 24
+# /Users/saul/src/thundergate/include/bdrdma.h: 24
 class struct_bdrdma_mode(Structure):
     pass
 
+struct_bdrdma_mode._pack_ = 1
 struct_bdrdma_mode.__slots__ = [
     'reserved26',
     'addr_oflow_err_log_en',
@@ -1232,10 +1739,11 @@ struct_bdrdma_mode._fields_ = [
     ('reserved0', u32, 1),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 36
+# /Users/saul/src/thundergate/include/bdrdma.h: 36
 class struct_bdrdma_status(Structure):
     pass
 
+struct_bdrdma_status._pack_ = 1
 struct_bdrdma_status.__slots__ = [
     'reserved10',
     'malformed_tlp_or_poison_tlp_err_det',
@@ -1263,10 +1771,11 @@ struct_bdrdma_status._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 50
+# /Users/saul/src/thundergate/include/bdrdma.h: 50
 class struct_bdrdma_len_dbg(Structure):
     pass
 
+struct_bdrdma_len_dbg._pack_ = 1
 struct_bdrdma_len_dbg.__slots__ = [
     'rdmad_length_b_2',
     'rdmad_length_b_1',
@@ -1276,10 +1785,11 @@ struct_bdrdma_len_dbg._fields_ = [
     ('rdmad_length_b_1', u32, 16),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 55
+# /Users/saul/src/thundergate/include/bdrdma.h: 55
 class struct_bdrdma_rstates_dbg(Structure):
     pass
 
+struct_bdrdma_rstates_dbg._pack_ = 1
 struct_bdrdma_rstates_dbg.__slots__ = [
     'rbdi_cnt',
     'reserved2',
@@ -1291,10 +1801,11 @@ struct_bdrdma_rstates_dbg._fields_ = [
     ('rstate1', u32, 2),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 61
+# /Users/saul/src/thundergate/include/bdrdma.h: 61
 class struct_bdrdma_rstate2_dbg(Structure):
     pass
 
+struct_bdrdma_rstate2_dbg._pack_ = 1
 struct_bdrdma_rstate2_dbg.__slots__ = [
     'host_addr',
     'rstate2',
@@ -1304,10 +1815,11 @@ struct_bdrdma_rstate2_dbg._fields_ = [
     ('rstate2', u32, 4),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 66
+# /Users/saul/src/thundergate/include/bdrdma.h: 66
 class struct_bdrdma_bd_status_dbg(Structure):
     pass
 
+struct_bdrdma_bd_status_dbg._pack_ = 1
 struct_bdrdma_bd_status_dbg.__slots__ = [
     'rlctrl',
     'dmad_load_and_mem_ok',
@@ -1349,10 +1861,11 @@ struct_bdrdma_bd_status_dbg._fields_ = [
     ('lst_bd_mbuf', u32, 1),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 88
+# /Users/saul/src/thundergate/include/bdrdma.h: 88
 class struct_bdrdma_req_ptr_dbg(Structure):
     pass
 
+struct_bdrdma_req_ptr_dbg._pack_ = 1
 struct_bdrdma_req_ptr_dbg.__slots__ = [
     'ih_dmad_len',
     'reserved13',
@@ -1370,10 +1883,11 @@ struct_bdrdma_req_ptr_dbg._fields_ = [
     ('rftq_b_dmad_pnt', u32, 2),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 97
+# /Users/saul/src/thundergate/include/bdrdma.h: 97
 class struct_bdrdma_hold_d_dmad_dbg(Structure):
     pass
 
+struct_bdrdma_hold_d_dmad_dbg._pack_ = 1
 struct_bdrdma_hold_d_dmad_dbg.__slots__ = [
     'reserved4',
     'rhold_b_dmad',
@@ -1385,10 +1899,11 @@ struct_bdrdma_hold_d_dmad_dbg._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 103
+# /Users/saul/src/thundergate/include/bdrdma.h: 103
 class struct_bdrdma_len_and_addr_idx_dbg(Structure):
     pass
 
+struct_bdrdma_len_and_addr_idx_dbg._pack_ = 1
 struct_bdrdma_len_and_addr_idx_dbg.__slots__ = [
     'rdma_rd_length',
     'reserved0',
@@ -1398,10 +1913,11 @@ struct_bdrdma_len_and_addr_idx_dbg._fields_ = [
     ('reserved0', u32, 16),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 108
+# /Users/saul/src/thundergate/include/bdrdma.h: 108
 class struct_bdrdma_addr_idx_dbg(Structure):
     pass
 
+struct_bdrdma_addr_idx_dbg._pack_ = 1
 struct_bdrdma_addr_idx_dbg.__slots__ = [
     'reserved5',
     'h_host_addr_i',
@@ -1411,10 +1927,11 @@ struct_bdrdma_addr_idx_dbg._fields_ = [
     ('h_host_addr_i', u32, 5),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 113
+# /Users/saul/src/thundergate/include/bdrdma.h: 113
 class struct_bdrdma_pcie_dbg_status(Structure):
     pass
 
+struct_bdrdma_pcie_dbg_status._pack_ = 1
 struct_bdrdma_pcie_dbg_status.__slots__ = [
     'lt_term',
     'reserved27',
@@ -1448,10 +1965,11 @@ struct_bdrdma_pcie_dbg_status._fields_ = [
     ('dr_pci_len', u32, 16),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 130
+# /Users/saul/src/thundergate/include/bdrdma.h: 130
 class struct_bdrdma_pcie_dma_rd_req_addr_dbg(Structure):
     pass
 
+struct_bdrdma_pcie_dma_rd_req_addr_dbg._pack_ = 1
 struct_bdrdma_pcie_dma_rd_req_addr_dbg.__slots__ = [
     'dr_pci_ad_hi',
     'dr_pci_ad_lo',
@@ -1461,10 +1979,11 @@ struct_bdrdma_pcie_dma_rd_req_addr_dbg._fields_ = [
     ('dr_pci_ad_lo', u32, 16),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 135
+# /Users/saul/src/thundergate/include/bdrdma.h: 135
 class struct_bdrdma_pcie_dma_req_len_dbg(Structure):
     pass
 
+struct_bdrdma_pcie_dma_req_len_dbg._pack_ = 1
 struct_bdrdma_pcie_dma_req_len_dbg.__slots__ = [
     'reserved16',
     'rdma_len',
@@ -1474,10 +1993,11 @@ struct_bdrdma_pcie_dma_req_len_dbg._fields_ = [
     ('rdma_len', u32, 16),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 140
+# /Users/saul/src/thundergate/include/bdrdma.h: 140
 class struct_bdrdma_fifo1_dbg(Structure):
     pass
 
+struct_bdrdma_fifo1_dbg._pack_ = 1
 struct_bdrdma_fifo1_dbg.__slots__ = [
     'reserved9',
     'c_write_addr',
@@ -1487,10 +2007,11 @@ struct_bdrdma_fifo1_dbg._fields_ = [
     ('c_write_addr', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 145
+# /Users/saul/src/thundergate/include/bdrdma.h: 145
 class struct_bdrdma_fifo2_dbg(Structure):
     pass
 
+struct_bdrdma_fifo2_dbg._pack_ = 1
 struct_bdrdma_fifo2_dbg.__slots__ = [
     'reserved18',
     'rlctrl_in',
@@ -1502,10 +2023,11 @@ struct_bdrdma_fifo2_dbg._fields_ = [
     ('c_read_addr', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 151
+# /Users/saul/src/thundergate/include/bdrdma.h: 151
 class struct_bdrdma_rsvrd_ctrl(Structure):
     pass
 
+struct_bdrdma_rsvrd_ctrl._pack_ = 1
 struct_bdrdma_rsvrd_ctrl.__slots__ = [
     'reserved21',
     'sel_fed_en_bd',
@@ -1525,10 +2047,11 @@ struct_bdrdma_rsvrd_ctrl._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/bdrdma.h: 161
+# /Users/saul/src/thundergate/include/bdrdma.h: 161
 class struct_bdrdma_regs(Structure):
     pass
 
+struct_bdrdma_regs._pack_ = 1
 struct_bdrdma_regs.__slots__ = [
     'mode',
     'status',
@@ -1598,14 +2121,69 @@ struct_bdrdma_regs._fields_ = [
     ('ofs_7c', u32),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 22
+# /Users/saul/src/thundergate/include/bufman.h: 24
+class struct_anon_8(Structure):
+    pass
+
+struct_anon_8._pack_ = 1
+struct_anon_8.__slots__ = [
+    'txfifo_underrun_protection',
+    'reserved',
+    'reset_rxmbuf_pointer',
+    'mbuf_low_attention_enable',
+    'test_mode',
+    'attention_enable',
+    'enable',
+    'reset',
+]
+struct_anon_8._fields_ = [
+    ('txfifo_underrun_protection', u32, 1),
+    ('reserved', u32, 25),
+    ('reset_rxmbuf_pointer', u32, 1),
+    ('mbuf_low_attention_enable', u32, 1),
+    ('test_mode', u32, 1),
+    ('attention_enable', u32, 1),
+    ('enable', u32, 1),
+    ('reset', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/bufman.h: 23
+class union_anon_9(Union):
+    pass
+
+union_anon_9._pack_ = 1
+union_anon_9.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_9._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_9._fields_ = [
+    ('unnamed_1', struct_anon_8),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/bufman.h: 22
 class struct_bufman_mode(Structure):
     pass
 
-# /home/saul/thundergate/include/bufman.h: 38
+struct_bufman_mode._pack_ = 1
+struct_bufman_mode.__slots__ = [
+    'unnamed_1',
+]
+struct_bufman_mode._anonymous_ = [
+    'unnamed_1',
+]
+struct_bufman_mode._fields_ = [
+    ('unnamed_1', union_anon_9),
+]
+
+# /Users/saul/src/thundergate/include/bufman.h: 38
 class struct_bufman_status(Structure):
     pass
 
+struct_bufman_status._pack_ = 1
 struct_bufman_status.__slots__ = [
     'test_mode',
     'mbuf_low_attention',
@@ -1621,10 +2199,11 @@ struct_bufman_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 46
+# /Users/saul/src/thundergate/include/bufman.h: 46
 class struct_bufman_mbuf_pool_bar(Structure):
     pass
 
+struct_bufman_mbuf_pool_bar._pack_ = 1
 struct_bufman_mbuf_pool_bar.__slots__ = [
     'reserved',
     'mbuf_base_addr',
@@ -1634,10 +2213,11 @@ struct_bufman_mbuf_pool_bar._fields_ = [
     ('mbuf_base_addr', u32, 23),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 51
+# /Users/saul/src/thundergate/include/bufman.h: 51
 class struct_bufman_mbuf_pool_length(Structure):
     pass
 
+struct_bufman_mbuf_pool_length._pack_ = 1
 struct_bufman_mbuf_pool_length.__slots__ = [
     'reserved',
     'mbuf_length',
@@ -1647,10 +2227,11 @@ struct_bufman_mbuf_pool_length._fields_ = [
     ('mbuf_length', u32, 23),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 56
+# /Users/saul/src/thundergate/include/bufman.h: 56
 class struct_bufman_rdma_mbuf_low_watermark(Structure):
     pass
 
+struct_bufman_rdma_mbuf_low_watermark._pack_ = 1
 struct_bufman_rdma_mbuf_low_watermark.__slots__ = [
     'reserved',
     'count',
@@ -1660,10 +2241,11 @@ struct_bufman_rdma_mbuf_low_watermark._fields_ = [
     ('count', u32, 6),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 61
+# /Users/saul/src/thundergate/include/bufman.h: 61
 class struct_bufman_dma_mbuf_low_watermark(Structure):
     pass
 
+struct_bufman_dma_mbuf_low_watermark._pack_ = 1
 struct_bufman_dma_mbuf_low_watermark.__slots__ = [
     'reserved',
     'count',
@@ -1673,10 +2255,11 @@ struct_bufman_dma_mbuf_low_watermark._fields_ = [
     ('count', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 66
+# /Users/saul/src/thundergate/include/bufman.h: 66
 class struct_bufman_mbuf_high_watermark(Structure):
     pass
 
+struct_bufman_mbuf_high_watermark._pack_ = 1
 struct_bufman_mbuf_high_watermark.__slots__ = [
     'reserved',
     'count',
@@ -1686,10 +2269,11 @@ struct_bufman_mbuf_high_watermark._fields_ = [
     ('count', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 71
+# /Users/saul/src/thundergate/include/bufman.h: 71
 class struct_bufman_risc_mbuf_cluster_allocation_request(Structure):
     pass
 
+struct_bufman_risc_mbuf_cluster_allocation_request._pack_ = 1
 struct_bufman_risc_mbuf_cluster_allocation_request.__slots__ = [
     'allocation_request',
     'reserved',
@@ -1699,10 +2283,11 @@ struct_bufman_risc_mbuf_cluster_allocation_request._fields_ = [
     ('reserved', u32, 31),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 76
+# /Users/saul/src/thundergate/include/bufman.h: 76
 class struct_bufman_risc_mbuf_cluster_allocation_response(Structure):
     pass
 
+struct_bufman_risc_mbuf_cluster_allocation_response._pack_ = 1
 struct_bufman_risc_mbuf_cluster_allocation_response.__slots__ = [
     'mbuf',
 ]
@@ -1710,10 +2295,11 @@ struct_bufman_risc_mbuf_cluster_allocation_response._fields_ = [
     ('mbuf', u32),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 80
+# /Users/saul/src/thundergate/include/bufman.h: 80
 class struct_bufman_hardware_diagnostic_1(Structure):
     pass
 
+struct_bufman_hardware_diagnostic_1._pack_ = 1
 struct_bufman_hardware_diagnostic_1.__slots__ = [
     'reserved',
     'last_txmbuf_deallocation_head_ptr',
@@ -1731,10 +2317,11 @@ struct_bufman_hardware_diagnostic_1._fields_ = [
     ('next_txmbuf_allocation_ptr', u32, 6),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 89
+# /Users/saul/src/thundergate/include/bufman.h: 89
 class struct_bufman_hardware_diagnostic_2(Structure):
     pass
 
+struct_bufman_hardware_diagnostic_2._pack_ = 1
 struct_bufman_hardware_diagnostic_2.__slots__ = [
     'reserved',
     'rxmbuf_count',
@@ -1750,10 +2337,11 @@ struct_bufman_hardware_diagnostic_2._fields_ = [
     ('rxmbuf_left', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 97
+# /Users/saul/src/thundergate/include/bufman.h: 97
 class struct_bufman_hardware_diagnostic_3(Structure):
     pass
 
+struct_bufman_hardware_diagnostic_3._pack_ = 1
 struct_bufman_hardware_diagnostic_3.__slots__ = [
     'reserved',
     'next_rxmbuf_deallocation_ptr',
@@ -1767,10 +2355,11 @@ struct_bufman_hardware_diagnostic_3._fields_ = [
     ('next_rxmbuf_allocation_ptr', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 104
+# /Users/saul/src/thundergate/include/bufman.h: 104
 class struct_bufman_receive_flow_threshold(Structure):
     pass
 
+struct_bufman_receive_flow_threshold._pack_ = 1
 struct_bufman_receive_flow_threshold.__slots__ = [
     'reserved',
     'mbuf_threshold',
@@ -1780,10 +2369,11 @@ struct_bufman_receive_flow_threshold._fields_ = [
     ('mbuf_threshold', u32, 9),
 ]
 
-# /home/saul/thundergate/include/bufman.h: 109
+# /Users/saul/src/thundergate/include/bufman.h: 109
 class struct_bufman_regs(Structure):
     pass
 
+struct_bufman_regs._pack_ = 1
 struct_bufman_regs.__slots__ = [
     'mode',
     'status',
@@ -1835,10 +2425,11 @@ struct_bufman_regs._fields_ = [
     ('receive_flow_threshold', struct_bufman_receive_flow_threshold),
 ]
 
-# /home/saul/thundergate/include/cfg_port.h: 22
+# /Users/saul/src/thundergate/include/cfg_port.h: 22
 class struct_cfg_port_cap_ctrl(Structure):
     pass
 
+struct_cfg_port_cap_ctrl._pack_ = 1
 struct_cfg_port_cap_ctrl.__slots__ = [
     'unknown4',
     'pm_en',
@@ -1854,10 +2445,11 @@ struct_cfg_port_cap_ctrl._fields_ = [
     ('msix_en', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cfg_port.h: 30
+# /Users/saul/src/thundergate/include/cfg_port.h: 30
 class struct_cfg_port_bar_ctrl(Structure):
     pass
 
+struct_cfg_port_bar_ctrl._pack_ = 1
 struct_cfg_port_bar_ctrl.__slots__ = [
     'unknown12',
     'rom_bar_sz',
@@ -1873,22 +2465,153 @@ struct_cfg_port_bar_ctrl._fields_ = [
     ('bar0_sz', u32, 4),
 ]
 
-# /home/saul/thundergate/include/cfg_port.h: 38
+# /Users/saul/src/thundergate/include/cfg_port.h: 40
+class struct_anon_10(Structure):
+    pass
+
+struct_anon_10._pack_ = 1
+struct_anon_10.__slots__ = [
+    'vid',
+    'did',
+]
+struct_anon_10._fields_ = [
+    ('vid', u16),
+    ('did', u16),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 39
+class union_anon_11(Union):
+    pass
+
+union_anon_11._pack_ = 1
+union_anon_11.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_11._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_11._fields_ = [
+    ('unnamed_1', struct_anon_10),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 38
 class struct_cfg_port_pci_id(Structure):
     pass
 
-# /home/saul/thundergate/include/cfg_port.h: 48
+struct_cfg_port_pci_id._pack_ = 1
+struct_cfg_port_pci_id.__slots__ = [
+    'unnamed_1',
+]
+struct_cfg_port_pci_id._anonymous_ = [
+    'unnamed_1',
+]
+struct_cfg_port_pci_id._fields_ = [
+    ('unnamed_1', union_anon_11),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 50
+class struct_anon_12(Structure):
+    pass
+
+struct_anon_12._pack_ = 1
+struct_anon_12.__slots__ = [
+    'ssid',
+    'svid',
+]
+struct_anon_12._fields_ = [
+    ('ssid', u16),
+    ('svid', u16),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 49
+class union_anon_13(Union):
+    pass
+
+union_anon_13._pack_ = 1
+union_anon_13.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_13._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_13._fields_ = [
+    ('unnamed_1', struct_anon_12),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 48
 class struct_cfg_port_pci_sid(Structure):
     pass
 
-# /home/saul/thundergate/include/cfg_port.h: 58
+struct_cfg_port_pci_sid._pack_ = 1
+struct_cfg_port_pci_sid.__slots__ = [
+    'unnamed_1',
+]
+struct_cfg_port_pci_sid._anonymous_ = [
+    'unnamed_1',
+]
+struct_cfg_port_pci_sid._fields_ = [
+    ('unnamed_1', union_anon_13),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 60
+class struct_anon_14(Structure):
+    pass
+
+struct_anon_14._pack_ = 1
+struct_anon_14.__slots__ = [
+    'unknown24',
+    'class_code',
+    'subclass_code',
+    'unknown0',
+]
+struct_anon_14._fields_ = [
+    ('unknown24', u32, 8),
+    ('class_code', u32, 8),
+    ('subclass_code', u32, 8),
+    ('unknown0', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 59
+class union_anon_15(Union):
+    pass
+
+union_anon_15._pack_ = 1
+union_anon_15.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_15._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_15._fields_ = [
+    ('unnamed_1', struct_anon_14),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 58
 class struct_cfg_port_pci_class(Structure):
     pass
 
-# /home/saul/thundergate/include/cfg_port.h: 70
+struct_cfg_port_pci_class._pack_ = 1
+struct_cfg_port_pci_class.__slots__ = [
+    'unnamed_1',
+]
+struct_cfg_port_pci_class._anonymous_ = [
+    'unnamed_1',
+]
+struct_cfg_port_pci_class._fields_ = [
+    ('unnamed_1', union_anon_15),
+]
+
+# /Users/saul/src/thundergate/include/cfg_port.h: 70
 class struct_cfg_port_regs(Structure):
     pass
 
+struct_cfg_port_regs._pack_ = 1
 struct_cfg_port_regs.__slots__ = [
     'ofs_00',
     'ofs_04',
@@ -2406,10 +3129,11 @@ struct_cfg_port_regs._fields_ = [
     ('ofs_3fc', u32),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 22
+# /Users/saul/src/thundergate/include/cpmu.h: 22
 class struct_cpmu_control(Structure):
     pass
 
+struct_cpmu_control._pack_ = 1
 struct_cpmu_control.__slots__ = [
     'reserved31',
     'reserved30',
@@ -2475,10 +3199,11 @@ struct_cpmu_control._fields_ = [
     ('software_reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 55
+# /Users/saul/src/thundergate/include/cpmu.h: 55
 class struct_cpmu_clock(Structure):
     pass
 
+struct_cpmu_clock._pack_ = 1
 struct_cpmu_clock.__slots__ = [
     'reserved21',
     'mac_clock_switch',
@@ -2494,10 +3219,11 @@ struct_cpmu_clock._fields_ = [
     ('reserved0', u32, 8),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 63
+# /Users/saul/src/thundergate/include/cpmu.h: 63
 class struct_cpmu_override(Structure):
     pass
 
+struct_cpmu_override._pack_ = 1
 struct_cpmu_override.__slots__ = [
     'reserved',
     'mac_clock_speed_override_enable',
@@ -2509,10 +3235,11 @@ struct_cpmu_override._fields_ = [
     ('reserved2', u32, 13),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 69
+# /Users/saul/src/thundergate/include/cpmu.h: 69
 class struct_cpmu_status(Structure):
     pass
 
+struct_cpmu_status._pack_ = 1
 struct_cpmu_status.__slots__ = [
     'reserved',
     'wol_acpi_detection_enabled',
@@ -2544,10 +3271,11 @@ struct_cpmu_status._fields_ = [
     ('pm_state_machine_state', u32, 4),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 85
+# /Users/saul/src/thundergate/include/cpmu.h: 85
 class struct_cpmu_clock_status(Structure):
     pass
 
+struct_cpmu_clock_status._pack_ = 1
 struct_cpmu_clock_status.__slots__ = [
     'reserved30',
     'flash_clk_dis',
@@ -2577,10 +3305,11 @@ struct_cpmu_clock_status._fields_ = [
     ('reserved0', u32, 4),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 100
+# /Users/saul/src/thundergate/include/cpmu.h: 100
 class struct_cpmu_pcie_status(Structure):
     pass
 
+struct_cpmu_pcie_status._pack_ = 1
 struct_cpmu_pcie_status.__slots__ = [
     'dl_active',
     'debug_vector_sel_2',
@@ -2598,10 +3327,11 @@ struct_cpmu_pcie_status._fields_ = [
     ('debug_vector_1', u32, 11),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 109
+# /Users/saul/src/thundergate/include/cpmu.h: 109
 class struct_cpmu_gphy_control_status(Structure):
     pass
 
+struct_cpmu_gphy_control_status._pack_ = 1
 struct_cpmu_gphy_control_status.__slots__ = [
     'logan_sku',
     'reserved14',
@@ -2637,10 +3367,11 @@ struct_cpmu_gphy_control_status._fields_ = [
     ('phy_iddq', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 127
+# /Users/saul/src/thundergate/include/cpmu.h: 127
 class struct_cpmu_ram_control(Structure):
     pass
 
+struct_cpmu_ram_control._pack_ = 1
 struct_cpmu_ram_control.__slots__ = [
     'core_ram_power_down',
     'bd_ram_power_down',
@@ -2692,10 +3423,11 @@ struct_cpmu_ram_control._fields_ = [
     ('ram_bank0_dis', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 153
+# /Users/saul/src/thundergate/include/cpmu.h: 153
 class struct_cpmu_cr_idle_det_debounce_ctrl(Structure):
     pass
 
+struct_cpmu_cr_idle_det_debounce_ctrl._pack_ = 1
 struct_cpmu_cr_idle_det_debounce_ctrl.__slots__ = [
     'reserved16',
     'timer',
@@ -2705,10 +3437,11 @@ struct_cpmu_cr_idle_det_debounce_ctrl._fields_ = [
     ('timer', u32, 16),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 158
+# /Users/saul/src/thundergate/include/cpmu.h: 158
 class struct_cpmu_core_idle_det_debounce_ctrl(Structure):
     pass
 
+struct_cpmu_core_idle_det_debounce_ctrl._pack_ = 1
 struct_cpmu_core_idle_det_debounce_ctrl.__slots__ = [
     'reserved8',
     'timer',
@@ -2718,10 +3451,11 @@ struct_cpmu_core_idle_det_debounce_ctrl._fields_ = [
     ('timer', u32, 8),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 163
+# /Users/saul/src/thundergate/include/cpmu.h: 163
 class struct_cpmu_pcie_idle_det_debounce_ctrl(Structure):
     pass
 
+struct_cpmu_pcie_idle_det_debounce_ctrl._pack_ = 1
 struct_cpmu_pcie_idle_det_debounce_ctrl.__slots__ = [
     'reserved8',
     'timer',
@@ -2731,10 +3465,11 @@ struct_cpmu_pcie_idle_det_debounce_ctrl._fields_ = [
     ('timer', u32, 8),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 168
+# /Users/saul/src/thundergate/include/cpmu.h: 168
 class struct_cpmu_energy_det_debounce_ctrl(Structure):
     pass
 
+struct_cpmu_energy_det_debounce_ctrl._pack_ = 1
 struct_cpmu_energy_det_debounce_ctrl.__slots__ = [
     'reserved10',
     'energy_detect_select',
@@ -2758,10 +3493,11 @@ struct_cpmu_energy_det_debounce_ctrl._fields_ = [
     ('energy_det_debounce_low_limit', u32, 2),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 180
+# /Users/saul/src/thundergate/include/cpmu.h: 180
 class struct_cpmu_dll_lock_timer(Structure):
     pass
 
+struct_cpmu_dll_lock_timer._pack_ = 1
 struct_cpmu_dll_lock_timer.__slots__ = [
     'reserved12',
     'gphy_dll_lock_dimer_enable',
@@ -2773,10 +3509,11 @@ struct_cpmu_dll_lock_timer._fields_ = [
     ('gphy_dll_lock_timer', u32, 11),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 186
+# /Users/saul/src/thundergate/include/cpmu.h: 186
 class struct_cpmu_chip_id(Structure):
     pass
 
+struct_cpmu_chip_id._pack_ = 1
 struct_cpmu_chip_id.__slots__ = [
     'chip_id_hi',
     'chip_id_lo',
@@ -2790,10 +3527,11 @@ struct_cpmu_chip_id._fields_ = [
     ('metal_layer_revision', u32, 8),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 193
+# /Users/saul/src/thundergate/include/cpmu.h: 193
 class struct_cpmu_mutex(Structure):
     pass
 
+struct_cpmu_mutex._pack_ = 1
 struct_cpmu_mutex.__slots__ = [
     'reserved13',
     'req_12',
@@ -2817,10 +3555,11 @@ struct_cpmu_mutex._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 205
+# /Users/saul/src/thundergate/include/cpmu.h: 205
 class struct_cpmu_padring_control(Structure):
     pass
 
+struct_cpmu_padring_control._pack_ = 1
 struct_cpmu_padring_control.__slots__ = [
     'power_sm_or_state',
     'power_sm_override',
@@ -2880,10 +3619,11 @@ struct_cpmu_padring_control._fields_ = [
     ('perst_l_pad_hysteris_enable', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cpmu.h: 237
+# /Users/saul/src/thundergate/include/cpmu.h: 237
 class struct_cpmu_regs(Structure):
     pass
 
+struct_cpmu_regs._pack_ = 1
 struct_cpmu_regs.__slots__ = [
     'control',
     'no_link_or_10mb_policy',
@@ -3017,10 +3757,11 @@ struct_cpmu_regs._fields_ = [
     ('clock_gen_control', u32),
 ]
 
-# /home/saul/thundergate/include/cpu.h: 22
+# /Users/saul/src/thundergate/include/cpu.h: 22
 class struct_cpu_mode(Structure):
     pass
 
+struct_cpu_mode._pack_ = 1
 struct_cpu_mode.__slots__ = [
     'reserved15',
     'register_addr_trap_halt_en',
@@ -3058,14 +3799,97 @@ struct_cpu_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cpu.h: 44
+# /Users/saul/src/thundergate/include/cpu.h: 46
+class struct_anon_16(Structure):
+    pass
+
+struct_anon_16._pack_ = 1
+struct_anon_16.__slots__ = [
+    'blocking_read',
+    'ma_request_fifo_overflow',
+    'ma_data_bytemask_fifo_overflow',
+    'ma_outstanding_read_fifo_overflow',
+    'ma_outstanding_write_fifo_overflow',
+    'reserved16',
+    'instruction_fetch_stall',
+    'data_access_stall',
+    'reserved13',
+    'interrupt_received',
+    'reserved11',
+    'halted',
+    'register_address_trap',
+    'memory_address_trap',
+    'bad_memory_alignment',
+    'invalid_instruction_fetch',
+    'invalid_data_access',
+    'page_0_instr_reference',
+    'page_0_data_reference',
+    'invalid_instruction',
+    'halt_instruction_executed',
+    'hardware_breakpoint',
+]
+struct_anon_16._fields_ = [
+    ('blocking_read', u32, 1),
+    ('ma_request_fifo_overflow', u32, 1),
+    ('ma_data_bytemask_fifo_overflow', u32, 1),
+    ('ma_outstanding_read_fifo_overflow', u32, 1),
+    ('ma_outstanding_write_fifo_overflow', u32, 1),
+    ('reserved16', u32, 11),
+    ('instruction_fetch_stall', u32, 1),
+    ('data_access_stall', u32, 1),
+    ('reserved13', u32, 1),
+    ('interrupt_received', u32, 1),
+    ('reserved11', u32, 1),
+    ('halted', u32, 1),
+    ('register_address_trap', u32, 1),
+    ('memory_address_trap', u32, 1),
+    ('bad_memory_alignment', u32, 1),
+    ('invalid_instruction_fetch', u32, 1),
+    ('invalid_data_access', u32, 1),
+    ('page_0_instr_reference', u32, 1),
+    ('page_0_data_reference', u32, 1),
+    ('invalid_instruction', u32, 1),
+    ('halt_instruction_executed', u32, 1),
+    ('hardware_breakpoint', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 45
+class union_anon_17(Union):
+    pass
+
+union_anon_17._pack_ = 1
+union_anon_17.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_17._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_17._fields_ = [
+    ('unnamed_1', struct_anon_16),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 44
 class struct_cpu_status(Structure):
     pass
 
-# /home/saul/thundergate/include/cpu.h: 74
+struct_cpu_status._pack_ = 1
+struct_cpu_status.__slots__ = [
+    'unnamed_1',
+]
+struct_cpu_status._anonymous_ = [
+    'unnamed_1',
+]
+struct_cpu_status._fields_ = [
+    ('unnamed_1', union_anon_17),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 74
 class struct_cpu_event_mask(Structure):
     pass
 
+struct_cpu_event_mask._pack_ = 1
 struct_cpu_event_mask.__slots__ = [
     'unknown',
     'reserved13',
@@ -3101,18 +3925,107 @@ struct_cpu_event_mask._fields_ = [
     ('breakpoint', u32, 1),
 ]
 
-# /home/saul/thundergate/include/cpu.h: 92
+# /Users/saul/src/thundergate/include/cpu.h: 95
+class struct_anon_18(Structure):
+    pass
+
+struct_anon_18._pack_ = 1
+struct_anon_18.__slots__ = [
+    'addr_word',
+    'reserved',
+    'disabled',
+]
+struct_anon_18._fields_ = [
+    ('addr_word', u32, 30),
+    ('reserved', u32, 1),
+    ('disabled', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 93
+class union_anon_19(Union):
+    pass
+
+union_anon_19._pack_ = 1
+union_anon_19.__slots__ = [
+    'address',
+    'unnamed_1',
+]
+union_anon_19._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_19._fields_ = [
+    ('address', u32),
+    ('unnamed_1', struct_anon_18),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 92
 class struct_cpu_breakpoint(Structure):
     pass
 
-# /home/saul/thundergate/include/cpu.h: 103
+struct_cpu_breakpoint._pack_ = 1
+struct_cpu_breakpoint.__slots__ = [
+    'unnamed_1',
+]
+struct_cpu_breakpoint._anonymous_ = [
+    'unnamed_1',
+]
+struct_cpu_breakpoint._fields_ = [
+    ('unnamed_1', union_anon_19),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 106
+class struct_anon_20(Structure):
+    pass
+
+struct_anon_20._pack_ = 1
+struct_anon_20.__slots__ = [
+    'addr_word',
+    'type',
+    'reserved',
+]
+struct_anon_20._fields_ = [
+    ('addr_word', u32, 30),
+    ('type', u32, 1),
+    ('reserved', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 104
+class union_anon_21(Union):
+    pass
+
+union_anon_21._pack_ = 1
+union_anon_21.__slots__ = [
+    'address',
+    'unnamed_1',
+]
+union_anon_21._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_21._fields_ = [
+    ('address', u32),
+    ('unnamed_1', struct_anon_20),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 103
 class struct_cpu_last_branch_address(Structure):
     pass
 
-# /home/saul/thundergate/include/cpu.h: 114
+struct_cpu_last_branch_address._pack_ = 1
+struct_cpu_last_branch_address.__slots__ = [
+    'unnamed_1',
+]
+struct_cpu_last_branch_address._anonymous_ = [
+    'unnamed_1',
+]
+struct_cpu_last_branch_address._fields_ = [
+    ('unnamed_1', union_anon_21),
+]
+
+# /Users/saul/src/thundergate/include/cpu.h: 114
 class struct_cpu_regs(Structure):
     pass
 
+struct_cpu_regs._pack_ = 1
 struct_cpu_regs.__slots__ = [
     'mode',
     'status',
@@ -3438,10 +4351,11 @@ struct_cpu_regs._fields_ = [
     ('r31', u32),
 ]
 
-# /home/saul/thundergate/include/cr_port.h: 22
+# /Users/saul/src/thundergate/include/cr_port.h: 22
 class struct_cr_port_regs(Structure):
     pass
 
+struct_cr_port_regs._pack_ = 1
 struct_cr_port_regs.__slots__ = [
     'ofs_00',
     'ofs_04',
@@ -3703,14 +4617,102 @@ struct_cr_port_regs._fields_ = [
     ('ofs_1fc', u32),
 ]
 
-# /home/saul/thundergate/include/dmac.h: 22
+# /Users/saul/src/thundergate/include/dma.h: 26
+class struct_anon_22(Structure):
+    pass
+
+struct_anon_22._pack_ = 1
+struct_anon_22.__slots__ = [
+    'length',
+    'cqid_sqid',
+]
+struct_anon_22._fields_ = [
+    ('length', u32, 16),
+    ('cqid_sqid', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/dma.h: 22
+class struct_dma_desc(Structure):
+    pass
+
+struct_dma_desc._pack_ = 1
+struct_dma_desc.__slots__ = [
+    'addr_hi',
+    'addr_lo',
+    'nic_mbuf',
+    'unnamed_1',
+    'flags',
+    'opaque1',
+    'opaque2',
+    'opaque3',
+]
+struct_dma_desc._anonymous_ = [
+    'unnamed_1',
+]
+struct_dma_desc._fields_ = [
+    ('addr_hi', u32),
+    ('addr_lo', u32),
+    ('nic_mbuf', u32),
+    ('unnamed_1', struct_anon_22),
+    ('flags', u32),
+    ('opaque1', u32),
+    ('opaque2', u32),
+    ('opaque3', u32),
+]
+
+# /Users/saul/src/thundergate/include/dmac.h: 24
+class struct_anon_23(Structure):
+    pass
+
+struct_anon_23._pack_ = 1
+struct_anon_23.__slots__ = [
+    'reserved',
+    'enable',
+    'reset',
+]
+struct_anon_23._fields_ = [
+    ('reserved', u32, 30),
+    ('enable', u32, 1),
+    ('reset', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/dmac.h: 23
+class union_anon_24(Union):
+    pass
+
+union_anon_24._pack_ = 1
+union_anon_24.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_24._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_24._fields_ = [
+    ('unnamed_1', struct_anon_23),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/dmac.h: 22
 class struct_dmac_mode(Structure):
     pass
 
-# /home/saul/thundergate/include/dmac.h: 33
+struct_dmac_mode._pack_ = 1
+struct_dmac_mode.__slots__ = [
+    'unnamed_1',
+]
+struct_dmac_mode._anonymous_ = [
+    'unnamed_1',
+]
+struct_dmac_mode._fields_ = [
+    ('unnamed_1', union_anon_24),
+]
+
+# /Users/saul/src/thundergate/include/dmac.h: 33
 class struct_dmac_regs(Structure):
     pass
 
+struct_dmac_regs._pack_ = 1
 struct_dmac_regs.__slots__ = [
     'mode',
 ]
@@ -3718,33 +4720,11 @@ struct_dmac_regs._fields_ = [
     ('mode', struct_dmac_mode),
 ]
 
-# /home/saul/thundergate/include/dma.h: 22
-class struct_dma_desc(Structure):
-    pass
-
-struct_dma_desc.__slots__ = [
-    'addr_hi',
-    'addr_lo',
-    'nic_mbuf',
-    'flags',
-    'opaque1',
-    'opaque2',
-    'opaque3',
-]
-struct_dma_desc._fields_ = [
-    ('addr_hi', u32),
-    ('addr_lo', u32),
-    ('nic_mbuf', u32),
-    ('flags', u32),
-    ('opaque1', u32),
-    ('opaque2', u32),
-    ('opaque3', u32),
-]
-
-# /home/saul/thundergate/include/emac.h: 24
+# /Users/saul/src/thundergate/include/emac.h: 24
 class struct_emac_mode(Structure):
     pass
 
+struct_emac_mode._pack_ = 1
 struct_emac_mode.__slots__ = [
     'ext_magic_pkt_en',
     'magic_pkt_free_running_mode_en',
@@ -3810,10 +4790,11 @@ struct_emac_mode._fields_ = [
     ('global_reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 57
+# /Users/saul/src/thundergate/include/emac.h: 57
 class struct_emac_status(Structure):
     pass
 
+struct_emac_status._pack_ = 1
 struct_emac_status.__slots__ = [
     'reserved29',
     'interesting_packet_pme_attention',
@@ -3841,10 +4822,11 @@ struct_emac_status._fields_ = [
     ('reserved0', u32, 12),
 ]
 
-# /home/saul/thundergate/include/emac.h: 71
+# /Users/saul/src/thundergate/include/emac.h: 71
 class struct_emac_event_enable(Structure):
     pass
 
+struct_emac_event_enable._pack_ = 1
 struct_emac_event_enable.__slots__ = [
     'reserved30',
     'tx_offload_error_interrupt',
@@ -3874,14 +4856,89 @@ struct_emac_event_enable._fields_ = [
     ('reserved0', u32, 12),
 ]
 
-# /home/saul/thundergate/include/emac.h: 86
+# /Users/saul/src/thundergate/include/emac.h: 88
+class struct_anon_25(Structure):
+    pass
+
+struct_anon_25._pack_ = 1
+struct_anon_25.__slots__ = [
+    'override_blink_rate',
+    'blink_period',
+    'reserved16',
+    'speed_10_100_mode',
+    'shared_traffic_link_led_mode',
+    'mac_mode',
+    'led_mode',
+    'traffic_led_status',
+    'ten_mbps_led_status',
+    'hundred_mbps_led_status',
+    'gig_mbps_led_status',
+    'traffic_led',
+    'blink_traffic_led',
+    'override_traffic_led',
+    'ten_mbps_led',
+    'hundred_mbps_led',
+    'gig_mbps_led',
+    'override_link_leds',
+]
+struct_anon_25._fields_ = [
+    ('override_blink_rate', u32, 1),
+    ('blink_period', u32, 12),
+    ('reserved16', u32, 3),
+    ('speed_10_100_mode', u32, 1),
+    ('shared_traffic_link_led_mode', u32, 1),
+    ('mac_mode', u32, 1),
+    ('led_mode', u32, 2),
+    ('traffic_led_status', u32, 1),
+    ('ten_mbps_led_status', u32, 1),
+    ('hundred_mbps_led_status', u32, 1),
+    ('gig_mbps_led_status', u32, 1),
+    ('traffic_led', u32, 1),
+    ('blink_traffic_led', u32, 1),
+    ('override_traffic_led', u32, 1),
+    ('ten_mbps_led', u32, 1),
+    ('hundred_mbps_led', u32, 1),
+    ('gig_mbps_led', u32, 1),
+    ('override_link_leds', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 87
+class union_anon_26(Union):
+    pass
+
+union_anon_26._pack_ = 1
+union_anon_26.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_26._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_26._fields_ = [
+    ('unnamed_1', struct_anon_25),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 86
 class struct_emac_led_control(Structure):
     pass
 
-# /home/saul/thundergate/include/emac.h: 112
+struct_emac_led_control._pack_ = 1
+struct_emac_led_control.__slots__ = [
+    'unnamed_1',
+]
+struct_emac_led_control._anonymous_ = [
+    'unnamed_1',
+]
+struct_emac_led_control._fields_ = [
+    ('unnamed_1', union_anon_26),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 112
 class struct_transmit_mac_mode(Structure):
     pass
 
+struct_transmit_mac_mode._pack_ = 1
 struct_transmit_mac_mode.__slots__ = [
     'rr_weight',
     'transmit_ftq_arbitration_mode',
@@ -3927,14 +4984,67 @@ struct_transmit_mac_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 135
+# /Users/saul/src/thundergate/include/emac.h: 137
+class struct_anon_27(Structure):
+    pass
+
+struct_anon_27._pack_ = 1
+struct_anon_27.__slots__ = [
+    'reserved',
+    'odi_overrun',
+    'odi_underrun',
+    'link_up',
+    'sent_xon',
+    'sent_xoff',
+    'currently_xoffed',
+]
+struct_anon_27._fields_ = [
+    ('reserved', u32, 26),
+    ('odi_overrun', u32, 1),
+    ('odi_underrun', u32, 1),
+    ('link_up', u32, 1),
+    ('sent_xon', u32, 1),
+    ('sent_xoff', u32, 1),
+    ('currently_xoffed', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 136
+class union_anon_28(Union):
+    pass
+
+union_anon_28._pack_ = 1
+union_anon_28.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_28._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_28._fields_ = [
+    ('unnamed_1', struct_anon_27),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 135
 class struct_transmit_mac_status(Structure):
     pass
 
-# /home/saul/thundergate/include/emac.h: 150
+struct_transmit_mac_status._pack_ = 1
+struct_transmit_mac_status.__slots__ = [
+    'unnamed_1',
+]
+struct_transmit_mac_status._anonymous_ = [
+    'unnamed_1',
+]
+struct_transmit_mac_status._fields_ = [
+    ('unnamed_1', union_anon_28),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 150
 class struct_transmit_mac_lengths(Structure):
     pass
 
+struct_transmit_mac_lengths._pack_ = 1
 struct_transmit_mac_lengths.__slots__ = [
     'reserved',
     'ipg_crs',
@@ -3948,10 +5058,11 @@ struct_transmit_mac_lengths._fields_ = [
     ('slot', u32, 8),
 ]
 
-# /home/saul/thundergate/include/emac.h: 157
+# /Users/saul/src/thundergate/include/emac.h: 157
 class struct_receive_mac_mode(Structure):
     pass
 
+struct_receive_mac_mode._pack_ = 1
 struct_receive_mac_mode.__slots__ = [
     'disable_hw_fix_24175',
     'disable_hw_fix_29914',
@@ -4015,22 +5126,221 @@ struct_receive_mac_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 189
+# /Users/saul/src/thundergate/include/emac.h: 191
+class struct_anon_29(Structure):
+    pass
+
+struct_anon_29._pack_ = 1
+struct_anon_29.__slots__ = [
+    'reserved',
+    'acpi_packet_rcvd',
+    'magic_packet_rcvd',
+    'rx_fifo_overrun',
+    'xon_received',
+    'xoff_received',
+    'remote_transmitter_xoffed',
+]
+struct_anon_29._fields_ = [
+    ('reserved', u32, 26),
+    ('acpi_packet_rcvd', u32, 1),
+    ('magic_packet_rcvd', u32, 1),
+    ('rx_fifo_overrun', u32, 1),
+    ('xon_received', u32, 1),
+    ('xoff_received', u32, 1),
+    ('remote_transmitter_xoffed', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 190
+class union_anon_30(Union):
+    pass
+
+union_anon_30._pack_ = 1
+union_anon_30.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_30._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_30._fields_ = [
+    ('unnamed_1', struct_anon_29),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 189
 class struct_receive_mac_status(Structure):
     pass
 
-# /home/saul/thundergate/include/emac.h: 205
+struct_receive_mac_status._pack_ = 1
+struct_receive_mac_status.__slots__ = [
+    'unnamed_1',
+]
+struct_receive_mac_status._anonymous_ = [
+    'unnamed_1',
+]
+struct_receive_mac_status._fields_ = [
+    ('unnamed_1', union_anon_30),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 207
+class struct_anon_31(Structure):
+    pass
+
+struct_anon_31._pack_ = 1
+struct_anon_31.__slots__ = [
+    'byte_2',
+    'byte_1',
+    'reserved',
+]
+struct_anon_31._fields_ = [
+    ('byte_2', u32, 8),
+    ('byte_1', u32, 8),
+    ('reserved', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 206
+class union_anon_32(Union):
+    pass
+
+union_anon_32._pack_ = 1
+union_anon_32.__slots__ = [
+    'unnamed_1',
+    'word_hi',
+]
+union_anon_32._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_32._fields_ = [
+    ('unnamed_1', struct_anon_31),
+    ('word_hi', u32),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 215
+class struct_anon_33(Structure):
+    pass
+
+struct_anon_33._pack_ = 1
+struct_anon_33.__slots__ = [
+    'byte_3',
+    'byte_4',
+    'byte_5',
+    'byte_6',
+]
+struct_anon_33._fields_ = [
+    ('byte_3', u32, 8),
+    ('byte_4', u32, 8),
+    ('byte_5', u32, 8),
+    ('byte_6', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 214
+class union_anon_34(Union):
+    pass
+
+union_anon_34._pack_ = 1
+union_anon_34.__slots__ = [
+    'unnamed_1',
+    'word_low',
+]
+union_anon_34._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_34._fields_ = [
+    ('unnamed_1', struct_anon_33),
+    ('word_low', u32),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 205
 class struct_emac_mac_addr(Structure):
     pass
 
-# /home/saul/thundergate/include/emac.h: 225
+struct_emac_mac_addr._pack_ = 1
+struct_emac_mac_addr.__slots__ = [
+    'unnamed_1',
+    'unnamed_2',
+]
+struct_emac_mac_addr._anonymous_ = [
+    'unnamed_1',
+    'unnamed_2',
+]
+struct_emac_mac_addr._fields_ = [
+    ('unnamed_1', union_anon_32),
+    ('unnamed_2', union_anon_34),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 227
+class struct_anon_35(Structure):
+    pass
+
+struct_anon_35._pack_ = 1
+struct_anon_35.__slots__ = [
+    'enable',
+    'and_with_next',
+    'activate_rxcpu',
+    'reserved',
+    'reserved2',
+    'mask',
+    'discard',
+    'map',
+    'reserved3',
+    'comparison_op',
+    'header_type',
+    'pclass',
+    'offset',
+]
+struct_anon_35._fields_ = [
+    ('enable', u32, 1),
+    ('and_with_next', u32, 1),
+    ('activate_rxcpu', u32, 1),
+    ('reserved', u32, 1),
+    ('reserved2', u32, 1),
+    ('mask', u32, 1),
+    ('discard', u32, 1),
+    ('map', u32, 1),
+    ('reserved3', u32, 6),
+    ('comparison_op', u32, 2),
+    ('header_type', u32, 3),
+    ('pclass', u32, 5),
+    ('offset', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 226
+class union_anon_36(Union):
+    pass
+
+union_anon_36._pack_ = 1
+union_anon_36.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_36._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_36._fields_ = [
+    ('unnamed_1', struct_anon_35),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 225
 class struct_emac_rx_rule_control(Structure):
     pass
 
-# /home/saul/thundergate/include/emac.h: 246
+struct_emac_rx_rule_control._pack_ = 1
+struct_emac_rx_rule_control.__slots__ = [
+    'unnamed_1',
+]
+struct_emac_rx_rule_control._anonymous_ = [
+    'unnamed_1',
+]
+struct_emac_rx_rule_control._fields_ = [
+    ('unnamed_1', union_anon_36),
+]
+
+# /Users/saul/src/thundergate/include/emac.h: 246
 class struct_receive_mac_rules_configuration(Structure):
     pass
 
+struct_receive_mac_rules_configuration._pack_ = 1
 struct_receive_mac_rules_configuration.__slots__ = [
     'reserved',
     'no_rules_matches_default_class',
@@ -4042,10 +5352,11 @@ struct_receive_mac_rules_configuration._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/emac.h: 252
+# /Users/saul/src/thundergate/include/emac.h: 252
 class struct_emac_low_watermark_max_receive_frame(Structure):
     pass
 
+struct_emac_low_watermark_max_receive_frame._pack_ = 1
 struct_emac_low_watermark_max_receive_frame.__slots__ = [
     'reserved',
     'txfifo_almost_empty_thresh',
@@ -4057,10 +5368,11 @@ struct_emac_low_watermark_max_receive_frame._fields_ = [
     ('count', u32, 16),
 ]
 
-# /home/saul/thundergate/include/emac.h: 258
+# /Users/saul/src/thundergate/include/emac.h: 258
 class struct_emac_mii_status(Structure):
     pass
 
+struct_emac_mii_status._pack_ = 1
 struct_emac_mii_status.__slots__ = [
     'communications_register_overlap_error',
     'reserved2',
@@ -4074,10 +5386,11 @@ struct_emac_mii_status._fields_ = [
     ('link_status', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 265
+# /Users/saul/src/thundergate/include/emac.h: 265
 class struct_emac_mii_mode(Structure):
     pass
 
+struct_emac_mii_mode._pack_ = 1
 struct_emac_mii_mode.__slots__ = [
     'communication_delay_fix_disable',
     'reserved21',
@@ -4105,10 +5418,11 @@ struct_emac_mii_mode._fields_ = [
     ('fast_clock', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 279
+# /Users/saul/src/thundergate/include/emac.h: 279
 class struct_emac_autopolling_status(Structure):
     pass
 
+struct_emac_autopolling_status._pack_ = 1
 struct_emac_autopolling_status.__slots__ = [
     'reserved',
     'error',
@@ -4118,10 +5432,11 @@ struct_emac_autopolling_status._fields_ = [
     ('error', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 284
+# /Users/saul/src/thundergate/include/emac.h: 284
 class struct_emac_mii_communication(Structure):
     pass
 
+struct_emac_mii_communication._pack_ = 1
 struct_emac_mii_communication.__slots__ = [
     'reserved30',
     'start_busy',
@@ -4143,10 +5458,11 @@ struct_emac_mii_communication._fields_ = [
     ('data', u32, 16),
 ]
 
-# /home/saul/thundergate/include/emac.h: 295
+# /Users/saul/src/thundergate/include/emac.h: 295
 class struct_emac_regulator_voltage_control(Structure):
     pass
 
+struct_emac_regulator_voltage_control._pack_ = 1
 struct_emac_regulator_voltage_control.__slots__ = [
     'reserved',
     'regclt_1_2v_core',
@@ -4190,23 +5506,25 @@ struct_emac_regulator_voltage_control._fields_ = [
     ('traffic_led_pin_input', u32, 1),
 ]
 
-# /home/saul/thundergate/include/emac.h: 346
-class struct_anon_2(Structure):
+# /Users/saul/src/thundergate/include/emac.h: 346
+class struct_anon_37(Structure):
     pass
 
-struct_anon_2.__slots__ = [
+struct_anon_37._pack_ = 1
+struct_anon_37.__slots__ = [
     'control',
     'mask_value',
 ]
-struct_anon_2._fields_ = [
+struct_anon_37._fields_ = [
     ('control', struct_emac_rx_rule_control),
     ('mask_value', u32),
 ]
 
-# /home/saul/thundergate/include/emac.h: 320
+# /Users/saul/src/thundergate/include/emac.h: 320
 class struct_emac_regs(Structure):
     pass
 
+struct_emac_regs._pack_ = 1
 struct_emac_regs.__slots__ = [
     'mode',
     'status',
@@ -4312,7 +5630,7 @@ struct_emac_regs._fields_ = [
     ('status', struct_emac_status),
     ('event_enable', struct_emac_event_enable),
     ('led_control', struct_emac_led_control),
-    ('addr', struct_emac_mac_addr * 4),
+    ('addr', struct_emac_mac_addr * int(4)),
     ('wol_pattern_pointer', u32),
     ('wol_pattern_configuration', u32),
     ('tx_random_backoff', u32),
@@ -4333,7 +5651,7 @@ struct_emac_regs._fields_ = [
     ('mac_hash_1', u32),
     ('mac_hash_2', u32),
     ('mac_hash_3', u32),
-    ('rx_rule', struct_anon_2 * 8),
+    ('rx_rule', struct_anon_37 * int(8)),
     ('ofs_c0', u32),
     ('ofs_c4', u32),
     ('ofs_c8', u32),
@@ -4408,10 +5726,11 @@ struct_emac_regs._fields_ = [
     ('ofs_1dc', u32),
 ]
 
-# /home/saul/thundergate/include/frame.h: 24
+# /Users/saul/src/thundergate/include/frame.h: 24
 class struct_frame(Structure):
     pass
 
+struct_frame._pack_ = 1
 struct_frame.__slots__ = [
     'dest',
     'src',
@@ -4419,47 +5738,257 @@ struct_frame.__slots__ = [
     'data',
 ]
 struct_frame._fields_ = [
-    ('dest', u8 * 6),
-    ('src', u8 * 6),
+    ('dest', u8 * int(6)),
+    ('src', u8 * int(6)),
     ('type', u16),
-    ('data', u8 * 0),
+    ('data', u8 * int(0)),
 ]
 
-# /home/saul/thundergate/include/frame.h: 31
+# /Users/saul/src/thundergate/include/frame.h: 37
+class struct_anon_38(Structure):
+    pass
+
+struct_anon_38._pack_ = 1
+struct_anon_38.__slots__ = [
+    'priority',
+    'cfi',
+    'vlan',
+]
+struct_anon_38._fields_ = [
+    ('priority', u16, 3),
+    ('cfi', u16, 1),
+    ('vlan', u16, 12),
+]
+
+# /Users/saul/src/thundergate/include/frame.h: 35
+class union_anon_39(Union):
+    pass
+
+union_anon_39._pack_ = 1
+union_anon_39.__slots__ = [
+    'tci',
+    'unnamed_1',
+]
+union_anon_39._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_39._fields_ = [
+    ('tci', u16),
+    ('unnamed_1', struct_anon_38),
+]
+
+# /Users/saul/src/thundergate/include/frame.h: 31
 class struct_vlan_frame(Structure):
     pass
 
+struct_vlan_frame._pack_ = 1
 struct_vlan_frame.__slots__ = [
     'dest',
     'src',
     'tpid',
+    'unnamed_1',
     'type',
     'data',
 ]
+struct_vlan_frame._anonymous_ = [
+    'unnamed_1',
+]
 struct_vlan_frame._fields_ = [
-    ('dest', u8 * 6),
-    ('src', u8 * 6),
+    ('dest', u8 * int(6)),
+    ('src', u8 * int(6)),
     ('tpid', u16),
+    ('unnamed_1', union_anon_39),
     ('type', u16),
-    ('data', u8 * 0),
+    ('data', u8 * int(0)),
 ]
 
-# /home/saul/thundergate/include/ftq.h: 22
+# /Users/saul/src/thundergate/include/ftq.h: 25
+class struct_anon_40(Structure):
+    pass
+
+struct_anon_40._pack_ = 1
+struct_anon_40.__slots__ = [
+    'reserved',
+    'receive_data_completion',
+    'reserved2',
+    'receive_list_placement',
+    'receive_bd_complete',
+    'reserved3',
+    'mac_tx',
+    'host_coalescing',
+    'send_data_completion',
+    'reserved4',
+    'dma_high_prio_write',
+    'dma_write',
+    'reserved5',
+    'send_bd_completion',
+    'reserved6',
+    'dma_high_prio_read',
+    'dma_read',
+    'reserved7',
+]
+struct_anon_40._fields_ = [
+    ('reserved', u32, 15),
+    ('receive_data_completion', u32, 1),
+    ('reserved2', u32, 1),
+    ('receive_list_placement', u32, 1),
+    ('receive_bd_complete', u32, 1),
+    ('reserved3', u32, 1),
+    ('mac_tx', u32, 1),
+    ('host_coalescing', u32, 1),
+    ('send_data_completion', u32, 1),
+    ('reserved4', u32, 1),
+    ('dma_high_prio_write', u32, 1),
+    ('dma_write', u32, 1),
+    ('reserved5', u32, 1),
+    ('send_bd_completion', u32, 1),
+    ('reserved6', u32, 1),
+    ('dma_high_prio_read', u32, 1),
+    ('dma_read', u32, 1),
+    ('reserved7', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 23
+class union_anon_41(Union):
+    pass
+
+union_anon_41._pack_ = 1
+union_anon_41.__slots__ = [
+    'word',
+    'unnamed_1',
+]
+union_anon_41._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_41._fields_ = [
+    ('word', u32),
+    ('unnamed_1', struct_anon_40),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 22
 class struct_ftq_reset(Structure):
     pass
 
-# /home/saul/thundergate/include/ftq.h: 48
+struct_ftq_reset._pack_ = 1
+struct_ftq_reset.__slots__ = [
+    'unnamed_1',
+]
+struct_ftq_reset._anonymous_ = [
+    'unnamed_1',
+]
+struct_ftq_reset._fields_ = [
+    ('unnamed_1', union_anon_41),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 50
+class struct_anon_42(Structure):
+    pass
+
+struct_anon_42._pack_ = 1
+struct_anon_42.__slots__ = [
+    'ignored1',
+    'head_txmbuf_ptr',
+    'ignored2',
+    'tail_txmbuf_ptr',
+]
+struct_anon_42._fields_ = [
+    ('ignored1', u32, 10),
+    ('head_txmbuf_ptr', u32, 6),
+    ('ignored2', u32, 10),
+    ('tail_txmbuf_ptr', u32, 6),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 49
+class union_anon_43(Union):
+    pass
+
+union_anon_43._pack_ = 1
+union_anon_43.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_43._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_43._fields_ = [
+    ('unnamed_1', struct_anon_42),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 48
 class struct_ftq_enqueue_dequeue(Structure):
     pass
 
-# /home/saul/thundergate/include/ftq.h: 60
+struct_ftq_enqueue_dequeue._pack_ = 1
+struct_ftq_enqueue_dequeue.__slots__ = [
+    'unnamed_1',
+]
+struct_ftq_enqueue_dequeue._anonymous_ = [
+    'unnamed_1',
+]
+struct_ftq_enqueue_dequeue._fields_ = [
+    ('unnamed_1', union_anon_43),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 62
+class struct_anon_44(Structure):
+    pass
+
+struct_anon_44._pack_ = 1
+struct_anon_44.__slots__ = [
+    'reserved',
+    'valid',
+    'skip',
+    'pass',
+    'head_rxmbuf_ptr',
+    'tail_rxmbuf_ptr',
+]
+struct_anon_44._fields_ = [
+    ('reserved', u32, 11),
+    ('valid', u32, 1),
+    ('skip', u32, 1),
+    ('pass', u32, 1),
+    ('head_rxmbuf_ptr', u32, 9),
+    ('tail_rxmbuf_ptr', u32, 9),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 61
+class union_anon_45(Union):
+    pass
+
+union_anon_45._pack_ = 1
+union_anon_45.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_45._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_45._fields_ = [
+    ('unnamed_1', struct_anon_44),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 60
 class struct_ftq_write_peek(Structure):
     pass
 
-# /home/saul/thundergate/include/ftq.h: 74
+struct_ftq_write_peek._pack_ = 1
+struct_ftq_write_peek.__slots__ = [
+    'unnamed_1',
+]
+struct_ftq_write_peek._anonymous_ = [
+    'unnamed_1',
+]
+struct_ftq_write_peek._fields_ = [
+    ('unnamed_1', union_anon_45),
+]
+
+# /Users/saul/src/thundergate/include/ftq.h: 74
 class struct_ftq_queue_regs(Structure):
     pass
 
+struct_ftq_queue_regs._pack_ = 1
 struct_ftq_queue_regs.__slots__ = [
     'control',
     'count',
@@ -4473,10 +6002,11 @@ struct_ftq_queue_regs._fields_ = [
     ('peek', struct_ftq_write_peek),
 ]
 
-# /home/saul/thundergate/include/ftq.h: 81
+# /Users/saul/src/thundergate/include/ftq.h: 81
 class struct_ftq_regs(Structure):
     pass
 
+struct_ftq_regs._pack_ = 1
 struct_ftq_regs.__slots__ = [
     'reset',
     'ofs_04',
@@ -4524,21 +6054,23 @@ struct_ftq_regs._fields_ = [
     ('sw_type2', struct_ftq_queue_regs),
 ]
 
-# /home/saul/thundergate/include/gencomm.h: 24
+# /Users/saul/src/thundergate/include/gencomm.h: 24
 class struct_gencomm(Structure):
     pass
 
+struct_gencomm._pack_ = 1
 struct_gencomm.__slots__ = [
     'dword',
 ]
 struct_gencomm._fields_ = [
-    ('dword', u32 * 256),
+    ('dword', u32 * int(256)),
 ]
 
-# /home/saul/thundergate/include/grc.h: 22
+# /Users/saul/src/thundergate/include/grc.h: 22
 class struct_grc_mode(Structure):
     pass
 
+struct_grc_mode._pack_ = 1
 struct_grc_mode.__slots__ = [
     'pcie_hi1k_en',
     'multi_cast_enable',
@@ -4606,10 +6138,11 @@ struct_grc_mode._fields_ = [
     ('int_send_tick', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 56
+# /Users/saul/src/thundergate/include/grc.h: 56
 class struct_grc_misc_config(Structure):
     pass
 
+struct_grc_misc_config._pack_ = 1
 struct_grc_misc_config.__slots__ = [
     'bond_id_7',
     'bond_id_6',
@@ -4657,10 +6190,11 @@ struct_grc_misc_config._fields_ = [
     ('grc_reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 80
+# /Users/saul/src/thundergate/include/grc.h: 80
 class struct_grc_misc_local_control(Structure):
     pass
 
+struct_grc_misc_local_control._pack_ = 1
 struct_grc_misc_local_control.__slots__ = [
     'wake_on_link_up',
     'wake_on_link_down',
@@ -4722,14 +6256,117 @@ struct_grc_misc_local_control._fields_ = [
     ('interrupt_state', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 111
+# /Users/saul/src/thundergate/include/grc.h: 113
+class struct_anon_46(Structure):
+    pass
+
+struct_anon_46._pack_ = 1
+struct_anon_46.__slots__ = [
+    'sw_event_13',
+    'sw_event_12',
+    'timer',
+    'sw_event_11',
+    'flow',
+    'rx_cpu',
+    'emac',
+    'tx_cpu',
+    'sw_event_10',
+    'hi_prio_mbox',
+    'low_prio_mbox',
+    'dma',
+    'sw_event_9',
+    'hi_dma_rd',
+    'hi_dma_wr',
+    'sw_event_8',
+    'host_coalescing',
+    'sw_event_7',
+    'receive_data_comp',
+    'sw_event_6',
+    'rx_sw_queue',
+    'dma_rd',
+    'dma_wr',
+    'rdiq',
+    'sw_event_5',
+    'recv_bd_comp',
+    'sw_event_4',
+    'recv_list_selector',
+    'sw_event_3',
+    'recv_list_placement',
+    'sw_event_1',
+    'sw_event_0',
+]
+struct_anon_46._fields_ = [
+    ('sw_event_13', u32, 1),
+    ('sw_event_12', u32, 1),
+    ('timer', u32, 1),
+    ('sw_event_11', u32, 1),
+    ('flow', u32, 1),
+    ('rx_cpu', u32, 1),
+    ('emac', u32, 1),
+    ('tx_cpu', u32, 1),
+    ('sw_event_10', u32, 1),
+    ('hi_prio_mbox', u32, 1),
+    ('low_prio_mbox', u32, 1),
+    ('dma', u32, 1),
+    ('sw_event_9', u32, 1),
+    ('hi_dma_rd', u32, 1),
+    ('hi_dma_wr', u32, 1),
+    ('sw_event_8', u32, 1),
+    ('host_coalescing', u32, 1),
+    ('sw_event_7', u32, 1),
+    ('receive_data_comp', u32, 1),
+    ('sw_event_6', u32, 1),
+    ('rx_sw_queue', u32, 1),
+    ('dma_rd', u32, 1),
+    ('dma_wr', u32, 1),
+    ('rdiq', u32, 1),
+    ('sw_event_5', u32, 1),
+    ('recv_bd_comp', u32, 1),
+    ('sw_event_4', u32, 1),
+    ('recv_list_selector', u32, 1),
+    ('sw_event_3', u32, 1),
+    ('recv_list_placement', u32, 1),
+    ('sw_event_1', u32, 1),
+    ('sw_event_0', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 112
+class union_anon_47(Union):
+    pass
+
+union_anon_47._pack_ = 1
+union_anon_47.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_47._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_47._fields_ = [
+    ('unnamed_1', struct_anon_46),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 111
 class struct_grc_cpu_event(Structure):
     pass
 
-# /home/saul/thundergate/include/grc.h: 151
+struct_grc_cpu_event._pack_ = 1
+struct_grc_cpu_event.__slots__ = [
+    'unnamed_1',
+]
+struct_grc_cpu_event._anonymous_ = [
+    'unnamed_1',
+]
+struct_grc_cpu_event._fields_ = [
+    ('unnamed_1', union_anon_47),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 151
 class struct_grc_cpu_semaphore(Structure):
     pass
 
+struct_grc_cpu_semaphore._pack_ = 1
 struct_grc_cpu_semaphore.__slots__ = [
     'reserved',
     'semaphore',
@@ -4739,10 +6376,11 @@ struct_grc_cpu_semaphore._fields_ = [
     ('semaphore', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 156
+# /Users/saul/src/thundergate/include/grc.h: 156
 class struct_grc_pcie_misc_status(Structure):
     pass
 
+struct_grc_pcie_misc_status._pack_ = 1
 struct_grc_pcie_misc_status.__slots__ = [
     'reserved',
     'p1_pcie_ack_fifo_underrun',
@@ -4780,14 +6418,117 @@ struct_grc_pcie_misc_status._fields_ = [
     ('pci_grc_inta', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 175
+# /Users/saul/src/thundergate/include/grc.h: 177
+class struct_anon_48(Structure):
+    pass
+
+struct_anon_48._pack_ = 1
+struct_anon_48.__slots__ = [
+    'flash',
+    'vpd',
+    'timer',
+    'rom',
+    'hc_module',
+    'rx_cpu_module',
+    'emac',
+    'memory_map_enable',
+    'reserved23',
+    'high_prio_mbox',
+    'low_prio_mbox',
+    'dma',
+    'reserved19',
+    'reserved18',
+    'reserved17',
+    'asf_location_15',
+    'tpm_interrupt_enable',
+    'asf_location_14',
+    'reserved13',
+    'asf_location_13',
+    'unused_sdi',
+    'sdc',
+    'sdi',
+    'rdiq',
+    'asf_location_12',
+    'reserved6',
+    'asf_location_11',
+    'reserved4',
+    'asf_location_10',
+    'reserved2',
+    'asf_location_9',
+    'asf_location_8',
+]
+struct_anon_48._fields_ = [
+    ('flash', u32, 1),
+    ('vpd', u32, 1),
+    ('timer', u32, 1),
+    ('rom', u32, 1),
+    ('hc_module', u32, 1),
+    ('rx_cpu_module', u32, 1),
+    ('emac', u32, 1),
+    ('memory_map_enable', u32, 1),
+    ('reserved23', u32, 1),
+    ('high_prio_mbox', u32, 1),
+    ('low_prio_mbox', u32, 1),
+    ('dma', u32, 1),
+    ('reserved19', u32, 1),
+    ('reserved18', u32, 1),
+    ('reserved17', u32, 1),
+    ('asf_location_15', u32, 1),
+    ('tpm_interrupt_enable', u32, 1),
+    ('asf_location_14', u32, 1),
+    ('reserved13', u32, 1),
+    ('asf_location_13', u32, 1),
+    ('unused_sdi', u32, 1),
+    ('sdc', u32, 1),
+    ('sdi', u32, 1),
+    ('rdiq', u32, 1),
+    ('asf_location_12', u32, 1),
+    ('reserved6', u32, 1),
+    ('asf_location_11', u32, 1),
+    ('reserved4', u32, 1),
+    ('asf_location_10', u32, 1),
+    ('reserved2', u32, 1),
+    ('asf_location_9', u32, 1),
+    ('asf_location_8', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 176
+class union_anon_49(Union):
+    pass
+
+union_anon_49._pack_ = 1
+union_anon_49.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_49._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_49._fields_ = [
+    ('unnamed_1', struct_anon_48),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 175
 class struct_grc_cpu_event_enable(Structure):
     pass
 
-# /home/saul/thundergate/include/grc.h: 215
+struct_grc_cpu_event_enable._pack_ = 1
+struct_grc_cpu_event_enable.__slots__ = [
+    'unnamed_1',
+]
+struct_grc_cpu_event_enable._anonymous_ = [
+    'unnamed_1',
+]
+struct_grc_cpu_event_enable._fields_ = [
+    ('unnamed_1', union_anon_49),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 215
 class struct_grc_secfg_1(Structure):
     pass
 
+struct_grc_secfg_1._pack_ = 1
 struct_grc_secfg_1.__slots__ = [
     'cr_vddio_30v_reg_out_adj',
     'cr_vddio_18v_reg_out_adj',
@@ -4827,10 +6568,11 @@ struct_grc_secfg_1._fields_ = [
     ('xd_picture_card_det_pol_ctrl', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 235
+# /Users/saul/src/thundergate/include/grc.h: 235
 class struct_grc_secfg_2(Structure):
     pass
 
+struct_grc_secfg_2._pack_ = 1
 struct_grc_secfg_2.__slots__ = [
     'reserved',
     'sd_write_prot_int_pu_pd_ovrd_ctrl',
@@ -4846,10 +6588,11 @@ struct_grc_secfg_2._fields_ = [
     ('xd_picture_card_det_pu_pd_ovrd_ctrl', u32, 2),
 ]
 
-# /home/saul/thundergate/include/grc.h: 243
+# /Users/saul/src/thundergate/include/grc.h: 243
 class struct_grc_bond_id(Structure):
     pass
 
+struct_grc_bond_id._pack_ = 1
 struct_grc_bond_id.__slots__ = [
     'serdes_l0_exit_lat_sel',
     'umc_bg_wa',
@@ -4883,10 +6626,11 @@ struct_grc_bond_id._fields_ = [
     ('bond_id', u32, 17),
 ]
 
-# /home/saul/thundergate/include/grc.h: 260
+# /Users/saul/src/thundergate/include/grc.h: 260
 class struct_grc_clock_ctrl(Structure):
     pass
 
+struct_grc_clock_ctrl._pack_ = 1
 struct_grc_clock_ctrl.__slots__ = [
     'pl_clock_disable',
     'dll_clock_disable',
@@ -4942,10 +6686,11 @@ struct_grc_clock_ctrl._fields_ = [
     ('reserved13', u32, 5),
 ]
 
-# /home/saul/thundergate/include/grc.h: 288
+# /Users/saul/src/thundergate/include/grc.h: 288
 class struct_grc_misc_control(Structure):
     pass
 
+struct_grc_misc_control._pack_ = 1
 struct_grc_misc_control.__slots__ = [
     'done_dr_fix4_en',
     'done_dr_fix3_en',
@@ -4979,14 +6724,57 @@ struct_grc_misc_control._fields_ = [
     ('reserved0', u32, 19),
 ]
 
-# /home/saul/thundergate/include/grc.h: 305
+# /Users/saul/src/thundergate/include/grc.h: 307
+class struct_anon_50(Structure):
+    pass
+
+struct_anon_50._pack_ = 1
+struct_anon_50.__slots__ = [
+    'enable',
+    'addr',
+]
+struct_anon_50._fields_ = [
+    ('enable', u32, 1),
+    ('addr', u32, 31),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 306
+class union_anon_51(Union):
+    pass
+
+union_anon_51._pack_ = 1
+union_anon_51.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_51._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_51._fields_ = [
+    ('unnamed_1', struct_anon_50),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 305
 class struct_grc_fastboot_program_counter(Structure):
     pass
 
-# /home/saul/thundergate/include/grc.h: 315
+struct_grc_fastboot_program_counter._pack_ = 1
+struct_grc_fastboot_program_counter.__slots__ = [
+    'unnamed_1',
+]
+struct_grc_fastboot_program_counter._anonymous_ = [
+    'unnamed_1',
+]
+struct_grc_fastboot_program_counter._fields_ = [
+    ('unnamed_1', union_anon_51),
+]
+
+# /Users/saul/src/thundergate/include/grc.h: 315
 class struct_grc_power_management_debug(Structure):
     pass
 
+struct_grc_power_management_debug._pack_ = 1
 struct_grc_power_management_debug.__slots__ = [
     'pclk_sw_force_override_en',
     'pclk_sw_force_override_val',
@@ -5030,10 +6818,11 @@ struct_grc_power_management_debug._fields_ = [
     ('pll_is_up', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 337
+# /Users/saul/src/thundergate/include/grc.h: 337
 class struct_grc_seeprom_addr(Structure):
     pass
 
+struct_grc_seeprom_addr._pack_ = 1
 struct_grc_seeprom_addr.__slots__ = [
     'not_write',
     'complete',
@@ -5055,10 +6844,11 @@ struct_grc_seeprom_addr._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/grc.h: 348
+# /Users/saul/src/thundergate/include/grc.h: 348
 class struct_grc_seeprom_ctrl(Structure):
     pass
 
+struct_grc_seeprom_ctrl._pack_ = 1
 struct_grc_seeprom_ctrl.__slots__ = [
     'reserved6',
     'data_input',
@@ -5078,10 +6868,11 @@ struct_grc_seeprom_ctrl._fields_ = [
     ('clock_output_tristate', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 358
+# /Users/saul/src/thundergate/include/grc.h: 358
 class struct_grc_mdi_ctrl(Structure):
     pass
 
+struct_grc_mdi_ctrl._pack_ = 1
 struct_grc_mdi_ctrl.__slots__ = [
     'reserved4',
     'mdi_clk',
@@ -5097,10 +6888,11 @@ struct_grc_mdi_ctrl._fields_ = [
     ('mdi_data', u32, 1),
 ]
 
-# /home/saul/thundergate/include/grc.h: 366
+# /Users/saul/src/thundergate/include/grc.h: 366
 class struct_grc_exp_rom_addr(Structure):
     pass
 
+struct_grc_exp_rom_addr._pack_ = 1
 struct_grc_exp_rom_addr.__slots__ = [
     'test_bits',
     'base',
@@ -5110,10 +6902,11 @@ struct_grc_exp_rom_addr._fields_ = [
     ('base', u32, 24),
 ]
 
-# /home/saul/thundergate/include/grc.h: 371
+# /Users/saul/src/thundergate/include/grc.h: 371
 class struct_grc_regs(Structure):
     pass
 
+struct_grc_regs._pack_ = 1
 struct_grc_regs.__slots__ = [
     'mode',
     'misc_config',
@@ -5249,10 +7042,11 @@ struct_grc_regs._fields_ = [
     ('ofs_fc', u32),
 ]
 
-# /home/saul/thundergate/include/hc.h: 24
+# /Users/saul/src/thundergate/include/hc.h: 24
 class struct_hc_mode(Structure):
     pass
 
+struct_hc_mode._pack_ = 1
 struct_hc_mode.__slots__ = [
     'during_int_frame_cntr_fix_disable',
     'end_of_rx_stream_detector_fires_all_msix',
@@ -5290,10 +7084,11 @@ struct_hc_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/hc.h: 43
+# /Users/saul/src/thundergate/include/hc.h: 43
 class struct_hc_status(Structure):
     pass
 
+struct_hc_status._pack_ = 1
 struct_hc_status.__slots__ = [
     'reserved',
     'error',
@@ -5305,10 +7100,11 @@ struct_hc_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/hc.h: 49
+# /Users/saul/src/thundergate/include/hc.h: 49
 class struct_hc_flow_attention(Structure):
     pass
 
+struct_hc_flow_attention._pack_ = 1
 struct_hc_flow_attention.__slots__ = [
     'sbdi',
     'sbdc',
@@ -5352,10 +7148,11 @@ struct_hc_flow_attention._fields_ = [
     ('reserved3', u32, 6),
 ]
 
-# /home/saul/thundergate/include/hc.h: 71
+# /Users/saul/src/thundergate/include/hc.h: 71
 class struct_hc_regs(Structure):
     pass
 
+struct_hc_regs._pack_ = 1
 struct_hc_regs.__slots__ = [
     'mode',
     'status',
@@ -5425,18 +7222,109 @@ struct_hc_regs._fields_ = [
     ('ofs_74', u32),
     ('ofs_78', u32),
     ('ofs_7c', u32),
-    ('nic_diag_rr_pi', u32 * 16),
-    ('nic_diag_sbd_ci', u32 * 16),
+    ('nic_diag_rr_pi', u32 * int(16)),
+    ('nic_diag_sbd_ci', u32 * int(16)),
 ]
 
-# /home/saul/thundergate/include/ma.h: 22
+# /Users/saul/src/thundergate/include/ma.h: 24
+class struct_anon_52(Structure):
+    pass
+
+struct_anon_52._pack_ = 1
+struct_anon_52.__slots__ = [
+    'tx_mbuf_cfg',
+    'cpu_pipeline_request_disable',
+    'low_latency_enable',
+    'fast_path_read_disable',
+    'reserved21',
+    'dmaw2_addr_trap',
+    'bufman_addr_trap',
+    'txbd_addr_trap',
+    'sdc_dmac_trap',
+    'sdi_addr_trap',
+    'mcf_addr_trap',
+    'hc_addr_trap',
+    'dc_addr_trap',
+    'rdi2_addr_trap',
+    'rdi1_addr_trap',
+    'rq_addr_trap',
+    'dmar2_addr_trap',
+    'pci_addr_trap',
+    'tx_risc_addr_trap',
+    'rx_risc_addr_trap',
+    'dmar1_addr_trap',
+    'dmaw1_addr_trap',
+    'rx_mac_addr_trap',
+    'tx_mac_addr_trap',
+    'enable',
+    'reset',
+]
+struct_anon_52._fields_ = [
+    ('tx_mbuf_cfg', u32, 2),
+    ('cpu_pipeline_request_disable', u32, 1),
+    ('low_latency_enable', u32, 1),
+    ('fast_path_read_disable', u32, 1),
+    ('reserved21', u32, 6),
+    ('dmaw2_addr_trap', u32, 1),
+    ('bufman_addr_trap', u32, 1),
+    ('txbd_addr_trap', u32, 1),
+    ('sdc_dmac_trap', u32, 1),
+    ('sdi_addr_trap', u32, 1),
+    ('mcf_addr_trap', u32, 1),
+    ('hc_addr_trap', u32, 1),
+    ('dc_addr_trap', u32, 1),
+    ('rdi2_addr_trap', u32, 1),
+    ('rdi1_addr_trap', u32, 1),
+    ('rq_addr_trap', u32, 1),
+    ('dmar2_addr_trap', u32, 1),
+    ('pci_addr_trap', u32, 1),
+    ('tx_risc_addr_trap', u32, 1),
+    ('rx_risc_addr_trap', u32, 1),
+    ('dmar1_addr_trap', u32, 1),
+    ('dmaw1_addr_trap', u32, 1),
+    ('rx_mac_addr_trap', u32, 1),
+    ('tx_mac_addr_trap', u32, 1),
+    ('enable', u32, 1),
+    ('reset', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/ma.h: 23
+class union_anon_53(Union):
+    pass
+
+union_anon_53._pack_ = 1
+union_anon_53.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_53._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_53._fields_ = [
+    ('unnamed_1', struct_anon_52),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/ma.h: 22
 class struct_ma_mode(Structure):
     pass
 
-# /home/saul/thundergate/include/ma.h: 64
+struct_ma_mode._pack_ = 1
+struct_ma_mode.__slots__ = [
+    'unnamed_1',
+]
+struct_ma_mode._anonymous_ = [
+    'unnamed_1',
+]
+struct_ma_mode._fields_ = [
+    ('unnamed_1', union_anon_53),
+]
+
+# /Users/saul/src/thundergate/include/ma.h: 64
 class struct_ma_status(Structure):
     pass
 
+struct_ma_status._pack_ = 1
 struct_ma_status.__slots__ = [
     'reserved',
     'dmaw2_addr_trap',
@@ -5476,10 +7364,11 @@ struct_ma_status._fields_ = [
     ('reserved6', u32, 2),
 ]
 
-# /home/saul/thundergate/include/ma.h: 85
+# /Users/saul/src/thundergate/include/ma.h: 85
 class struct_ma_regs(Structure):
     pass
 
+struct_ma_regs._pack_ = 1
 struct_ma_regs.__slots__ = [
     'mode',
     'status',
@@ -5493,28 +7382,29 @@ struct_ma_regs._fields_ = [
     ('trap_addr_hi', u32),
 ]
 
-enum_known_mailboxes = c_int # /home/saul/thundergate/include/mbox.h: 22
+enum_known_mailboxes = c_int# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_interrupt = 0 # /home/saul/thundergate/include/mbox.h: 22
+mb_interrupt = 0# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_standard_producer = (104 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_rbd_standard_producer = (0x68 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr0_consumer = (128 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_rbd_rr0_consumer = (0x80 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr1_consumer = (136 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_rbd_rr1_consumer = (0x88 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr2_consumer = (144 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_rbd_rr2_consumer = (0x90 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr3_consumer = (152 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_rbd_rr3_consumer = (0x98 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_sbd_host_producer = (256 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_sbd_host_producer = (0x100 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_sbd_nic_producer = (896 / 8) # /home/saul/thundergate/include/mbox.h: 22
+mb_sbd_nic_producer = (0x380 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-# /home/saul/thundergate/include/mbox.h: 33
+# /Users/saul/src/thundergate/include/mbox.h: 33
 class struct_mailbox(Structure):
     pass
 
+struct_mailbox._pack_ = 1
 struct_mailbox.__slots__ = [
     'hi',
     'low',
@@ -5524,32 +7414,35 @@ struct_mailbox._fields_ = [
     ('low', u32),
 ]
 
-# /home/saul/thundergate/include/mbox.h: 38
+# /Users/saul/src/thundergate/include/mbox.h: 38
 class struct_hpmb_regs(Structure):
     pass
 
+struct_hpmb_regs._pack_ = 1
 struct_hpmb_regs.__slots__ = [
     'box',
 ]
 struct_hpmb_regs._fields_ = [
-    ('box', struct_mailbox * (512 / 8)),
+    ('box', struct_mailbox * int((0x200 / 8))),
 ]
 
-# /home/saul/thundergate/include/mbox.h: 42
+# /Users/saul/src/thundergate/include/mbox.h: 42
 class struct_lpmb_regs(Structure):
     pass
 
+struct_lpmb_regs._pack_ = 1
 struct_lpmb_regs.__slots__ = [
     'box',
 ]
 struct_lpmb_regs._fields_ = [
-    ('box', struct_mailbox * (512 / 8)),
+    ('box', struct_mailbox * int((0x200 / 8))),
 ]
 
-# /home/saul/thundergate/include/mbuf.h: 24
+# /Users/saul/src/thundergate/include/mbuf.h: 24
 class struct_mbuf_hdr(Structure):
     pass
 
+struct_mbuf_hdr._pack_ = 1
 struct_mbuf_hdr.__slots__ = [
     'length',
     'next_mbuf',
@@ -5565,10 +7458,11 @@ struct_mbuf_hdr._fields_ = [
     ('c', u32, 1),
 ]
 
-# /home/saul/thundergate/include/mbuf.h: 42
+# /Users/saul/src/thundergate/include/mbuf.h: 42
 class struct_mbuf_frame_desc(Structure):
     pass
 
+struct_mbuf_frame_desc._pack_ = 1
 struct_mbuf_frame_desc.__slots__ = [
     'status_ctrl',
     'len',
@@ -5612,25 +7506,27 @@ struct_mbuf_frame_desc._fields_ = [
     ('reserved4', u32),
 ]
 
-# /home/saul/thundergate/include/mbuf.h: 102
-class union_anon_3(Union):
+# /Users/saul/src/thundergate/include/mbuf.h: 102
+class union_anon_54(Union):
     pass
 
-union_anon_3.__slots__ = [
+union_anon_54._pack_ = 1
+union_anon_54.__slots__ = [
     'frame',
     'word',
     'byte',
 ]
-union_anon_3._fields_ = [
+union_anon_54._fields_ = [
     ('frame', struct_mbuf_frame_desc),
-    ('word', u32 * 30),
-    ('byte', u8 * 120),
+    ('word', u32 * int(30)),
+    ('byte', u8 * int(120)),
 ]
 
-# /home/saul/thundergate/include/mbuf.h: 99
+# /Users/saul/src/thundergate/include/mbuf.h: 99
 class struct_mbuf(Structure):
     pass
 
+struct_mbuf._pack_ = 1
 struct_mbuf.__slots__ = [
     'hdr',
     'next_frame_ptr',
@@ -5639,13 +7535,14 @@ struct_mbuf.__slots__ = [
 struct_mbuf._fields_ = [
     ('hdr', struct_mbuf_hdr),
     ('next_frame_ptr', u32),
-    ('data', union_anon_3),
+    ('data', union_anon_54),
 ]
 
-# /home/saul/thundergate/include/msi.h: 22
+# /Users/saul/src/thundergate/include/msi.h: 22
 class struct_msi_mode(Structure):
     pass
 
+struct_msi_mode._pack_ = 1
 struct_msi_mode.__slots__ = [
     'priority',
     'msix_fix_pcie_client',
@@ -5675,10 +7572,11 @@ struct_msi_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/msi.h: 37
+# /Users/saul/src/thundergate/include/msi.h: 37
 class struct_msi_status(Structure):
     pass
 
+struct_msi_status._pack_ = 1
 struct_msi_status.__slots__ = [
     'reserved',
     'pci_parity_error',
@@ -5696,10 +7594,11 @@ struct_msi_status._fields_ = [
     ('msi_pci_request', u32, 1),
 ]
 
-# /home/saul/thundergate/include/msi.h: 46
+# /Users/saul/src/thundergate/include/msi.h: 46
 class struct_msi_regs(Structure):
     pass
 
+struct_msi_regs._pack_ = 1
 struct_msi_regs.__slots__ = [
     'mode',
     'status',
@@ -5709,10 +7608,11 @@ struct_msi_regs._fields_ = [
     ('status', struct_msi_status),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 24
+# /Users/saul/src/thundergate/include/nrdma.h: 24
 class struct_nrdma_mode(Structure):
     pass
 
+struct_nrdma_mode._pack_ = 1
 struct_nrdma_mode.__slots__ = [
     'reserved26',
     'addr_oflow_err_log_en',
@@ -5734,10 +7634,11 @@ struct_nrdma_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 35
+# /Users/saul/src/thundergate/include/nrdma.h: 35
 class struct_nrdma_status(Structure):
     pass
 
+struct_nrdma_status._pack_ = 1
 struct_nrdma_status.__slots__ = [
     'reserved11',
     'malformed_or_poison_tlp_err_det',
@@ -5765,10 +7666,11 @@ struct_nrdma_status._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 49
+# /Users/saul/src/thundergate/include/nrdma.h: 49
 class struct_nrdma_programmable_ipv6_extension_header(Structure):
     pass
 
+struct_nrdma_programmable_ipv6_extension_header._pack_ = 1
 struct_nrdma_programmable_ipv6_extension_header.__slots__ = [
     'hdr_type2_en',
     'hdr_type1_en',
@@ -5784,10 +7686,11 @@ struct_nrdma_programmable_ipv6_extension_header._fields_ = [
     ('hdr_type1', u32, 8),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 57
+# /Users/saul/src/thundergate/include/nrdma.h: 57
 class struct_nrdma_rstates_debug(Structure):
     pass
 
+struct_nrdma_rstates_debug._pack_ = 1
 struct_nrdma_rstates_debug.__slots__ = [
     'reserved11',
     'sdi_dr_wr',
@@ -5811,10 +7714,11 @@ struct_nrdma_rstates_debug._fields_ = [
     ('rstate1', u32, 3),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 69
+# /Users/saul/src/thundergate/include/nrdma.h: 69
 class struct_nrdma_rstate2_debug(Structure):
     pass
 
+struct_nrdma_rstate2_debug._pack_ = 1
 struct_nrdma_rstate2_debug.__slots__ = [
     'reserved5',
     'rstate2',
@@ -5824,10 +7728,11 @@ struct_nrdma_rstate2_debug._fields_ = [
     ('rstate2', u32, 5),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 74
+# /Users/saul/src/thundergate/include/nrdma.h: 74
 class struct_nrdma_bd_status_debug(Structure):
     pass
 
+struct_nrdma_bd_status_debug._pack_ = 1
 struct_nrdma_bd_status_debug.__slots__ = [
     'reserved3',
     'bd_non_mbuf',
@@ -5841,10 +7746,11 @@ struct_nrdma_bd_status_debug._fields_ = [
     ('lst_bd_mbuf', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 81
+# /Users/saul/src/thundergate/include/nrdma.h: 81
 class struct_nrdma_req_ptr_debug(Structure):
     pass
 
+struct_nrdma_req_ptr_debug._pack_ = 1
 struct_nrdma_req_ptr_debug.__slots__ = [
     'ih_dmad_length',
     'reserved13',
@@ -5862,10 +7768,11 @@ struct_nrdma_req_ptr_debug._fields_ = [
     ('reserved0', u32, 2),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 90
+# /Users/saul/src/thundergate/include/nrdma.h: 90
 class struct_nrdma_hold_d_dmad_debug(Structure):
     pass
 
+struct_nrdma_hold_d_dmad_debug._pack_ = 1
 struct_nrdma_hold_d_dmad_debug.__slots__ = [
     'reserved2',
     'rhold_d_dmad',
@@ -5875,10 +7782,11 @@ struct_nrdma_hold_d_dmad_debug._fields_ = [
     ('rhold_d_dmad', u32, 2),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 95
+# /Users/saul/src/thundergate/include/nrdma.h: 95
 class struct_nrdma_length_and_address_debug(Structure):
     pass
 
+struct_nrdma_length_and_address_debug._pack_ = 1
 struct_nrdma_length_and_address_debug.__slots__ = [
     'rdma_rd_length',
     'reserved6',
@@ -5890,10 +7798,11 @@ struct_nrdma_length_and_address_debug._fields_ = [
     ('mbuf_addr_idx', u32, 6),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 101
+# /Users/saul/src/thundergate/include/nrdma.h: 101
 class struct_nrdma_mbuf_byte_count_debug(Structure):
     pass
 
+struct_nrdma_mbuf_byte_count_debug._pack_ = 1
 struct_nrdma_mbuf_byte_count_debug.__slots__ = [
     'reserved4',
     'rmbuf_byte_cnt',
@@ -5903,10 +7812,11 @@ struct_nrdma_mbuf_byte_count_debug._fields_ = [
     ('rmbuf_byte_cnt', u32, 4),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 106
+# /Users/saul/src/thundergate/include/nrdma.h: 106
 class struct_nrdma_pcie_debug_status(Structure):
     pass
 
+struct_nrdma_pcie_debug_status._pack_ = 1
 struct_nrdma_pcie_debug_status.__slots__ = [
     'lt_term',
     'reserved27',
@@ -5940,10 +7850,11 @@ struct_nrdma_pcie_debug_status._fields_ = [
     ('dr_pci_len', u32, 16),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 123
+# /Users/saul/src/thundergate/include/nrdma.h: 123
 class struct_nrdma_pcie_dma_read_req_debug(Structure):
     pass
 
+struct_nrdma_pcie_dma_read_req_debug._pack_ = 1
 struct_nrdma_pcie_dma_read_req_debug.__slots__ = [
     'dr_pci_ad_hi',
     'dr_pci_ad_lo',
@@ -5953,10 +7864,11 @@ struct_nrdma_pcie_dma_read_req_debug._fields_ = [
     ('dr_pci_ad_lo', u32, 16),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 128
+# /Users/saul/src/thundergate/include/nrdma.h: 128
 class struct_nrdma_pcie_dma_req_length_debug(Structure):
     pass
 
+struct_nrdma_pcie_dma_req_length_debug._pack_ = 1
 struct_nrdma_pcie_dma_req_length_debug.__slots__ = [
     'reserved16',
     'rdma_len',
@@ -5966,10 +7878,11 @@ struct_nrdma_pcie_dma_req_length_debug._fields_ = [
     ('rdma_len', u32, 16),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 133
+# /Users/saul/src/thundergate/include/nrdma.h: 133
 class struct_nrdma_fifo1_debug(Structure):
     pass
 
+struct_nrdma_fifo1_debug._pack_ = 1
 struct_nrdma_fifo1_debug.__slots__ = [
     'reserved9',
     'c_write_addr',
@@ -5979,10 +7892,11 @@ struct_nrdma_fifo1_debug._fields_ = [
     ('c_write_addr', u32, 9),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 138
+# /Users/saul/src/thundergate/include/nrdma.h: 138
 class struct_nrdma_fifo2_debug(Structure):
     pass
 
+struct_nrdma_fifo2_debug._pack_ = 1
 struct_nrdma_fifo2_debug.__slots__ = [
     'reserved18',
     'rlctrl_in',
@@ -5994,10 +7908,11 @@ struct_nrdma_fifo2_debug._fields_ = [
     ('c_read_addr', u32, 9),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 144
+# /Users/saul/src/thundergate/include/nrdma.h: 144
 class struct_nrdma_post_proc_pkt_req_cnt(Structure):
     pass
 
+struct_nrdma_post_proc_pkt_req_cnt._pack_ = 1
 struct_nrdma_post_proc_pkt_req_cnt.__slots__ = [
     'reserved8',
     'pkt_req_cnt',
@@ -6007,10 +7922,11 @@ struct_nrdma_post_proc_pkt_req_cnt._fields_ = [
     ('pkt_req_cnt', u32, 8),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 149
+# /Users/saul/src/thundergate/include/nrdma.h: 149
 class struct_nrdma_mbuf_addr_debug(Structure):
     pass
 
+struct_nrdma_mbuf_addr_debug._pack_ = 1
 struct_nrdma_mbuf_addr_debug.__slots__ = [
     'reserved26',
     'mactq_full',
@@ -6026,10 +7942,11 @@ struct_nrdma_mbuf_addr_debug._fields_ = [
     ('rcmp_head', u32, 16),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 157
+# /Users/saul/src/thundergate/include/nrdma.h: 157
 class struct_nrdma_tce_debug1(Structure):
     pass
 
+struct_nrdma_tce_debug1._pack_ = 1
 struct_nrdma_tce_debug1.__slots__ = [
     'odi_state_out',
     'odi_state_in',
@@ -6043,10 +7960,11 @@ struct_nrdma_tce_debug1._fields_ = [
     ('fifo_odi_data', u32, 22),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 164
+# /Users/saul/src/thundergate/include/nrdma.h: 164
 class struct_nrdma_tce_debug2(Structure):
     pass
 
+struct_nrdma_tce_debug2._pack_ = 1
 struct_nrdma_tce_debug2.__slots__ = [
     'det_abort_cnt',
     'reserved0',
@@ -6056,10 +7974,11 @@ struct_nrdma_tce_debug2._fields_ = [
     ('reserved0', u32, 24),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 169
+# /Users/saul/src/thundergate/include/nrdma.h: 169
 class struct_nrdma_tce_debug3(Structure):
     pass
 
+struct_nrdma_tce_debug3._pack_ = 1
 struct_nrdma_tce_debug3.__slots__ = [
     'reserved28',
     'tx_pkt_cnt',
@@ -6077,10 +7996,11 @@ struct_nrdma_tce_debug3._fields_ = [
     ('reserved0', u32, 12),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 178
+# /Users/saul/src/thundergate/include/nrdma.h: 178
 class struct_nrdma_reserved_control(Structure):
     pass
 
+struct_nrdma_reserved_control._pack_ = 1
 struct_nrdma_reserved_control.__slots__ = [
     'txmbuf_margin_nlso',
     'reserved20',
@@ -6102,10 +8022,11 @@ struct_nrdma_reserved_control._fields_ = [
     ('select_fed_enable', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 189
+# /Users/saul/src/thundergate/include/nrdma.h: 189
 class struct_nrdma_flow_reserved_control(Structure):
     pass
 
+struct_nrdma_flow_reserved_control._pack_ = 1
 struct_nrdma_flow_reserved_control.__slots__ = [
     'reserved24',
     'fifo_threshold_mbuf_req_msb',
@@ -6127,10 +8048,11 @@ struct_nrdma_flow_reserved_control._fields_ = [
     ('fifo_threshold_mbuf_req_lmsb', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 200
+# /Users/saul/src/thundergate/include/nrdma.h: 200
 class struct_nrdma_corruption_enable_control(Structure):
     pass
 
+struct_nrdma_corruption_enable_control._pack_ = 1
 struct_nrdma_corruption_enable_control.__slots__ = [
     'lcrc_dr_fix_en',
     'new_length_fix_en',
@@ -6166,10 +8088,11 @@ struct_nrdma_corruption_enable_control._fields_ = [
     ('reserved', u32, 7),
 ]
 
-# /home/saul/thundergate/include/nrdma.h: 218
+# /Users/saul/src/thundergate/include/nrdma.h: 218
 class struct_nrdma_regs(Structure):
     pass
 
+struct_nrdma_regs._pack_ = 1
 struct_nrdma_regs.__slots__ = [
     'mode',
     'status',
@@ -6202,6 +8125,7 @@ struct_nrdma_regs.__slots__ = [
     'reserved_control',
     'flow_reserved_control',
     'corruption_enable_control',
+    'ofs_7c',
 ]
 struct_nrdma_regs._fields_ = [
     ('mode', struct_nrdma_mode),
@@ -6235,12 +8159,14 @@ struct_nrdma_regs._fields_ = [
     ('reserved_control', struct_nrdma_reserved_control),
     ('flow_reserved_control', struct_nrdma_flow_reserved_control),
     ('corruption_enable_control', struct_nrdma_corruption_enable_control),
+    ('ofs_7c', u32),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 35
+# /Users/saul/src/thundergate/include/nvram.h: 35
 class struct_nvram_dir_item(Structure):
     pass
 
+struct_nvram_dir_item._pack_ = 1
 struct_nvram_dir_item.__slots__ = [
     'sram_start',
     'typelen',
@@ -6252,18 +8178,19 @@ struct_nvram_dir_item._fields_ = [
     ('nvram_start', u32),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 45
-class struct_anon_4(Structure):
+# /Users/saul/src/thundergate/include/nvram.h: 45
+class struct_anon_55(Structure):
     pass
 
-struct_anon_4.__slots__ = [
+struct_anon_55._pack_ = 1
+struct_anon_55.__slots__ = [
     'mgaic',
     'bc_sram_start',
     'bc_words',
     'bc_nvram_start',
     'crc',
 ]
-struct_anon_4._fields_ = [
+struct_anon_55._fields_ = [
     ('mgaic', u32),
     ('bc_sram_start', u32),
     ('bc_words', u32),
@@ -6271,11 +8198,12 @@ struct_anon_4._fields_ = [
     ('crc', u32),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 53
-class struct_anon_5(Structure):
+# /Users/saul/src/thundergate/include/nvram.h: 53
+class struct_anon_56(Structure):
     pass
 
-struct_anon_5.__slots__ = [
+struct_anon_56._pack_ = 1
+struct_anon_56.__slots__ = [
     'len',
     'dir_cksum',
     'rev',
@@ -6314,16 +8242,16 @@ struct_anon_5.__slots__ = [
     'power_budget_3',
     'crc',
 ]
-struct_anon_5._fields_ = [
+struct_anon_56._fields_ = [
     ('len', u16),
     ('dir_cksum', u8),
     ('rev', u8),
     ('_unused', u32),
-    ('mac_address', u8 * 8),
-    ('partno', c_char * 16),
-    ('partrev', c_char * 2),
+    ('mac_address', u8 * int(8)),
+    ('partno', c_char * int(16)),
+    ('partrev', c_char * int(2)),
     ('bc_rev', u16),
-    ('mfg_date', u8 * 4),
+    ('mfg_date', u8 * int(4)),
     ('mba_vlan_p1', u16),
     ('mba_vlan_p2', u16),
     ('pci_did', u16),
@@ -6333,13 +8261,13 @@ struct_anon_5._fields_ = [
     ('cpu_mhz', u16),
     ('smbus_addr1', u8),
     ('smbus_addr0', u8),
-    ('mac_backup', u8 * 8),
-    ('mac_backup_p2', u8 * 8),
+    ('mac_backup', u8 * int(8)),
+    ('mac_backup_p2', u8 * int(8)),
     ('power_dissipated', u32),
     ('power_consumed', u32),
     ('feat_cfg', u32),
     ('hw_cfg', u32),
-    ('mac_address_p2', u8 * 8),
+    ('mac_address_p2', u8 * int(8)),
     ('feat_cfg_p2', u32),
     ('hw_cfg_p2', u32),
     ('shared_cfg', u32),
@@ -6354,25 +8282,27 @@ struct_anon_5._fields_ = [
     ('crc', u32),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 44
+# /Users/saul/src/thundergate/include/nvram.h: 44
 class struct_nvram_header(Structure):
     pass
 
+struct_nvram_header._pack_ = 1
 struct_nvram_header.__slots__ = [
     'bs',
     'directory',
     'mfg',
 ]
 struct_nvram_header._fields_ = [
-    ('bs', struct_anon_4),
-    ('directory', struct_nvram_dir_item * 8),
-    ('mfg', struct_anon_5),
+    ('bs', struct_anon_55),
+    ('directory', struct_nvram_dir_item * int(8)),
+    ('mfg', struct_anon_56),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 95
+# /Users/saul/src/thundergate/include/nvram.h: 95
 class struct_nvram_command(Structure):
     pass
 
+struct_nvram_command._pack_ = 1
 struct_nvram_command.__slots__ = [
     'policy_error',
     'atmel_page_size',
@@ -6420,10 +8350,11 @@ struct_nvram_command._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 119
+# /Users/saul/src/thundergate/include/nvram.h: 119
 class struct_nvram_status(Structure):
     pass
 
+struct_nvram_status._pack_ = 1
 struct_nvram_status.__slots__ = [
     'reserved',
     'spi_at_read_state',
@@ -6443,10 +8374,11 @@ struct_nvram_status._fields_ = [
     ('see_fsm_state', u32, 6),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 129
+# /Users/saul/src/thundergate/include/nvram.h: 129
 class struct_nvram_software_arbitration(Structure):
     pass
 
+struct_nvram_software_arbitration._pack_ = 1
 struct_nvram_software_arbitration.__slots__ = [
     'reserved',
     'req3',
@@ -6486,10 +8418,11 @@ struct_nvram_software_arbitration._fields_ = [
     ('req_set0', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 149
+# /Users/saul/src/thundergate/include/nvram.h: 149
 class struct_nvram_access(Structure):
     pass
 
+struct_nvram_access._pack_ = 1
 struct_nvram_access.__slots__ = [
     'reserved',
     'st_lockup_fix_enable',
@@ -6509,10 +8442,11 @@ struct_nvram_access._fields_ = [
     ('enable', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 159
+# /Users/saul/src/thundergate/include/nvram.h: 159
 class struct_nvram_write1(Structure):
     pass
 
+struct_nvram_write1._pack_ = 1
 struct_nvram_write1.__slots__ = [
     'reserved',
     'disable_command',
@@ -6524,10 +8458,11 @@ struct_nvram_write1._fields_ = [
     ('enable_command', u32, 8),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 165
+# /Users/saul/src/thundergate/include/nvram.h: 165
 class struct_nvram_arbitration_watchdog(Structure):
     pass
 
+struct_nvram_arbitration_watchdog._pack_ = 1
 struct_nvram_arbitration_watchdog.__slots__ = [
     'reserved_31_28',
     'reserved_27_24',
@@ -6547,10 +8482,11 @@ struct_nvram_arbitration_watchdog._fields_ = [
     ('reserved_4_0', u32, 5),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 175
+# /Users/saul/src/thundergate/include/nvram.h: 175
 class struct_nvram_auto_sense_status(Structure):
     pass
 
+struct_nvram_auto_sense_status._pack_ = 1
 struct_nvram_auto_sense_status.__slots__ = [
     'reserved21',
     'device_id',
@@ -6574,10 +8510,11 @@ struct_nvram_auto_sense_status._fields_ = [
     ('busy', u32, 1),
 ]
 
-# /home/saul/thundergate/include/nvram.h: 187
+# /Users/saul/src/thundergate/include/nvram.h: 187
 class struct_nvram_regs(Structure):
     pass
 
+struct_nvram_regs._pack_ = 1
 struct_nvram_regs.__slots__ = [
     'command',
     'status',
@@ -6613,10 +8550,11 @@ struct_nvram_regs._fields_ = [
     ('auto_sense_status', struct_nvram_auto_sense_status),
 ]
 
-# /home/saul/thundergate/include/otp.h: 24
+# /Users/saul/src/thundergate/include/otp.h: 24
 class struct_otp_mode(Structure):
     pass
 
+struct_otp_mode._pack_ = 1
 struct_otp_mode.__slots__ = [
     'reserved',
     'mode',
@@ -6626,10 +8564,11 @@ struct_otp_mode._fields_ = [
     ('mode', u32, 1),
 ]
 
-# /home/saul/thundergate/include/otp.h: 29
+# /Users/saul/src/thundergate/include/otp.h: 29
 class struct_otp_control(Structure):
     pass
 
+struct_otp_control._pack_ = 1
 struct_otp_control.__slots__ = [
     'bypass_otp_clk',
     'reserved',
@@ -6669,10 +8608,11 @@ struct_otp_control._fields_ = [
     ('start', u32, 1),
 ]
 
-# /home/saul/thundergate/include/otp.h: 49
+# /Users/saul/src/thundergate/include/otp.h: 49
 class struct_otp_status(Structure):
     pass
 
+struct_otp_status._pack_ = 1
 struct_otp_status.__slots__ = [
     'reserved',
     'control_error',
@@ -6704,10 +8644,11 @@ struct_otp_status._fields_ = [
     ('command_done', u32, 1),
 ]
 
-# /home/saul/thundergate/include/otp.h: 65
+# /Users/saul/src/thundergate/include/otp.h: 65
 class struct_otp_addr(Structure):
     pass
 
+struct_otp_addr._pack_ = 1
 struct_otp_addr.__slots__ = [
     'reserved',
     'address',
@@ -6717,10 +8658,11 @@ struct_otp_addr._fields_ = [
     ('address', u32, 16),
 ]
 
-# /home/saul/thundergate/include/otp.h: 70
+# /Users/saul/src/thundergate/include/otp.h: 70
 class struct_otp_soft_reset(Structure):
     pass
 
+struct_otp_soft_reset._pack_ = 1
 struct_otp_soft_reset.__slots__ = [
     'reserved',
     'reset',
@@ -6730,10 +8672,11 @@ struct_otp_soft_reset._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/otp.h: 75
+# /Users/saul/src/thundergate/include/otp.h: 75
 class struct_otp_regs(Structure):
     pass
 
+struct_otp_regs._pack_ = 1
 struct_otp_regs.__slots__ = [
     'mode',
     'control',
@@ -6753,10 +8696,553 @@ struct_otp_regs._fields_ = [
     ('soft_reset', struct_otp_soft_reset),
 ]
 
-# /home/saul/thundergate/include/pcie_alt.h: 22
+# /Users/saul/src/thundergate/include/pci.h: 24
+class struct_anon_57(Structure):
+    pass
+
+struct_anon_57._pack_ = 1
+struct_anon_57.__slots__ = [
+    'detected_parity_error',
+    'signaled_system_error',
+    'received_master_abort',
+    'received_target_abort',
+    'signaled_target_abort',
+    'devsel_timing',
+    'master_data_parity_error',
+    'fast_back_to_back_capable',
+    'reserved',
+    'sixty_six_mhz_capable',
+    'capabilities_list',
+    'interrupt_status',
+    'reserved2',
+]
+struct_anon_57._fields_ = [
+    ('detected_parity_error', u16, 1),
+    ('signaled_system_error', u16, 1),
+    ('received_master_abort', u16, 1),
+    ('received_target_abort', u16, 1),
+    ('signaled_target_abort', u16, 1),
+    ('devsel_timing', u16, 2),
+    ('master_data_parity_error', u16, 1),
+    ('fast_back_to_back_capable', u16, 1),
+    ('reserved', u16, 1),
+    ('sixty_six_mhz_capable', u16, 1),
+    ('capabilities_list', u16, 1),
+    ('interrupt_status', u16, 1),
+    ('reserved2', u16, 3),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 23
+class union_anon_58(Union):
+    pass
+
+union_anon_58._pack_ = 1
+union_anon_58.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_58._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_58._fields_ = [
+    ('unnamed_1', struct_anon_57),
+    ('word', u16),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 22
+class struct_pci_status(Structure):
+    pass
+
+struct_pci_status._pack_ = 1
+struct_pci_status.__slots__ = [
+    'unnamed_1',
+]
+struct_pci_status._anonymous_ = [
+    'unnamed_1',
+]
+struct_pci_status._fields_ = [
+    ('unnamed_1', union_anon_58),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 45
+class struct_anon_59(Structure):
+    pass
+
+struct_anon_59._pack_ = 1
+struct_anon_59.__slots__ = [
+    'reserved3',
+    'interrupt_disable',
+    'fast_back_to_back_enable',
+    'system_error_enable',
+    'stepping_control',
+    'parity_error_enable',
+    'vga_palette_snoop',
+    'memory_write_and_invalidate',
+    'special_cycles',
+    'bus_master',
+    'memory_space',
+    'io_space',
+]
+struct_anon_59._fields_ = [
+    ('reserved3', u16, 5),
+    ('interrupt_disable', u16, 1),
+    ('fast_back_to_back_enable', u16, 1),
+    ('system_error_enable', u16, 1),
+    ('stepping_control', u16, 1),
+    ('parity_error_enable', u16, 1),
+    ('vga_palette_snoop', u16, 1),
+    ('memory_write_and_invalidate', u16, 1),
+    ('special_cycles', u16, 1),
+    ('bus_master', u16, 1),
+    ('memory_space', u16, 1),
+    ('io_space', u16, 1),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 44
+class union_anon_60(Union):
+    pass
+
+union_anon_60._pack_ = 1
+union_anon_60.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_60._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_60._fields_ = [
+    ('unnamed_1', struct_anon_59),
+    ('word', u16),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 43
+class struct_pci_command(Structure):
+    pass
+
+struct_pci_command._pack_ = 1
+struct_pci_command.__slots__ = [
+    'unnamed_1',
+]
+struct_pci_command._anonymous_ = [
+    'unnamed_1',
+]
+struct_pci_command._fields_ = [
+    ('unnamed_1', union_anon_60),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 63
+class struct_pci_pm_cap(Structure):
+    pass
+
+struct_pci_pm_cap._pack_ = 1
+struct_pci_pm_cap.__slots__ = [
+    'pme_support',
+    'd2_support',
+    'd1_support',
+    'aux_current',
+    'dsi',
+    'reserved6',
+    'pme_clock',
+    'version',
+    'next_cap',
+    'cap_id',
+]
+struct_pci_pm_cap._fields_ = [
+    ('pme_support', u32, 5),
+    ('d2_support', u32, 1),
+    ('d1_support', u32, 1),
+    ('aux_current', u32, 3),
+    ('dsi', u32, 1),
+    ('reserved6', u32, 1),
+    ('pme_clock', u32, 1),
+    ('version', u32, 3),
+    ('next_cap', u32, 8),
+    ('cap_id', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 76
+class struct_pci_pm_ctrl_status(Structure):
+    pass
+
+struct_pci_pm_ctrl_status._pack_ = 1
+struct_pci_pm_ctrl_status.__slots__ = [
+    'pm_data',
+    'reserved7',
+    'pme_status',
+    'data_scale',
+    'data_select',
+    'pme_enable',
+    'reserved8',
+    'no_soft_reset',
+    'reserved9',
+    'power_state',
+]
+struct_pci_pm_ctrl_status._fields_ = [
+    ('pm_data', u32, 8),
+    ('reserved7', u32, 8),
+    ('pme_status', u32, 1),
+    ('data_scale', u32, 2),
+    ('data_select', u32, 4),
+    ('pme_enable', u32, 1),
+    ('reserved8', u32, 4),
+    ('no_soft_reset', u32, 1),
+    ('reserved9', u32, 1),
+    ('power_state', u32, 2),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 89
+class struct_pci_msi_cap_hdr(Structure):
+    pass
+
+struct_pci_msi_cap_hdr._pack_ = 1
+struct_pci_msi_cap_hdr.__slots__ = [
+    'msi_control',
+    'msi_pvmask_capable',
+    'sixty_four_bit_addr_capable',
+    'multiple_message_enable',
+    'multiple_message_capable',
+    'msi_enable',
+    'next_cap',
+    'cap_id',
+]
+struct_pci_msi_cap_hdr._fields_ = [
+    ('msi_control', u32, 7),
+    ('msi_pvmask_capable', u32, 1),
+    ('sixty_four_bit_addr_capable', u32, 1),
+    ('multiple_message_enable', u32, 3),
+    ('multiple_message_capable', u32, 3),
+    ('msi_enable', u32, 1),
+    ('next_cap', u32, 8),
+    ('cap_id', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 100
+class struct_pci_misc_host_ctrl(Structure):
+    pass
+
+struct_pci_misc_host_ctrl._pack_ = 1
+struct_pci_misc_host_ctrl.__slots__ = [
+    'asic_rev_id',
+    'unused',
+    'enable_tagged_status_mode',
+    'mask_interrupt_mode',
+    'enable_indirect_access',
+    'enable_register_word_swap',
+    'enable_clock_control_register_rw_cap',
+    'enable_pci_state_register_rw_cap',
+    'enable_endian_word_swap',
+    'enable_endian_byte_swap',
+    'mask_interrupt',
+    'clear_interrupt',
+]
+struct_pci_misc_host_ctrl._fields_ = [
+    ('asic_rev_id', u32, 16),
+    ('unused', u32, 6),
+    ('enable_tagged_status_mode', u32, 1),
+    ('mask_interrupt_mode', u32, 1),
+    ('enable_indirect_access', u32, 1),
+    ('enable_register_word_swap', u32, 1),
+    ('enable_clock_control_register_rw_cap', u32, 1),
+    ('enable_pci_state_register_rw_cap', u32, 1),
+    ('enable_endian_word_swap', u32, 1),
+    ('enable_endian_byte_swap', u32, 1),
+    ('mask_interrupt', u32, 1),
+    ('clear_interrupt', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 115
+class struct_pci_dma_rw_ctrl(Structure):
+    pass
+
+struct_pci_dma_rw_ctrl._pack_ = 1
+struct_pci_dma_rw_ctrl.__slots__ = [
+    'reserved25',
+    'cr_write_watermark',
+    'dma_write_watermark',
+    'reserved10',
+    'card_reader_dma_read_mrrs',
+    'dma_read_mrrs_for_slow_speed',
+    'reserved1',
+    'disable_cache_alignment',
+]
+struct_pci_dma_rw_ctrl._fields_ = [
+    ('reserved25', u32, 7),
+    ('cr_write_watermark', u32, 3),
+    ('dma_write_watermark', u32, 3),
+    ('reserved10', u32, 9),
+    ('card_reader_dma_read_mrrs', u32, 3),
+    ('dma_read_mrrs_for_slow_speed', u32, 3),
+    ('reserved1', u32, 3),
+    ('disable_cache_alignment', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 126
+class struct_pci_state(Structure):
+    pass
+
+struct_pci_state._pack_ = 1
+struct_pci_state.__slots__ = [
+    'reserved20',
+    'generate_reset_pulse',
+    'ape_ps_wr_en',
+    'ape_shm_wr_en',
+    'ape_ctrl_reg_wr_en',
+    'config_retry',
+    'reserved15',
+    'pci_vaux_present',
+    'max_retry',
+    'flat_view',
+    'vpd_available',
+    'rom_retry_enable',
+    'rom_enable',
+    'bus_32_bit',
+    'bus_speed_hi',
+    'conv_pci_mode',
+    'int_not_active',
+    'force_reset',
+]
+struct_pci_state._fields_ = [
+    ('reserved20', u32, 12),
+    ('generate_reset_pulse', u32, 1),
+    ('ape_ps_wr_en', u32, 1),
+    ('ape_shm_wr_en', u32, 1),
+    ('ape_ctrl_reg_wr_en', u32, 1),
+    ('config_retry', u32, 1),
+    ('reserved15', u32, 2),
+    ('pci_vaux_present', u32, 1),
+    ('max_retry', u32, 3),
+    ('flat_view', u32, 1),
+    ('vpd_available', u32, 1),
+    ('rom_retry_enable', u32, 1),
+    ('rom_enable', u32, 1),
+    ('bus_32_bit', u32, 1),
+    ('bus_speed_hi', u32, 1),
+    ('conv_pci_mode', u32, 1),
+    ('int_not_active', u32, 1),
+    ('force_reset', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 152
+class struct_pci_device_id(Structure):
+    pass
+
+struct_pci_device_id._pack_ = 1
+struct_pci_device_id.__slots__ = [
+    'did',
+    'vid',
+]
+struct_pci_device_id._fields_ = [
+    ('did', u32, 16),
+    ('vid', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 157
+class struct_pci_class_code_rev_id(Structure):
+    pass
+
+struct_pci_class_code_rev_id._pack_ = 1
+struct_pci_class_code_rev_id.__slots__ = [
+    'class_code',
+    'rev_id',
+]
+struct_pci_class_code_rev_id._fields_ = [
+    ('class_code', u32, 24),
+    ('rev_id', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 163
+class struct_anon_61(Structure):
+    pass
+
+struct_anon_61._pack_ = 1
+struct_anon_61.__slots__ = [
+    'did',
+    'vid',
+]
+struct_anon_61._fields_ = [
+    ('did', u32, 16),
+    ('vid', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 167
+class struct_anon_62(Structure):
+    pass
+
+struct_anon_62._pack_ = 1
+struct_anon_62.__slots__ = [
+    'status',
+    'command',
+]
+struct_anon_62._fields_ = [
+    ('status', struct_pci_status),
+    ('command', struct_pci_command),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 172
+class struct_anon_63(Structure):
+    pass
+
+struct_anon_63._pack_ = 1
+struct_anon_63.__slots__ = [
+    'bist',
+    'hdr_type',
+    'lat_timer',
+    'cache_line_sz',
+]
+struct_anon_63._fields_ = [
+    ('bist', u8, 8),
+    ('hdr_type', u32, 8),
+    ('lat_timer', u32, 8),
+    ('cache_line_sz', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 185
+class struct_anon_64(Structure):
+    pass
+
+struct_anon_64._pack_ = 1
+struct_anon_64.__slots__ = [
+    'ssid',
+    'svid',
+]
+struct_anon_64._fields_ = [
+    ('ssid', u16),
+    ('svid', u16),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 190
+class struct_anon_65(Structure):
+    pass
+
+struct_anon_65._pack_ = 1
+struct_anon_65.__slots__ = [
+    'reserved1',
+    'cap_ptr',
+]
+struct_anon_65._fields_ = [
+    ('reserved1', u32, 24),
+    ('cap_ptr', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 195
+class struct_anon_66(Structure):
+    pass
+
+struct_anon_66._pack_ = 1
+struct_anon_66.__slots__ = [
+    'max_lat',
+    'min_gnt',
+    'int_pin',
+    'int_line',
+]
+struct_anon_66._fields_ = [
+    ('max_lat', u32, 8),
+    ('min_gnt', u32, 8),
+    ('int_pin', u32, 8),
+    ('int_line', u32, 8),
+]
+
+# /Users/saul/src/thundergate/include/pci.h: 162
+class struct_pci_regs(Structure):
+    pass
+
+struct_pci_regs._pack_ = 1
+struct_pci_regs.__slots__ = [
+    'unnamed_1',
+    'unnamed_2',
+    'class_code_rev_id',
+    'unnamed_3',
+    'bar0_hi',
+    'bar0_low',
+    'bar1_hi',
+    'bar1_low',
+    'bar2_hi',
+    'bar2_low',
+    'cardbus_cis_ptr',
+    'unnamed_4',
+    'rombar',
+    'unnamed_5',
+    'reserved2',
+    'unnamed_6',
+    'int_mailbox',
+    'pm_cap',
+    'pm_ctrl_status',
+    'unknown2',
+    'msi_cap_hdr',
+    'msi_lower_address',
+    'msi_upper_address',
+    'msi_data',
+    'misc_host_ctrl',
+    'dma_rw_ctrl',
+    'state',
+    'reset_counters_initial_values',
+    'reg_base_addr',
+    'mem_base_addr',
+    'reg_data',
+    'mem_data',
+    'unknown3',
+    'misc_local_control',
+    'unknown4',
+    'std_ring_prod_ci_hi',
+    'std_ring_prod_ci_low',
+    'recv_ret_ring_ci_hi',
+    'recv_ret_ring_ci_low',
+]
+struct_pci_regs._anonymous_ = [
+    'unnamed_1',
+    'unnamed_2',
+    'unnamed_3',
+    'unnamed_4',
+    'unnamed_5',
+    'unnamed_6',
+]
+struct_pci_regs._fields_ = [
+    ('unnamed_1', struct_anon_61),
+    ('unnamed_2', struct_anon_62),
+    ('class_code_rev_id', struct_pci_class_code_rev_id),
+    ('unnamed_3', struct_anon_63),
+    ('bar0_hi', u32),
+    ('bar0_low', u32),
+    ('bar1_hi', u32),
+    ('bar1_low', u32),
+    ('bar2_hi', u32),
+    ('bar2_low', u32),
+    ('cardbus_cis_ptr', u32),
+    ('unnamed_4', struct_anon_64),
+    ('rombar', u32),
+    ('unnamed_5', struct_anon_65),
+    ('reserved2', u32),
+    ('unnamed_6', struct_anon_66),
+    ('int_mailbox', u64),
+    ('pm_cap', struct_pci_pm_cap),
+    ('pm_ctrl_status', struct_pci_pm_ctrl_status),
+    ('unknown2', u32 * int(2)),
+    ('msi_cap_hdr', struct_pci_msi_cap_hdr),
+    ('msi_lower_address', u32),
+    ('msi_upper_address', u32),
+    ('msi_data', u32),
+    ('misc_host_ctrl', struct_pci_misc_host_ctrl),
+    ('dma_rw_ctrl', struct_pci_dma_rw_ctrl),
+    ('state', struct_pci_state),
+    ('reset_counters_initial_values', u32),
+    ('reg_base_addr', u32),
+    ('mem_base_addr', u32),
+    ('reg_data', u32),
+    ('mem_data', u32),
+    ('unknown3', u32 * int(2)),
+    ('misc_local_control', u32),
+    ('unknown4', u32),
+    ('std_ring_prod_ci_hi', u32),
+    ('std_ring_prod_ci_low', u32),
+    ('recv_ret_ring_ci_hi', u32),
+    ('recv_ret_ring_ci_low', u32),
+]
+
+# /Users/saul/src/thundergate/include/pcie_alt.h: 22
 class struct_pcie_pl_lo_regs(Structure):
     pass
 
+struct_pcie_pl_lo_regs._pack_ = 1
 struct_pcie_pl_lo_regs.__slots__ = [
     'phyctl0',
     'phyctl1',
@@ -6774,10 +9260,11 @@ struct_pcie_pl_lo_regs._fields_ = [
     ('phyctl5', u32),
 ]
 
-# /home/saul/thundergate/include/pcie_alt.h: 31
+# /Users/saul/src/thundergate/include/pcie_alt.h: 31
 class struct_pcie_dl_lo_ftsmax(Structure):
     pass
 
+struct_pcie_dl_lo_ftsmax._pack_ = 1
 struct_pcie_dl_lo_ftsmax.__slots__ = [
     'unknown',
     'val',
@@ -6787,10 +9274,11 @@ struct_pcie_dl_lo_ftsmax._fields_ = [
     ('val', u32, 8),
 ]
 
-# /home/saul/thundergate/include/pcie_alt.h: 36
+# /Users/saul/src/thundergate/include/pcie_alt.h: 36
 class struct_pcie_dl_lo_regs(Structure):
     pass
 
+struct_pcie_dl_lo_regs._pack_ = 1
 struct_pcie_dl_lo_regs.__slots__ = [
     'unknown0',
     'unknown4',
@@ -6804,14 +9292,40 @@ struct_pcie_dl_lo_regs._fields_ = [
     ('ftsmax', struct_pcie_dl_lo_ftsmax),
 ]
 
-# /home/saul/thundergate/include/pcie_alt.h: 43
+# /Users/saul/src/thundergate/include/pcie_alt.h: 44
+class union_anon_67(Union):
+    pass
+
+union_anon_67._pack_ = 1
+union_anon_67.__slots__ = [
+    'dll',
+    'pll',
+]
+union_anon_67._fields_ = [
+    ('dll', struct_pcie_dl_lo_regs),
+    ('pll', struct_pcie_pl_lo_regs),
+]
+
+# /Users/saul/src/thundergate/include/pcie_alt.h: 43
 class struct_pcie_alt_regs(Structure):
     pass
 
-# /home/saul/thundergate/include/pcie.h: 22
+struct_pcie_alt_regs._pack_ = 1
+struct_pcie_alt_regs.__slots__ = [
+    'unnamed_1',
+]
+struct_pcie_alt_regs._anonymous_ = [
+    'unnamed_1',
+]
+struct_pcie_alt_regs._fields_ = [
+    ('unnamed_1', union_anon_67),
+]
+
+# /Users/saul/src/thundergate/include/pcie.h: 22
 class struct_pcie_tl_tlp_ctrl(Structure):
     pass
 
+struct_pcie_tl_tlp_ctrl._pack_ = 1
 struct_pcie_tl_tlp_ctrl.__slots__ = [
     'excessive_current_fix_en',
     'reserved30',
@@ -6859,10 +9373,11 @@ struct_pcie_tl_tlp_ctrl._fields_ = [
     ('completion_timeout', u32, 6),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 46
+# /Users/saul/src/thundergate/include/pcie.h: 46
 class struct_pcie_tl_transaction_config(Structure):
     pass
 
+struct_pcie_tl_transaction_config._pack_ = 1
 struct_pcie_tl_transaction_config.__slots__ = [
     'retry_buffer_timining_mod_en',
     'reserved30',
@@ -6920,10 +9435,11 @@ struct_pcie_tl_transaction_config._fields_ = [
     ('reserved0', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 75
+# /Users/saul/src/thundergate/include/pcie.h: 75
 class struct_pcie_tl_wdma_len_byte_en_req_diag(Structure):
     pass
 
+struct_pcie_tl_wdma_len_byte_en_req_diag._pack_ = 1
 struct_pcie_tl_wdma_len_byte_en_req_diag.__slots__ = [
     'request_length',
     'byte_enables',
@@ -6937,10 +9453,11 @@ struct_pcie_tl_wdma_len_byte_en_req_diag._fields_ = [
     ('raw_request', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 82
+# /Users/saul/src/thundergate/include/pcie.h: 82
 class struct_pcie_tl_rdma_len_req_diag(Structure):
     pass
 
+struct_pcie_tl_rdma_len_req_diag._pack_ = 1
 struct_pcie_tl_rdma_len_req_diag.__slots__ = [
     'request_length',
     'reserved1',
@@ -6952,10 +9469,11 @@ struct_pcie_tl_rdma_len_req_diag._fields_ = [
     ('raw_request', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 88
+# /Users/saul/src/thundergate/include/pcie.h: 88
 class struct_pcie_tl_msi_len_req_diag(Structure):
     pass
 
+struct_pcie_tl_msi_len_req_diag._pack_ = 1
 struct_pcie_tl_msi_len_req_diag.__slots__ = [
     'request_length',
     'reserved1',
@@ -6967,10 +9485,11 @@ struct_pcie_tl_msi_len_req_diag._fields_ = [
     ('raw_request', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 94
+# /Users/saul/src/thundergate/include/pcie.h: 94
 class struct_pcie_tl_slave_req_len_type_diag(Structure):
     pass
 
+struct_pcie_tl_slave_req_len_type_diag._pack_ = 1
 struct_pcie_tl_slave_req_len_type_diag.__slots__ = [
     'reg_slv_len_req',
     'request_length',
@@ -6986,10 +9505,11 @@ struct_pcie_tl_slave_req_len_type_diag._fields_ = [
     ('raw_request', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 102
+# /Users/saul/src/thundergate/include/pcie.h: 102
 class struct_pcie_tl_flow_control_inputs_diag(Structure):
     pass
 
+struct_pcie_tl_flow_control_inputs_diag._pack_ = 1
 struct_pcie_tl_flow_control_inputs_diag.__slots__ = [
     'reg_fc_input',
     'non_posted_header_avail',
@@ -7007,10 +9527,11 @@ struct_pcie_tl_flow_control_inputs_diag._fields_ = [
     ('completion_data_avail', u32, 12),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 111
+# /Users/saul/src/thundergate/include/pcie.h: 111
 class struct_pcie_tl_xmt_state_machines_gated_reqs_diag(Structure):
     pass
 
+struct_pcie_tl_xmt_state_machines_gated_reqs_diag._pack_ = 1
 struct_pcie_tl_xmt_state_machines_gated_reqs_diag.__slots__ = [
     'reg_sm_r0_r3',
     'tlp_tx_data_state_machine',
@@ -7032,10 +9553,11 @@ struct_pcie_tl_xmt_state_machines_gated_reqs_diag._fields_ = [
     ('write_dma_gated_req', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 122
+# /Users/saul/src/thundergate/include/pcie.h: 122
 class struct_pcie_tl_tlp_bdf(Structure):
     pass
 
+struct_pcie_tl_tlp_bdf._pack_ = 1
 struct_pcie_tl_tlp_bdf.__slots__ = [
     'reserved17',
     'config_write_indicator',
@@ -7051,10 +9573,11 @@ struct_pcie_tl_tlp_bdf._fields_ = [
     ('function', u32, 3),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 130
+# /Users/saul/src/thundergate/include/pcie.h: 130
 class struct_pcie_tl_regs(Structure):
     pass
 
+struct_pcie_tl_regs._pack_ = 1
 struct_pcie_tl_regs.__slots__ = [
     'tlp_ctrl',
     'transaction_config',
@@ -7126,10 +9649,11 @@ struct_pcie_tl_regs._fields_ = [
     ('target_debug_4', u32),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 174
+# /Users/saul/src/thundergate/include/pcie.h: 174
 class struct_pcie_dl_ctrl(Structure):
     pass
 
+struct_pcie_dl_ctrl._pack_ = 1
 struct_pcie_dl_ctrl.__slots__ = [
     'reserved19',
     'pll_refsel_sw',
@@ -7161,10 +9685,11 @@ struct_pcie_dl_ctrl._fields_ = [
     ('power_management_ctrl', u32, 8),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 190
+# /Users/saul/src/thundergate/include/pcie.h: 190
 class struct_pcie_dl_status(Structure):
     pass
 
+struct_pcie_dl_status._pack_ = 1
 struct_pcie_dl_status.__slots__ = [
     'reserved26',
     'phy_link_state',
@@ -7204,10 +9729,11 @@ struct_pcie_dl_status._fields_ = [
     ('tlp_error', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 210
+# /Users/saul/src/thundergate/include/pcie.h: 210
 class struct_pcie_dl_attn(Structure):
     pass
 
+struct_pcie_dl_attn._pack_ = 1
 struct_pcie_dl_attn.__slots__ = [
     'reserved5',
     'data_link_layer_attn_ind',
@@ -7225,10 +9751,11 @@ struct_pcie_dl_attn._fields_ = [
     ('tlp_err_cntr_attn_ind', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 219
+# /Users/saul/src/thundergate/include/pcie.h: 219
 class struct_pcie_dl_attn_mask(Structure):
     pass
 
+struct_pcie_dl_attn_mask._pack_ = 1
 struct_pcie_dl_attn_mask.__slots__ = [
     'reserved8',
     'attn_mask',
@@ -7248,10 +9775,11 @@ struct_pcie_dl_attn_mask._fields_ = [
     ('tlp_err_cntr_attn_mask', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 229
+# /Users/saul/src/thundergate/include/pcie.h: 229
 class struct_pcie_dl_seq_no(Structure):
     pass
 
+struct_pcie_dl_seq_no._pack_ = 1
 struct_pcie_dl_seq_no.__slots__ = [
     'reserved12',
     'value',
@@ -7261,10 +9789,11 @@ struct_pcie_dl_seq_no._fields_ = [
     ('value', u32, 12),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 234
+# /Users/saul/src/thundergate/include/pcie.h: 234
 class struct_pcie_dl_replay(Structure):
     pass
 
+struct_pcie_dl_replay._pack_ = 1
 struct_pcie_dl_replay.__slots__ = [
     'reserved23',
     'timeout_value',
@@ -7276,10 +9805,11 @@ struct_pcie_dl_replay._fields_ = [
     ('buffer_size', u32, 10),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 240
+# /Users/saul/src/thundergate/include/pcie.h: 240
 class struct_pcie_dl_ack_timeout(Structure):
     pass
 
+struct_pcie_dl_ack_timeout._pack_ = 1
 struct_pcie_dl_ack_timeout.__slots__ = [
     'reserved11',
     'value',
@@ -7289,10 +9819,11 @@ struct_pcie_dl_ack_timeout._fields_ = [
     ('value', u32, 11),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 245
+# /Users/saul/src/thundergate/include/pcie.h: 245
 class struct_pcie_dl_pm_threshold(Structure):
     pass
 
+struct_pcie_dl_pm_threshold._pack_ = 1
 struct_pcie_dl_pm_threshold.__slots__ = [
     'reserved24',
     'l0_stay_time',
@@ -7308,10 +9839,11 @@ struct_pcie_dl_pm_threshold._fields_ = [
     ('l0s_threshold', u32, 8),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 253
+# /Users/saul/src/thundergate/include/pcie.h: 253
 class struct_pcie_dl_retry_buffer_ptr(Structure):
     pass
 
+struct_pcie_dl_retry_buffer_ptr._pack_ = 1
 struct_pcie_dl_retry_buffer_ptr.__slots__ = [
     'reserved11',
     'value',
@@ -7321,10 +9853,11 @@ struct_pcie_dl_retry_buffer_ptr._fields_ = [
     ('value', u32, 11),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 258
+# /Users/saul/src/thundergate/include/pcie.h: 258
 class struct_pcie_dl_test(Structure):
     pass
 
+struct_pcie_dl_test._pack_ = 1
 struct_pcie_dl_test.__slots__ = [
     'reserved16',
     'store_recv_tlps',
@@ -7364,10 +9897,11 @@ struct_pcie_dl_test._fields_ = [
     ('send_bad_crc_bit', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 278
+# /Users/saul/src/thundergate/include/pcie.h: 278
 class struct_pcie_dl_packet_bist(Structure):
     pass
 
+struct_pcie_dl_packet_bist._pack_ = 1
 struct_pcie_dl_packet_bist.__slots__ = [
     'reserved24',
     'packet_checker_loaded',
@@ -7391,10 +9925,11 @@ struct_pcie_dl_packet_bist._fields_ = [
     ('packet_generator_test_mode_en', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 290
+# /Users/saul/src/thundergate/include/pcie.h: 290
 class struct_pcie_dl_regs(Structure):
     pass
 
+struct_pcie_dl_regs._pack_ = 1
 struct_pcie_dl_regs.__slots__ = [
     'dl_ctrl',
     'dl_status',
@@ -7444,10 +9979,11 @@ struct_pcie_dl_regs._fields_ = [
     ('link_pcie_1_1_control', u32),
 ]
 
-# /home/saul/thundergate/include/pcie.h: 320
+# /Users/saul/src/thundergate/include/pcie.h: 320
 class struct_pcie_pl_regs(Structure):
     pass
 
+struct_pcie_pl_regs._pack_ = 1
 struct_pcie_pl_regs.__slots__ = [
     'phy_mode',
     'phy_link_status',
@@ -7485,309 +10021,44 @@ struct_pcie_pl_regs._fields_ = [
     ('phy_hardware_diag_2', u32),
 ]
 
-# /home/saul/thundergate/include/pci.h: 22
-class struct_pci_status(Structure):
+# /Users/saul/src/thundergate/include/rbdc.h: 23
+class struct_anon_68(Structure):
     pass
 
-# /home/saul/thundergate/include/pci.h: 43
-class struct_pci_command(Structure):
-    pass
-
-# /home/saul/thundergate/include/pci.h: 63
-class struct_pci_pm_cap(Structure):
-    pass
-
-struct_pci_pm_cap.__slots__ = [
-    'pme_support',
-    'd2_support',
-    'd1_support',
-    'aux_current',
-    'dsi',
-    'reserved6',
-    'pme_clock',
-    'version',
-    'next_cap',
-    'cap_id',
+struct_anon_68._pack_ = 1
+struct_anon_68.__slots__ = [
+    'reserved',
+    'attention_enable',
+    'enable',
+    'reset',
 ]
-struct_pci_pm_cap._fields_ = [
-    ('pme_support', u32, 5),
-    ('d2_support', u32, 1),
-    ('d1_support', u32, 1),
-    ('aux_current', u32, 3),
-    ('dsi', u32, 1),
-    ('reserved6', u32, 1),
-    ('pme_clock', u32, 1),
-    ('version', u32, 3),
-    ('next_cap', u32, 8),
-    ('cap_id', u32, 8),
+struct_anon_68._fields_ = [
+    ('reserved', u32, 29),
+    ('attention_enable', u32, 1),
+    ('enable', u32, 1),
+    ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/pci.h: 76
-class struct_pci_pm_ctrl_status(Structure):
-    pass
-
-struct_pci_pm_ctrl_status.__slots__ = [
-    'pm_data',
-    'reserved7',
-    'pme_status',
-    'data_scale',
-    'data_select',
-    'pme_enable',
-    'reserved8',
-    'no_soft_reset',
-    'reserved9',
-    'power_state',
-]
-struct_pci_pm_ctrl_status._fields_ = [
-    ('pm_data', u32, 8),
-    ('reserved7', u32, 8),
-    ('pme_status', u32, 1),
-    ('data_scale', u32, 2),
-    ('data_select', u32, 4),
-    ('pme_enable', u32, 1),
-    ('reserved8', u32, 4),
-    ('no_soft_reset', u32, 1),
-    ('reserved9', u32, 1),
-    ('power_state', u32, 2),
-]
-
-# /home/saul/thundergate/include/pci.h: 89
-class struct_pci_msi_cap_hdr(Structure):
-    pass
-
-struct_pci_msi_cap_hdr.__slots__ = [
-    'msi_control',
-    'msi_pvmask_capable',
-    'sixty_four_bit_addr_capable',
-    'multiple_message_enable',
-    'multiple_message_capable',
-    'msi_enable',
-    'next_cap',
-    'cap_id',
-]
-struct_pci_msi_cap_hdr._fields_ = [
-    ('msi_control', u32, 7),
-    ('msi_pvmask_capable', u32, 1),
-    ('sixty_four_bit_addr_capable', u32, 1),
-    ('multiple_message_enable', u32, 3),
-    ('multiple_message_capable', u32, 3),
-    ('msi_enable', u32, 1),
-    ('next_cap', u32, 8),
-    ('cap_id', u32, 8),
-]
-
-# /home/saul/thundergate/include/pci.h: 100
-class struct_pci_misc_host_ctrl(Structure):
-    pass
-
-struct_pci_misc_host_ctrl.__slots__ = [
-    'asic_rev_id',
-    'unused',
-    'enable_tagged_status_mode',
-    'mask_interrupt_mode',
-    'enable_indirect_access',
-    'enable_register_word_swap',
-    'enable_clock_control_register_rw_cap',
-    'enable_pci_state_register_rw_cap',
-    'enable_endian_word_swap',
-    'enable_endian_byte_swap',
-    'mask_interrupt',
-    'clear_interrupt',
-]
-struct_pci_misc_host_ctrl._fields_ = [
-    ('asic_rev_id', u32, 16),
-    ('unused', u32, 6),
-    ('enable_tagged_status_mode', u32, 1),
-    ('mask_interrupt_mode', u32, 1),
-    ('enable_indirect_access', u32, 1),
-    ('enable_register_word_swap', u32, 1),
-    ('enable_clock_control_register_rw_cap', u32, 1),
-    ('enable_pci_state_register_rw_cap', u32, 1),
-    ('enable_endian_word_swap', u32, 1),
-    ('enable_endian_byte_swap', u32, 1),
-    ('mask_interrupt', u32, 1),
-    ('clear_interrupt', u32, 1),
-]
-
-# /home/saul/thundergate/include/pci.h: 115
-class struct_pci_dma_rw_ctrl(Structure):
-    pass
-
-struct_pci_dma_rw_ctrl.__slots__ = [
-    'reserved25',
-    'cr_write_watermark',
-    'dma_write_watermark',
-    'reserved10',
-    'card_reader_dma_read_mrrs',
-    'dma_read_mrrs_for_slow_speed',
-    'reserved1',
-    'disable_cache_alignment',
-]
-struct_pci_dma_rw_ctrl._fields_ = [
-    ('reserved25', u32, 7),
-    ('cr_write_watermark', u32, 3),
-    ('dma_write_watermark', u32, 3),
-    ('reserved10', u32, 9),
-    ('card_reader_dma_read_mrrs', u32, 3),
-    ('dma_read_mrrs_for_slow_speed', u32, 3),
-    ('reserved1', u32, 3),
-    ('disable_cache_alignment', u32, 1),
-]
-
-# /home/saul/thundergate/include/pci.h: 126
-class struct_pci_state(Structure):
-    pass
-
-struct_pci_state.__slots__ = [
-    'reserved20',
-    'generate_reset_pulse',
-    'ape_ps_wr_en',
-    'ape_shm_wr_en',
-    'ape_ctrl_reg_wr_en',
-    'config_retry',
-    'reserved15',
-    'pci_vaux_present',
-    'max_retry',
-    'flat_view',
-    'vpd_available',
-    'rom_retry_enable',
-    'rom_enable',
-    'bus_32_bit',
-    'bus_speed_hi',
-    'conv_pci_mode',
-    'int_not_active',
-    'force_reset',
-]
-struct_pci_state._fields_ = [
-    ('reserved20', u32, 12),
-    ('generate_reset_pulse', u32, 1),
-    ('ape_ps_wr_en', u32, 1),
-    ('ape_shm_wr_en', u32, 1),
-    ('ape_ctrl_reg_wr_en', u32, 1),
-    ('config_retry', u32, 1),
-    ('reserved15', u32, 2),
-    ('pci_vaux_present', u32, 1),
-    ('max_retry', u32, 3),
-    ('flat_view', u32, 1),
-    ('vpd_available', u32, 1),
-    ('rom_retry_enable', u32, 1),
-    ('rom_enable', u32, 1),
-    ('bus_32_bit', u32, 1),
-    ('bus_speed_hi', u32, 1),
-    ('conv_pci_mode', u32, 1),
-    ('int_not_active', u32, 1),
-    ('force_reset', u32, 1),
-]
-
-# /home/saul/thundergate/include/pci.h: 152
-class struct_pci_device_id(Structure):
-    pass
-
-struct_pci_device_id.__slots__ = [
-    'did',
-    'vid',
-]
-struct_pci_device_id._fields_ = [
-    ('did', u32, 16),
-    ('vid', u32, 16),
-]
-
-# /home/saul/thundergate/include/pci.h: 157
-class struct_pci_class_code_rev_id(Structure):
-    pass
-
-struct_pci_class_code_rev_id.__slots__ = [
-    'class_code',
-    'rev_id',
-]
-struct_pci_class_code_rev_id._fields_ = [
-    ('class_code', u32, 24),
-    ('rev_id', u32, 8),
-]
-
-# /home/saul/thundergate/include/pci.h: 162
-class struct_pci_regs(Structure):
-    pass
-
-struct_pci_regs.__slots__ = [
-    'class_code_rev_id',
-    'bar0_hi',
-    'bar0_low',
-    'bar1_hi',
-    'bar1_low',
-    'bar2_hi',
-    'bar2_low',
-    'cardbus_cis_ptr',
-    'rombar',
-    'reserved2',
-    'int_mailbox',
-    'pm_cap',
-    'pm_ctrl_status',
-    'unknown2',
-    'msi_cap_hdr',
-    'msi_lower_address',
-    'msi_upper_address',
-    'msi_data',
-    'misc_host_ctrl',
-    'dma_rw_ctrl',
-    'state',
-    'reset_counters_initial_values',
-    'reg_base_addr',
-    'mem_base_addr',
-    'reg_data',
-    'mem_data',
-    'unknown3',
-    'misc_local_control',
-    'unknown4',
-    'std_ring_prod_ci_hi',
-    'std_ring_prod_ci_low',
-    'recv_ret_ring_ci_hi',
-    'recv_ret_ring_ci_low',
-]
-struct_pci_regs._fields_ = [
-    ('class_code_rev_id', struct_pci_class_code_rev_id),
-    ('bar0_hi', u32),
-    ('bar0_low', u32),
-    ('bar1_hi', u32),
-    ('bar1_low', u32),
-    ('bar2_hi', u32),
-    ('bar2_low', u32),
-    ('cardbus_cis_ptr', u32),
-    ('rombar', u32),
-    ('reserved2', u32),
-    ('int_mailbox', u64),
-    ('pm_cap', struct_pci_pm_cap),
-    ('pm_ctrl_status', struct_pci_pm_ctrl_status),
-    ('unknown2', u32 * 2),
-    ('msi_cap_hdr', struct_pci_msi_cap_hdr),
-    ('msi_lower_address', u32),
-    ('msi_upper_address', u32),
-    ('msi_data', u32),
-    ('misc_host_ctrl', struct_pci_misc_host_ctrl),
-    ('dma_rw_ctrl', struct_pci_dma_rw_ctrl),
-    ('state', struct_pci_state),
-    ('reset_counters_initial_values', u32),
-    ('reg_base_addr', u32),
-    ('mem_base_addr', u32),
-    ('reg_data', u32),
-    ('mem_data', u32),
-    ('unknown3', u32 * 2),
-    ('misc_local_control', u32),
-    ('unknown4', u32),
-    ('std_ring_prod_ci_hi', u32),
-    ('std_ring_prod_ci_low', u32),
-    ('recv_ret_ring_ci_hi', u32),
-    ('recv_ret_ring_ci_low', u32),
-]
-
-# /home/saul/thundergate/include/rbdc.h: 22
+# /Users/saul/src/thundergate/include/rbdc.h: 22
 class struct_rbdc_mode(Structure):
     pass
 
-# /home/saul/thundergate/include/rbdc.h: 31
+struct_rbdc_mode._pack_ = 1
+struct_rbdc_mode.__slots__ = [
+    'unnamed_1',
+]
+struct_rbdc_mode._anonymous_ = [
+    'unnamed_1',
+]
+struct_rbdc_mode._fields_ = [
+    ('unnamed_1', struct_anon_68),
+]
+
+# /Users/saul/src/thundergate/include/rbdc.h: 31
 class struct_rbdc_status(Structure):
     pass
 
+struct_rbdc_status._pack_ = 1
 struct_rbdc_status.__slots__ = [
     'reserved',
     'error',
@@ -7799,10 +10070,11 @@ struct_rbdc_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rbdc.h: 37
+# /Users/saul/src/thundergate/include/rbdc.h: 37
 class struct_rbdc_rbd_pi(Structure):
     pass
 
+struct_rbdc_rbd_pi._pack_ = 1
 struct_rbdc_rbd_pi.__slots__ = [
     'reserved',
     'bd_pi',
@@ -7812,10 +10084,11 @@ struct_rbdc_rbd_pi._fields_ = [
     ('bd_pi', u32, 9),
 ]
 
-# /home/saul/thundergate/include/rbdc.h: 42
+# /Users/saul/src/thundergate/include/rbdc.h: 42
 class struct_rbdc_regs(Structure):
     pass
 
+struct_rbdc_regs._pack_ = 1
 struct_rbdc_regs.__slots__ = [
     'mode',
     'status',
@@ -7831,14 +10104,61 @@ struct_rbdc_regs._fields_ = [
     ('mini_rbd_pi', struct_rbdc_rbd_pi),
 ]
 
-# /home/saul/thundergate/include/rbdi.h: 22
+# /Users/saul/src/thundergate/include/rbdi.h: 24
+class struct_anon_69(Structure):
+    pass
+
+struct_anon_69._pack_ = 1
+struct_anon_69.__slots__ = [
+    'reserved',
+    'receive_bds_available_on_disabled_rbd_ring_attn_enable',
+    'enable',
+    'reset',
+]
+struct_anon_69._fields_ = [
+    ('reserved', u32, 29),
+    ('receive_bds_available_on_disabled_rbd_ring_attn_enable', u32, 1),
+    ('enable', u32, 1),
+    ('reset', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/rbdi.h: 23
+class union_anon_70(Union):
+    pass
+
+union_anon_70._pack_ = 1
+union_anon_70.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_70._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_70._fields_ = [
+    ('unnamed_1', struct_anon_69),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/rbdi.h: 22
 class struct_rbdi_mode(Structure):
     pass
 
-# /home/saul/thundergate/include/rbdi.h: 34
+struct_rbdi_mode._pack_ = 1
+struct_rbdi_mode.__slots__ = [
+    'unnamed_1',
+]
+struct_rbdi_mode._anonymous_ = [
+    'unnamed_1',
+]
+struct_rbdi_mode._fields_ = [
+    ('unnamed_1', union_anon_70),
+]
+
+# /Users/saul/src/thundergate/include/rbdi.h: 34
 class struct_rbdi_status(Structure):
     pass
 
+struct_rbdi_status._pack_ = 1
 struct_rbdi_status.__slots__ = [
     'reserved',
     'receive_bds_available_on_disabled_rbd_ring',
@@ -7850,10 +10170,11 @@ struct_rbdi_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rbdi.h: 40
+# /Users/saul/src/thundergate/include/rbdi.h: 40
 class struct_rbdi_ring_replenish_threshold(Structure):
     pass
 
+struct_rbdi_ring_replenish_threshold._pack_ = 1
 struct_rbdi_ring_replenish_threshold.__slots__ = [
     'reserved',
     'count',
@@ -7863,10 +10184,11 @@ struct_rbdi_ring_replenish_threshold._fields_ = [
     ('count', u32, 10),
 ]
 
-# /home/saul/thundergate/include/rbdi.h: 45
+# /Users/saul/src/thundergate/include/rbdi.h: 45
 class struct_rbdi_regs(Structure):
     pass
 
+struct_rbdi_regs._pack_ = 1
 struct_rbdi_regs.__slots__ = [
     'mode',
     'status',
@@ -7889,15 +10211,16 @@ struct_rbdi_regs._fields_ = [
     ('mini_ring_replenish_threshold', struct_rbdi_ring_replenish_threshold),
     ('std_ring_replenish_threshold', struct_rbdi_ring_replenish_threshold),
     ('jumbo_ring_replenish_threshold', struct_rbdi_ring_replenish_threshold),
-    ('reserved', u32 * (224 >> 2)),
+    ('reserved', u32 * int((0xe0 >> 2))),
     ('std_ring_replenish_watermark', struct_rbdi_ring_replenish_threshold),
     ('jumbo_ring_replenish_watermark', struct_rbdi_ring_replenish_threshold),
 ]
 
-# /home/saul/thundergate/include/rbdrules.h: 24
+# /Users/saul/src/thundergate/include/rbdrules.h: 24
 class struct_rbd_rule(Structure):
     pass
 
+struct_rbd_rule._pack_ = 1
 struct_rbd_rule.__slots__ = [
     'enabled',
     'and_with_next',
@@ -7929,10 +10252,11 @@ struct_rbd_rule._fields_ = [
     ('offset', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rbdrules.h: 40
+# /Users/saul/src/thundergate/include/rbdrules.h: 40
 class struct_rbd_value_mask(Structure):
     pass
 
+struct_rbd_value_mask._pack_ = 1
 struct_rbd_value_mask.__slots__ = [
     'mask',
     'value',
@@ -7942,10 +10266,11 @@ struct_rbd_value_mask._fields_ = [
     ('value', u16),
 ]
 
-# /home/saul/thundergate/include/rcb.h: 22
+# /Users/saul/src/thundergate/include/rcb.h: 22
 class struct_rcb_flags(Structure):
     pass
 
+struct_rcb_flags._pack_ = 1
 struct_rcb_flags.__slots__ = [
     'reserved',
     'disabled',
@@ -7957,10 +10282,11 @@ struct_rcb_flags._fields_ = [
     ('reserved2', u16, 14),
 ]
 
-# /home/saul/thundergate/include/rcb.h: 28
+# /Users/saul/src/thundergate/include/rcb.h: 28
 class struct_rcb(Structure):
     pass
 
+struct_rcb._pack_ = 1
 struct_rcb.__slots__ = [
     'addr_hi',
     'addr_low',
@@ -7976,14 +10302,61 @@ struct_rcb._fields_ = [
     ('nic_addr', u32),
 ]
 
-# /home/saul/thundergate/include/rdc.h: 22
+# /Users/saul/src/thundergate/include/rdc.h: 24
+class struct_anon_71(Structure):
+    pass
+
+struct_anon_71._pack_ = 1
+struct_anon_71.__slots__ = [
+    'reserved',
+    'attention_enable',
+    'enable',
+    'reset',
+]
+struct_anon_71._fields_ = [
+    ('reserved', u32, 29),
+    ('attention_enable', u32, 1),
+    ('enable', u32, 1),
+    ('reset', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/rdc.h: 23
+class union_anon_72(Union):
+    pass
+
+union_anon_72._pack_ = 1
+union_anon_72.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_72._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_72._fields_ = [
+    ('unnamed_1', struct_anon_71),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/rdc.h: 22
 class struct_rdc_mode(Structure):
     pass
 
-# /home/saul/thundergate/include/rdc.h: 34
+struct_rdc_mode._pack_ = 1
+struct_rdc_mode.__slots__ = [
+    'unnamed_1',
+]
+struct_rdc_mode._anonymous_ = [
+    'unnamed_1',
+]
+struct_rdc_mode._fields_ = [
+    ('unnamed_1', union_anon_72),
+]
+
+# /Users/saul/src/thundergate/include/rdc.h: 34
 class struct_rdc_regs(Structure):
     pass
 
+struct_rdc_regs._pack_ = 1
 struct_rdc_regs.__slots__ = [
     'mode',
 ]
@@ -7991,10 +10364,11 @@ struct_rdc_regs._fields_ = [
     ('mode', struct_rdc_mode),
 ]
 
-# /home/saul/thundergate/include/rdi.h: 22
+# /Users/saul/src/thundergate/include/rdi.h: 22
 class struct_rdi_mode(Structure):
     pass
 
+struct_rdi_mode._pack_ = 1
 struct_rdi_mode.__slots__ = [
     'reserved',
     'illegal_return_ring_size',
@@ -8012,10 +10386,11 @@ struct_rdi_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rdi.h: 31
+# /Users/saul/src/thundergate/include/rdi.h: 31
 class struct_rdi_status(Structure):
     pass
 
+struct_rdi_status._pack_ = 1
 struct_rdi_status.__slots__ = [
     'reserved',
     'illegal_return_ring_size',
@@ -8029,25 +10404,50 @@ struct_rdi_status._fields_ = [
     ('reserved2', u32, 3),
 ]
 
-# /home/saul/thundergate/include/rdi.h: 38
+# /Users/saul/src/thundergate/include/rdi.h: 41
+class struct_anon_73(Structure):
+    pass
+
+struct_anon_73._pack_ = 1
+struct_anon_73.__slots__ = [
+    'ring_size',
+    'max_frame_len',
+    'disable_ring',
+    'reserved',
+]
+struct_anon_73._fields_ = [
+    ('ring_size', u32, 16),
+    ('max_frame_len', u32, 14),
+    ('disable_ring', u32, 1),
+    ('reserved', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/rdi.h: 38
 class struct_rcb_registers(Structure):
     pass
 
+struct_rcb_registers._pack_ = 1
 struct_rcb_registers.__slots__ = [
     'host_addr_hi',
     'host_addr_low',
+    'unnamed_1',
     'nic_addr',
+]
+struct_rcb_registers._anonymous_ = [
+    'unnamed_1',
 ]
 struct_rcb_registers._fields_ = [
     ('host_addr_hi', u32),
     ('host_addr_low', u32),
+    ('unnamed_1', struct_anon_73),
     ('nic_addr', u32),
 ]
 
-# /home/saul/thundergate/include/rdi.h: 50
+# /Users/saul/src/thundergate/include/rdi.h: 50
 class struct_rdi_regs(Structure):
     pass
 
+struct_rdi_regs._pack_ = 1
 struct_rdi_regs.__slots__ = [
     'mode',
     'status',
@@ -8065,7 +10465,7 @@ struct_rdi_regs.__slots__ = [
 struct_rdi_regs._fields_ = [
     ('mode', struct_rdi_mode),
     ('status', struct_rdi_status),
-    ('unknown', u32 * 14),
+    ('unknown', u32 * int(14)),
     ('jumbo_rcb', struct_rcb_registers),
     ('std_rcb', struct_rcb_registers),
     ('mini_rcb', struct_rcb_registers),
@@ -8073,14 +10473,15 @@ struct_rdi_regs._fields_ = [
     ('local_std_rbd_ci', u32),
     ('local_mini_rbd_ci', u32),
     ('unknown2', u32),
-    ('local_rr_pi', u32 * 16),
+    ('local_rr_pi', u32 * int(16)),
     ('hw_diag', u32),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 24
+# /Users/saul/src/thundergate/include/rdma.h: 24
 class struct_rdma_mode(Structure):
     pass
 
+struct_rdma_mode._pack_ = 1
 struct_rdma_mode.__slots__ = [
     'reserved',
     'in_band_vtag_enable',
@@ -8136,10 +10537,11 @@ struct_rdma_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 52
+# /Users/saul/src/thundergate/include/rdma.h: 52
 class struct_rdma_status(Structure):
     pass
 
+struct_rdma_status._pack_ = 1
 struct_rdma_status.__slots__ = [
     'reserved',
     'mbuf_sbd_corruption_attention',
@@ -8173,10 +10575,11 @@ struct_rdma_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 69
+# /Users/saul/src/thundergate/include/rdma.h: 69
 class struct_rdma_programmable_ipv6_extension_header(Structure):
     pass
 
+struct_rdma_programmable_ipv6_extension_header._pack_ = 1
 struct_rdma_programmable_ipv6_extension_header.__slots__ = [
     'type_2_en',
     'type_1_en',
@@ -8192,10 +10595,11 @@ struct_rdma_programmable_ipv6_extension_header._fields_ = [
     ('ext_hdr_type_1', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 77
+# /Users/saul/src/thundergate/include/rdma.h: 77
 class struct_rdma_rstates_debug(Structure):
     pass
 
+struct_rdma_rstates_debug._pack_ = 1
 struct_rdma_rstates_debug.__slots__ = [
     'reserved6',
     'rstate3',
@@ -8209,10 +10613,11 @@ struct_rdma_rstates_debug._fields_ = [
     ('rstate1', u32, 3),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 84
+# /Users/saul/src/thundergate/include/rdma.h: 84
 class struct_rdma_rstate2_debug(Structure):
     pass
 
+struct_rdma_rstate2_debug._pack_ = 1
 struct_rdma_rstate2_debug.__slots__ = [
     'reserved5',
     'rstate2',
@@ -8222,10 +10627,11 @@ struct_rdma_rstate2_debug._fields_ = [
     ('rstate2', u32, 5),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 89
+# /Users/saul/src/thundergate/include/rdma.h: 89
 class struct_rdma_bd_status_debug(Structure):
     pass
 
+struct_rdma_bd_status_debug._pack_ = 1
 struct_rdma_bd_status_debug.__slots__ = [
     'reserved3',
     'bd_non_mbuf',
@@ -8239,10 +10645,11 @@ struct_rdma_bd_status_debug._fields_ = [
     ('lst_bd_mbuf', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 96
+# /Users/saul/src/thundergate/include/rdma.h: 96
 class struct_rdma_req_ptr_debug(Structure):
     pass
 
+struct_rdma_req_ptr_debug._pack_ = 1
 struct_rdma_req_ptr_debug.__slots__ = [
     'ih_dmad_length',
     'reserved10',
@@ -8260,10 +10667,11 @@ struct_rdma_req_ptr_debug._fields_ = [
     ('rftq_b_dmad_pnt', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 105
+# /Users/saul/src/thundergate/include/rdma.h: 105
 class struct_rdma_hold_d_dmad_debug(Structure):
     pass
 
+struct_rdma_hold_d_dmad_debug._pack_ = 1
 struct_rdma_hold_d_dmad_debug.__slots__ = [
     'reserved2',
     'rhold_d_dmad',
@@ -8273,10 +10681,11 @@ struct_rdma_hold_d_dmad_debug._fields_ = [
     ('rhold_d_dmad', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 110
+# /Users/saul/src/thundergate/include/rdma.h: 110
 class struct_rdma_length_and_address_index_debug(Structure):
     pass
 
+struct_rdma_length_and_address_index_debug._pack_ = 1
 struct_rdma_length_and_address_index_debug.__slots__ = [
     'rdma_rd_length',
     'mbuf_addr_idx',
@@ -8286,10 +10695,11 @@ struct_rdma_length_and_address_index_debug._fields_ = [
     ('mbuf_addr_idx', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 115
+# /Users/saul/src/thundergate/include/rdma.h: 115
 class struct_rdma_mbuf_byte_count_debug(Structure):
     pass
 
+struct_rdma_mbuf_byte_count_debug._pack_ = 1
 struct_rdma_mbuf_byte_count_debug.__slots__ = [
     'reserved4',
     'rmbuf_byte_cnt',
@@ -8299,10 +10709,11 @@ struct_rdma_mbuf_byte_count_debug._fields_ = [
     ('rmbuf_byte_cnt', u32, 4),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 120
+# /Users/saul/src/thundergate/include/rdma.h: 120
 class struct_rdma_pcie_mbuf_byte_count_debug(Structure):
     pass
 
+struct_rdma_pcie_mbuf_byte_count_debug._pack_ = 1
 struct_rdma_pcie_mbuf_byte_count_debug.__slots__ = [
     'lt_term',
     'reserved27',
@@ -8336,10 +10747,11 @@ struct_rdma_pcie_mbuf_byte_count_debug._fields_ = [
     ('dr_pci_len', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 137
+# /Users/saul/src/thundergate/include/rdma.h: 137
 class struct_rdma_pcie_read_request_address_debug(Structure):
     pass
 
+struct_rdma_pcie_read_request_address_debug._pack_ = 1
 struct_rdma_pcie_read_request_address_debug.__slots__ = [
     'dr_pci_ad_hi',
     'dr_pci_ad_lo',
@@ -8349,10 +10761,11 @@ struct_rdma_pcie_read_request_address_debug._fields_ = [
     ('dr_pci_ad_lo', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 142
+# /Users/saul/src/thundergate/include/rdma.h: 142
 class struct_rdma_fifo1_debug(Structure):
     pass
 
+struct_rdma_fifo1_debug._pack_ = 1
 struct_rdma_fifo1_debug.__slots__ = [
     'reserved8',
     'c_write_addr',
@@ -8362,10 +10775,11 @@ struct_rdma_fifo1_debug._fields_ = [
     ('c_write_addr', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 147
+# /Users/saul/src/thundergate/include/rdma.h: 147
 class struct_rdma_fifo2_debug(Structure):
     pass
 
+struct_rdma_fifo2_debug._pack_ = 1
 struct_rdma_fifo2_debug.__slots__ = [
     'reserved16',
     'rlctrl_in',
@@ -8377,10 +10791,11 @@ struct_rdma_fifo2_debug._fields_ = [
     ('c_read_addr', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 153
+# /Users/saul/src/thundergate/include/rdma.h: 153
 class struct_rdma_packet_request_debug_1(Structure):
     pass
 
+struct_rdma_packet_request_debug_1._pack_ = 1
 struct_rdma_packet_request_debug_1.__slots__ = [
     'reserved8',
     'pkt_req_cnt',
@@ -8390,10 +10805,11 @@ struct_rdma_packet_request_debug_1._fields_ = [
     ('pkt_req_cnt', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 158
+# /Users/saul/src/thundergate/include/rdma.h: 158
 class struct_rdma_packet_request_debug_2(Structure):
     pass
 
+struct_rdma_packet_request_debug_2._pack_ = 1
 struct_rdma_packet_request_debug_2.__slots__ = [
     'sdc_ack_cnt',
 ]
@@ -8401,10 +10817,11 @@ struct_rdma_packet_request_debug_2._fields_ = [
     ('sdc_ack_cnt', u32),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 162
+# /Users/saul/src/thundergate/include/rdma.h: 162
 class struct_rdma_packet_request_debug_3(Structure):
     pass
 
+struct_rdma_packet_request_debug_3._pack_ = 1
 struct_rdma_packet_request_debug_3.__slots__ = [
     'cs',
     'reserved26',
@@ -8426,10 +10843,11 @@ struct_rdma_packet_request_debug_3._fields_ = [
     ('pre_sdcq_pkt_cnt', u32, 7),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 173
+# /Users/saul/src/thundergate/include/rdma.h: 173
 class struct_rdma_tcp_checksum_debug(Structure):
     pass
 
+struct_rdma_tcp_checksum_debug._pack_ = 1
 struct_rdma_tcp_checksum_debug.__slots__ = [
     'reserved30',
     'fd_addr_req',
@@ -8443,10 +10861,11 @@ struct_rdma_tcp_checksum_debug._fields_ = [
     ('lt_mem_tcp_chksum', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 180
+# /Users/saul/src/thundergate/include/rdma.h: 180
 class struct_rdma_ip_tcp_header_checksum_debug(Structure):
     pass
 
+struct_rdma_ip_tcp_header_checksum_debug._pack_ = 1
 struct_rdma_ip_tcp_header_checksum_debug.__slots__ = [
     'lt_mem_ip_chksum',
     'lt_mem_tcphdr_chksum',
@@ -8456,10 +10875,11 @@ struct_rdma_ip_tcp_header_checksum_debug._fields_ = [
     ('lt_mem_tcphdr_chksum', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 185
+# /Users/saul/src/thundergate/include/rdma.h: 185
 class struct_rdma_pseudo_checksum_debug(Structure):
     pass
 
+struct_rdma_pseudo_checksum_debug._pack_ = 1
 struct_rdma_pseudo_checksum_debug.__slots__ = [
     'lt_mem_pse_chksum_no_tcplen',
     'lt_mem_pkt_len',
@@ -8469,10 +10889,11 @@ struct_rdma_pseudo_checksum_debug._fields_ = [
     ('lt_mem_pkt_len', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 190
+# /Users/saul/src/thundergate/include/rdma.h: 190
 class struct_rdma_mbuf_address_debug(Structure):
     pass
 
+struct_rdma_mbuf_address_debug._pack_ = 1
 struct_rdma_mbuf_address_debug.__slots__ = [
     'reserved30',
     'mbuf1_addr',
@@ -8494,10 +10915,11 @@ struct_rdma_mbuf_address_debug._fields_ = [
     ('pre_mbuf0_addr', u32, 6),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 201
+# /Users/saul/src/thundergate/include/rdma.h: 201
 class struct_rdma_misc_ctrl_1(Structure):
     pass
 
+struct_rdma_misc_ctrl_1._pack_ = 1
 struct_rdma_misc_ctrl_1.__slots__ = [
     'txmbuf_margin',
     'select_fed_enable',
@@ -8519,10 +10941,11 @@ struct_rdma_misc_ctrl_1._fields_ = [
     ('sdi_shortq_en', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 212
+# /Users/saul/src/thundergate/include/rdma.h: 212
 class struct_rdma_misc_ctrl_2(Structure):
     pass
 
+struct_rdma_misc_ctrl_2._pack_ = 1
 struct_rdma_misc_ctrl_2.__slots__ = [
     'fifo_threshold_bd_req',
     'fifo_threshold_mbuf_req',
@@ -8542,10 +10965,11 @@ struct_rdma_misc_ctrl_2._fields_ = [
     ('mbuf_threshold_clk_req', u32, 6),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 222
+# /Users/saul/src/thundergate/include/rdma.h: 222
 class struct_rdma_misc_ctrl_3(Structure):
     pass
 
+struct_rdma_misc_ctrl_3._pack_ = 1
 struct_rdma_misc_ctrl_3.__slots__ = [
     'reserved6',
     'cq33951_fix_dis',
@@ -8565,10 +10989,11 @@ struct_rdma_misc_ctrl_3._fields_ = [
     ('reserved0', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rdma.h: 232
+# /Users/saul/src/thundergate/include/rdma.h: 232
 class struct_rdma_regs(Structure):
     pass
 
+struct_rdma_regs._pack_ = 1
 struct_rdma_regs.__slots__ = [
     'mode',
     'status',
@@ -8702,10 +11127,11 @@ struct_rdma_regs._fields_ = [
     ('ofs_fc', u32),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 22
+# /Users/saul/src/thundergate/include/rlp.h: 22
 class struct_receive_list_placement_mode(Structure):
     pass
 
+struct_receive_list_placement_mode._pack_ = 1
 struct_receive_list_placement_mode.__slots__ = [
     'reserved',
     'stats_overflow_attention_enable',
@@ -8723,10 +11149,11 @@ struct_receive_list_placement_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 31
+# /Users/saul/src/thundergate/include/rlp.h: 31
 class struct_receive_list_placement_status(Structure):
     pass
 
+struct_receive_list_placement_status._pack_ = 1
 struct_receive_list_placement_status.__slots__ = [
     'reserved',
     'stats_overflow_attention',
@@ -8742,10 +11169,11 @@ struct_receive_list_placement_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 39
+# /Users/saul/src/thundergate/include/rlp.h: 39
 class struct_receive_selector_not_empty_bits(Structure):
     pass
 
+struct_receive_selector_not_empty_bits._pack_ = 1
 struct_receive_selector_not_empty_bits.__slots__ = [
     'reserved',
     'list_non_empty_bits',
@@ -8755,10 +11183,11 @@ struct_receive_selector_not_empty_bits._fields_ = [
     ('list_non_empty_bits', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 44
+# /Users/saul/src/thundergate/include/rlp.h: 44
 class struct_receive_list_placement_configuration(Structure):
     pass
 
+struct_receive_list_placement_configuration._pack_ = 1
 struct_receive_list_placement_configuration.__slots__ = [
     'reserved',
     'default_interrupt_distribution_queue',
@@ -8774,10 +11203,11 @@ struct_receive_list_placement_configuration._fields_ = [
     ('number_of_lists_per_distribution_group', u32, 3),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 52
+# /Users/saul/src/thundergate/include/rlp.h: 52
 class struct_receive_list_placement_statistics_control(Structure):
     pass
 
+struct_receive_list_placement_statistics_control._pack_ = 1
 struct_receive_list_placement_statistics_control.__slots__ = [
     'reserved',
     'statistics_clear',
@@ -8791,14 +11221,77 @@ struct_receive_list_placement_statistics_control._fields_ = [
     ('statistics_enable', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 59
+# /Users/saul/src/thundergate/include/rlp.h: 61
+class struct_anon_74(Structure):
+    pass
+
+struct_anon_74._pack_ = 1
+struct_anon_74.__slots__ = [
+    'reserved',
+    'rss_priority',
+    'rc_return_ring_enable',
+    'cpu_mactq_priority_disable',
+    'reserved2',
+    'enable_inerror_stats',
+    'enable_indiscard_stats',
+    'enable_no_more_rbd_stats',
+    'reserved3',
+    'perst_l',
+    'a1_silent_indication',
+    'enable_cos_stats',
+]
+struct_anon_74._fields_ = [
+    ('reserved', u32, 6),
+    ('rss_priority', u32, 1),
+    ('rc_return_ring_enable', u32, 1),
+    ('cpu_mactq_priority_disable', u32, 1),
+    ('reserved2', u32, 1),
+    ('enable_inerror_stats', u32, 1),
+    ('enable_indiscard_stats', u32, 1),
+    ('enable_no_more_rbd_stats', u32, 1),
+    ('reserved3', u32, 15),
+    ('perst_l', u32, 1),
+    ('a1_silent_indication', u32, 1),
+    ('enable_cos_stats', u32, 1),
+]
+
+# /Users/saul/src/thundergate/include/rlp.h: 60
+class union_anon_75(Union):
+    pass
+
+union_anon_75._pack_ = 1
+union_anon_75.__slots__ = [
+    'unnamed_1',
+    'word',
+]
+union_anon_75._anonymous_ = [
+    'unnamed_1',
+]
+union_anon_75._fields_ = [
+    ('unnamed_1', struct_anon_74),
+    ('word', u32),
+]
+
+# /Users/saul/src/thundergate/include/rlp.h: 59
 class struct_receive_list_placement_statistics_enable_mask(Structure):
     pass
 
-# /home/saul/thundergate/include/rlp.h: 79
+struct_receive_list_placement_statistics_enable_mask._pack_ = 1
+struct_receive_list_placement_statistics_enable_mask.__slots__ = [
+    'unnamed_1',
+]
+struct_receive_list_placement_statistics_enable_mask._anonymous_ = [
+    'unnamed_1',
+]
+struct_receive_list_placement_statistics_enable_mask._fields_ = [
+    ('unnamed_1', union_anon_75),
+]
+
+# /Users/saul/src/thundergate/include/rlp.h: 79
 class struct_receive_list_placement_statistics_increment_mask(Structure):
     pass
 
+struct_receive_list_placement_statistics_increment_mask._pack_ = 1
 struct_receive_list_placement_statistics_increment_mask.__slots__ = [
     'reserved',
     'counters_increment_mask',
@@ -8812,10 +11305,11 @@ struct_receive_list_placement_statistics_increment_mask._fields_ = [
     ('counters_increment_mask_again', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 86
+# /Users/saul/src/thundergate/include/rlp.h: 86
 class struct_receive_list_local_statistics_counter(Structure):
     pass
 
+struct_receive_list_local_statistics_counter._pack_ = 1
 struct_receive_list_local_statistics_counter.__slots__ = [
     'reserved',
     'counters_value',
@@ -8825,10 +11319,11 @@ struct_receive_list_local_statistics_counter._fields_ = [
     ('counters_value', u32, 10),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 91
+# /Users/saul/src/thundergate/include/rlp.h: 91
 class struct_receive_list_lock(Structure):
     pass
 
+struct_receive_list_lock._pack_ = 1
 struct_receive_list_lock.__slots__ = [
     'grant',
     'request',
@@ -8838,27 +11333,29 @@ struct_receive_list_lock._fields_ = [
     ('request', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 107
-class struct_anon_6(Structure):
+# /Users/saul/src/thundergate/include/rlp.h: 107
+class struct_anon_76(Structure):
     pass
 
-struct_anon_6.__slots__ = [
+struct_anon_76._pack_ = 1
+struct_anon_76.__slots__ = [
     'list_head',
     'list_tail',
     'list_count',
     'unknown',
 ]
-struct_anon_6._fields_ = [
+struct_anon_76._fields_ = [
     ('list_head', u32),
     ('list_tail', u32),
     ('list_count', u32),
     ('unknown', u32),
 ]
 
-# /home/saul/thundergate/include/rlp.h: 96
+# /Users/saul/src/thundergate/include/rlp.h: 96
 class struct_rlp_regs(Structure):
     pass
 
+struct_rlp_regs._pack_ = 1
 struct_rlp_regs.__slots__ = [
     'mode',
     'status',
@@ -8881,15 +11378,16 @@ struct_rlp_regs._fields_ = [
     ('stats_control', struct_receive_list_placement_statistics_control),
     ('stats_enable_mask', struct_receive_list_placement_statistics_enable_mask),
     ('stats_increment_mask', struct_receive_list_placement_statistics_increment_mask),
-    ('unknown', u32 * 56),
-    ('rx_selector', struct_anon_6 * 16),
-    ('stat_counter', struct_receive_list_local_statistics_counter * 23),
+    ('unknown', u32 * int(56)),
+    ('rx_selector', struct_anon_76 * int(16)),
+    ('stat_counter', struct_receive_list_local_statistics_counter * int(23)),
 ]
 
-# /home/saul/thundergate/include/rss.h: 22
+# /Users/saul/src/thundergate/include/rss.h: 22
 class struct_rss_ind_table_1(Structure):
     pass
 
+struct_rss_ind_table_1._pack_ = 1
 struct_rss_ind_table_1.__slots__ = [
     'reserved30',
     'table_entry0',
@@ -8927,10 +11425,11 @@ struct_rss_ind_table_1._fields_ = [
     ('table_entry7', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 40
+# /Users/saul/src/thundergate/include/rss.h: 40
 class struct_rss_ind_table_2(Structure):
     pass
 
+struct_rss_ind_table_2._pack_ = 1
 struct_rss_ind_table_2.__slots__ = [
     'reserved30',
     'table_entry8',
@@ -8968,10 +11467,11 @@ struct_rss_ind_table_2._fields_ = [
     ('table_entry15', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 58
+# /Users/saul/src/thundergate/include/rss.h: 58
 class struct_rss_ind_table_3(Structure):
     pass
 
+struct_rss_ind_table_3._pack_ = 1
 struct_rss_ind_table_3.__slots__ = [
     'reserved30',
     'table_entry16',
@@ -9009,10 +11509,11 @@ struct_rss_ind_table_3._fields_ = [
     ('table_entry23', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 76
+# /Users/saul/src/thundergate/include/rss.h: 76
 class struct_rss_ind_table_4(Structure):
     pass
 
+struct_rss_ind_table_4._pack_ = 1
 struct_rss_ind_table_4.__slots__ = [
     'reserved30',
     'table_entry24',
@@ -9050,10 +11551,11 @@ struct_rss_ind_table_4._fields_ = [
     ('table_entry31', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 94
+# /Users/saul/src/thundergate/include/rss.h: 94
 class struct_rss_ind_table_5(Structure):
     pass
 
+struct_rss_ind_table_5._pack_ = 1
 struct_rss_ind_table_5.__slots__ = [
     'reserved30',
     'table_entry32',
@@ -9091,10 +11593,11 @@ struct_rss_ind_table_5._fields_ = [
     ('table_entry39', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 112
+# /Users/saul/src/thundergate/include/rss.h: 112
 class struct_rss_ind_table_6(Structure):
     pass
 
+struct_rss_ind_table_6._pack_ = 1
 struct_rss_ind_table_6.__slots__ = [
     'reserved30',
     'table_entry40',
@@ -9132,10 +11635,11 @@ struct_rss_ind_table_6._fields_ = [
     ('table_entry47', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 130
+# /Users/saul/src/thundergate/include/rss.h: 130
 class struct_rss_ind_table_7(Structure):
     pass
 
+struct_rss_ind_table_7._pack_ = 1
 struct_rss_ind_table_7.__slots__ = [
     'reserved30',
     'table_entry48',
@@ -9173,10 +11677,11 @@ struct_rss_ind_table_7._fields_ = [
     ('table_entry55', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 148
+# /Users/saul/src/thundergate/include/rss.h: 148
 class struct_rss_ind_table_8(Structure):
     pass
 
+struct_rss_ind_table_8._pack_ = 1
 struct_rss_ind_table_8.__slots__ = [
     'reserved30',
     'table_entry56',
@@ -9214,10 +11719,11 @@ struct_rss_ind_table_8._fields_ = [
     ('table_entry63', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 166
+# /Users/saul/src/thundergate/include/rss.h: 166
 class struct_rss_ind_table_9(Structure):
     pass
 
+struct_rss_ind_table_9._pack_ = 1
 struct_rss_ind_table_9.__slots__ = [
     'reserved30',
     'table_entry64',
@@ -9255,10 +11761,11 @@ struct_rss_ind_table_9._fields_ = [
     ('table_entry71', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 185
+# /Users/saul/src/thundergate/include/rss.h: 185
 class struct_rss_ind_table_10(Structure):
     pass
 
+struct_rss_ind_table_10._pack_ = 1
 struct_rss_ind_table_10.__slots__ = [
     'reserved30',
     'table_entry72',
@@ -9296,10 +11803,11 @@ struct_rss_ind_table_10._fields_ = [
     ('table_entry79', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 203
+# /Users/saul/src/thundergate/include/rss.h: 203
 class struct_rss_ind_table_11(Structure):
     pass
 
+struct_rss_ind_table_11._pack_ = 1
 struct_rss_ind_table_11.__slots__ = [
     'reserved30',
     'table_entry80',
@@ -9337,10 +11845,11 @@ struct_rss_ind_table_11._fields_ = [
     ('table_entry87', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 221
+# /Users/saul/src/thundergate/include/rss.h: 221
 class struct_rss_ind_table_12(Structure):
     pass
 
+struct_rss_ind_table_12._pack_ = 1
 struct_rss_ind_table_12.__slots__ = [
     'reserved30',
     'table_entry88',
@@ -9378,10 +11887,11 @@ struct_rss_ind_table_12._fields_ = [
     ('table_entry95', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 239
+# /Users/saul/src/thundergate/include/rss.h: 239
 class struct_rss_ind_table_13(Structure):
     pass
 
+struct_rss_ind_table_13._pack_ = 1
 struct_rss_ind_table_13.__slots__ = [
     'reserved30',
     'table_entry96',
@@ -9419,10 +11929,11 @@ struct_rss_ind_table_13._fields_ = [
     ('table_entry103', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 257
+# /Users/saul/src/thundergate/include/rss.h: 257
 class struct_rss_ind_table_14(Structure):
     pass
 
+struct_rss_ind_table_14._pack_ = 1
 struct_rss_ind_table_14.__slots__ = [
     'reserved30',
     'table_entry104',
@@ -9460,10 +11971,11 @@ struct_rss_ind_table_14._fields_ = [
     ('table_entry111', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 275
+# /Users/saul/src/thundergate/include/rss.h: 275
 class struct_rss_ind_table_15(Structure):
     pass
 
+struct_rss_ind_table_15._pack_ = 1
 struct_rss_ind_table_15.__slots__ = [
     'reserved30',
     'table_entry112',
@@ -9501,10 +12013,11 @@ struct_rss_ind_table_15._fields_ = [
     ('table_entry119', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 293
+# /Users/saul/src/thundergate/include/rss.h: 293
 class struct_rss_ind_table_16(Structure):
     pass
 
+struct_rss_ind_table_16._pack_ = 1
 struct_rss_ind_table_16.__slots__ = [
     'reserved30',
     'table_entry120',
@@ -9542,10 +12055,11 @@ struct_rss_ind_table_16._fields_ = [
     ('table_entry127', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rss.h: 311
+# /Users/saul/src/thundergate/include/rss.h: 311
 class struct_rss_hash_key(Structure):
     pass
 
+struct_rss_hash_key._pack_ = 1
 struct_rss_hash_key.__slots__ = [
     'byte1',
     'byte2',
@@ -9559,10 +12073,11 @@ struct_rss_hash_key._fields_ = [
     ('byte4', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rss.h: 317
+# /Users/saul/src/thundergate/include/rss.h: 317
 class struct_rmac_programmable_ipv6_extension_header(Structure):
     pass
 
+struct_rmac_programmable_ipv6_extension_header._pack_ = 1
 struct_rmac_programmable_ipv6_extension_header.__slots__ = [
     'hdr_type2_en',
     'hdr_type1_en',
@@ -9578,10 +12093,11 @@ struct_rmac_programmable_ipv6_extension_header._fields_ = [
     ('hdr_type1', u32, 8),
 ]
 
-# /home/saul/thundergate/include/rss.h: 325
+# /Users/saul/src/thundergate/include/rss.h: 325
 class struct_rss_regs(Structure):
     pass
 
+struct_rss_regs._pack_ = 1
 struct_rss_regs.__slots__ = [
     'ofs_00',
     'ofs_04',
@@ -9669,10 +12185,11 @@ struct_rss_regs._fields_ = [
     ('rmac_ipv6_ext_hdr', struct_rmac_programmable_ipv6_extension_header),
 ]
 
-# /home/saul/thundergate/include/rtsdi.h: 24
+# /Users/saul/src/thundergate/include/rtsdi.h: 24
 class struct_rtsdi_mode(Structure):
     pass
 
+struct_rtsdi_mode._pack_ = 1
 struct_rtsdi_mode.__slots__ = [
     'reserved',
     'multiple_segment_enable',
@@ -9692,10 +12209,11 @@ struct_rtsdi_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rtsdi.h: 34
+# /Users/saul/src/thundergate/include/rtsdi.h: 34
 class struct_rtsdi_status(Structure):
     pass
 
+struct_rtsdi_status._pack_ = 1
 struct_rtsdi_status.__slots__ = [
     'reserved',
     'stats_overflow_attention',
@@ -9707,10 +12225,11 @@ struct_rtsdi_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/rtsdi.h: 40
+# /Users/saul/src/thundergate/include/rtsdi.h: 40
 class struct_rtsdi_statistics_control(Structure):
     pass
 
+struct_rtsdi_statistics_control._pack_ = 1
 struct_rtsdi_statistics_control.__slots__ = [
     'reserved',
     'zap_statistics',
@@ -9728,10 +12247,11 @@ struct_rtsdi_statistics_control._fields_ = [
     ('statistics_enable', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rtsdi.h: 49
+# /Users/saul/src/thundergate/include/rtsdi.h: 49
 class struct_rtsdi_statistics_mask(Structure):
     pass
 
+struct_rtsdi_statistics_mask._pack_ = 1
 struct_rtsdi_statistics_mask.__slots__ = [
     'reserved',
     'counters_enable_mask',
@@ -9741,10 +12261,11 @@ struct_rtsdi_statistics_mask._fields_ = [
     ('counters_enable_mask', u32, 1),
 ]
 
-# /home/saul/thundergate/include/rtsdi.h: 54
+# /Users/saul/src/thundergate/include/rtsdi.h: 54
 class struct_rtsdi_statistics_increment_mask(Structure):
     pass
 
+struct_rtsdi_statistics_increment_mask._pack_ = 1
 struct_rtsdi_statistics_increment_mask.__slots__ = [
     'reserved',
     'counters_increment_mask_1',
@@ -9758,10 +12279,11 @@ struct_rtsdi_statistics_increment_mask._fields_ = [
     ('counters_increment_mask_2', u32, 16),
 ]
 
-# /home/saul/thundergate/include/rtsdi.h: 61
+# /Users/saul/src/thundergate/include/rtsdi.h: 61
 class struct_rtsdi_regs(Structure):
     pass
 
+struct_rtsdi_regs._pack_ = 1
 struct_rtsdi_regs.__slots__ = [
     'mode',
     'status',
@@ -9789,10 +12311,11 @@ struct_rtsdi_regs._fields_ = [
     ('av_fetch_l1_comp', u32),
 ]
 
-# /home/saul/thundergate/include/sbdc.h: 24
+# /Users/saul/src/thundergate/include/sbdc.h: 24
 class struct_sbdc_mode(Structure):
     pass
 
+struct_sbdc_mode._pack_ = 1
 struct_sbdc_mode.__slots__ = [
     'reserved',
     'attention_enable',
@@ -9806,10 +12329,11 @@ struct_sbdc_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sbdc.h: 31
+# /Users/saul/src/thundergate/include/sbdc.h: 31
 class struct_sbdc_debug(Structure):
     pass
 
+struct_sbdc_debug._pack_ = 1
 struct_sbdc_debug.__slots__ = [
     'reserved',
     'rstate',
@@ -9819,10 +12343,11 @@ struct_sbdc_debug._fields_ = [
     ('rstate', u32, 3),
 ]
 
-# /home/saul/thundergate/include/sbdc.h: 36
+# /Users/saul/src/thundergate/include/sbdc.h: 36
 class struct_sbdc_regs(Structure):
     pass
 
+struct_sbdc_regs._pack_ = 1
 struct_sbdc_regs.__slots__ = [
     'mode',
     'debug',
@@ -9832,10 +12357,11 @@ struct_sbdc_regs._fields_ = [
     ('debug', struct_sbdc_debug),
 ]
 
-# /home/saul/thundergate/include/sbdi.h: 24
+# /Users/saul/src/thundergate/include/sbdi.h: 24
 class struct_sbdi_mode(Structure):
     pass
 
+struct_sbdi_mode._pack_ = 1
 struct_sbdi_mode.__slots__ = [
     'reserved',
     'multi_txq_en',
@@ -9855,10 +12381,11 @@ struct_sbdi_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sbdi.h: 34
+# /Users/saul/src/thundergate/include/sbdi.h: 34
 class struct_sbdi_status(Structure):
     pass
 
+struct_sbdi_status._pack_ = 1
 struct_sbdi_status.__slots__ = [
     'reserved',
     'error',
@@ -9870,10 +12397,11 @@ struct_sbdi_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/sbdi.h: 40
+# /Users/saul/src/thundergate/include/sbdi.h: 40
 class struct_sbdi_regs(Structure):
     pass
 
+struct_sbdi_regs._pack_ = 1
 struct_sbdi_regs.__slots__ = [
     'mode',
     'status',
@@ -9882,13 +12410,14 @@ struct_sbdi_regs.__slots__ = [
 struct_sbdi_regs._fields_ = [
     ('mode', struct_sbdi_mode),
     ('status', struct_sbdi_status),
-    ('prod_idx', u32 * 16),
+    ('prod_idx', u32 * int(16)),
 ]
 
-# /home/saul/thundergate/include/sbds.h: 22
+# /Users/saul/src/thundergate/include/sbds.h: 22
 class struct_sbds_mode(Structure):
     pass
 
+struct_sbds_mode._pack_ = 1
 struct_sbds_mode.__slots__ = [
     'reserved',
     'attention_enable',
@@ -9902,10 +12431,11 @@ struct_sbds_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sbds.h: 29
+# /Users/saul/src/thundergate/include/sbds.h: 29
 class struct_sbds_status(Structure):
     pass
 
+struct_sbds_status._pack_ = 1
 struct_sbds_status.__slots__ = [
     'reserved',
     'error',
@@ -9917,10 +12447,11 @@ struct_sbds_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/sbds.h: 35
+# /Users/saul/src/thundergate/include/sbds.h: 35
 class struct_sbds_local_nic_send_bd_consumer_idx(Structure):
     pass
 
+struct_sbds_local_nic_send_bd_consumer_idx._pack_ = 1
 struct_sbds_local_nic_send_bd_consumer_idx.__slots__ = [
     'reserved',
     'index',
@@ -9930,10 +12461,11 @@ struct_sbds_local_nic_send_bd_consumer_idx._fields_ = [
     ('index', u32, 9),
 ]
 
-# /home/saul/thundergate/include/sbds.h: 40
+# /Users/saul/src/thundergate/include/sbds.h: 40
 class struct_sbds_regs(Structure):
     pass
 
+struct_sbds_regs._pack_ = 1
 struct_sbds_regs.__slots__ = [
     'mode',
     'status',
@@ -9947,14 +12479,15 @@ struct_sbds_regs._fields_ = [
     ('status', struct_sbds_status),
     ('hardware_diagnostics', u32),
     ('local_nic_send_bd_consumer_idx', struct_sbds_local_nic_send_bd_consumer_idx),
-    ('unknown', u32 * 12),
-    ('con_idx', u32 * 16),
+    ('unknown', u32 * int(12)),
+    ('con_idx', u32 * int(16)),
 ]
 
-# /home/saul/thundergate/include/sdc.h: 24
+# /Users/saul/src/thundergate/include/sdc.h: 24
 class struct_sdc_mode(Structure):
     pass
 
+struct_sdc_mode._pack_ = 1
 struct_sdc_mode.__slots__ = [
     'reserved',
     'cdelay',
@@ -9970,10 +12503,11 @@ struct_sdc_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sdc.h: 32
+# /Users/saul/src/thundergate/include/sdc.h: 32
 class struct_sdc_pre_dma_command_exchange(Structure):
     pass
 
+struct_sdc_pre_dma_command_exchange._pack_ = 1
 struct_sdc_pre_dma_command_exchange.__slots__ = [
     'pass_flag',
     'skip_flag',
@@ -9991,10 +12525,11 @@ struct_sdc_pre_dma_command_exchange._fields_ = [
     ('tail_txmbuf_ptr', u32, 8),
 ]
 
-# /home/saul/thundergate/include/sdc.h: 41
+# /Users/saul/src/thundergate/include/sdc.h: 41
 class struct_sdc_regs(Structure):
     pass
 
+struct_sdc_regs._pack_ = 1
 struct_sdc_regs.__slots__ = [
     'mode',
     'unknown',
@@ -10006,10 +12541,11 @@ struct_sdc_regs._fields_ = [
     ('pre_dma_command_exchange', struct_sdc_pre_dma_command_exchange),
 ]
 
-# /home/saul/thundergate/include/sdi.h: 24
+# /Users/saul/src/thundergate/include/sdi.h: 24
 class struct_sdi_mode(Structure):
     pass
 
+struct_sdi_mode._pack_ = 1
 struct_sdi_mode.__slots__ = [
     'reserved',
     'multiple_segment_enable',
@@ -10029,10 +12565,11 @@ struct_sdi_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sdi.h: 34
+# /Users/saul/src/thundergate/include/sdi.h: 34
 class struct_sdi_status(Structure):
     pass
 
+struct_sdi_status._pack_ = 1
 struct_sdi_status.__slots__ = [
     'reserved',
     'stats_overflow_attention',
@@ -10044,10 +12581,11 @@ struct_sdi_status._fields_ = [
     ('reserved2', u32, 2),
 ]
 
-# /home/saul/thundergate/include/sdi.h: 40
+# /Users/saul/src/thundergate/include/sdi.h: 40
 class struct_sdi_statistics_control(Structure):
     pass
 
+struct_sdi_statistics_control._pack_ = 1
 struct_sdi_statistics_control.__slots__ = [
     'reserved',
     'zap_statistics',
@@ -10065,10 +12603,11 @@ struct_sdi_statistics_control._fields_ = [
     ('statistics_enable', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sdi.h: 49
+# /Users/saul/src/thundergate/include/sdi.h: 49
 class struct_sdi_statistics_mask(Structure):
     pass
 
+struct_sdi_statistics_mask._pack_ = 1
 struct_sdi_statistics_mask.__slots__ = [
     'reserved',
     'counters_enable_mask',
@@ -10078,10 +12617,11 @@ struct_sdi_statistics_mask._fields_ = [
     ('counters_enable_mask', u32, 1),
 ]
 
-# /home/saul/thundergate/include/sdi.h: 54
+# /Users/saul/src/thundergate/include/sdi.h: 54
 class struct_sdi_statistics_increment_mask(Structure):
     pass
 
+struct_sdi_statistics_increment_mask._pack_ = 1
 struct_sdi_statistics_increment_mask.__slots__ = [
     'reserved',
     'counters_increment_mask_1',
@@ -10095,10 +12635,11 @@ struct_sdi_statistics_increment_mask._fields_ = [
     ('counters_increment_mask_2', u32, 16),
 ]
 
-# /home/saul/thundergate/include/sdi.h: 61
+# /Users/saul/src/thundergate/include/sdi.h: 61
 class struct_sdi_regs(Structure):
     pass
 
+struct_sdi_regs._pack_ = 1
 struct_sdi_regs.__slots__ = [
     'mode',
     'status',
@@ -10114,14 +12655,15 @@ struct_sdi_regs._fields_ = [
     ('statistics_control', struct_sdi_statistics_control),
     ('statistics_mask', struct_sdi_statistics_mask),
     ('statistics_increment_mask', struct_sdi_statistics_increment_mask),
-    ('unknown', u32 * 27),
-    ('local_statistics', u32 * 18),
+    ('unknown', u32 * int(27)),
+    ('local_statistics', u32 * int(18)),
 ]
 
-# /home/saul/thundergate/include/stats.h: 22
+# /Users/saul/src/thundergate/include/stats.h: 22
 class struct_mac_stats_regs(Structure):
     pass
 
+struct_mac_stats_regs._pack_ = 1
 struct_mac_stats_regs.__slots__ = [
     'ifHCOutOctets',
     'ofs_04',
@@ -10223,14 +12765,129 @@ struct_mac_stats_regs._fields_ = [
     ('ofs_bc', u32),
 ]
 
-# /home/saul/thundergate/include/status_block.h: 24
+# /Users/saul/src/thundergate/include/status_block.h: 25
+class struct_anon_77(Structure):
+    pass
+
+struct_anon_77._pack_ = 1
+struct_anon_77.__slots__ = [
+    'updated',
+    'link_status',
+    'attention',
+    'reserved1',
+]
+struct_anon_77._fields_ = [
+    ('updated', u32, 1),
+    ('link_status', u32, 1),
+    ('attention', u32, 1),
+    ('reserved1', u32, 29),
+]
+
+# /Users/saul/src/thundergate/include/status_block.h: 31
+class struct_anon_78(Structure):
+    pass
+
+struct_anon_78._pack_ = 1
+struct_anon_78.__slots__ = [
+    'status_tag',
+    'reserved2',
+]
+struct_anon_78._fields_ = [
+    ('status_tag', u32, 8),
+    ('reserved2', u32, 24),
+]
+
+# /Users/saul/src/thundergate/include/status_block.h: 35
+class struct_anon_79(Structure):
+    pass
+
+struct_anon_79._pack_ = 1
+struct_anon_79.__slots__ = [
+    'rr1_pi',
+    'rpci',
+]
+struct_anon_79._fields_ = [
+    ('rr1_pi', u32, 16),
+    ('rpci', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/status_block.h: 39
+class struct_anon_80(Structure):
+    pass
+
+struct_anon_80._pack_ = 1
+struct_anon_80.__slots__ = [
+    'rr3_pi',
+    'rr2_pi',
+]
+struct_anon_80._fields_ = [
+    ('rr3_pi', u32, 16),
+    ('rr2_pi', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/status_block.h: 43
+class struct_anon_81(Structure):
+    pass
+
+struct_anon_81._pack_ = 1
+struct_anon_81.__slots__ = [
+    'rr0_pi',
+    'sbdci',
+]
+struct_anon_81._fields_ = [
+    ('rr0_pi', u32, 16),
+    ('sbdci', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/status_block.h: 47
+class struct_anon_82(Structure):
+    pass
+
+struct_anon_82._pack_ = 1
+struct_anon_82.__slots__ = [
+    'rjpci',
+    'reserved6',
+]
+struct_anon_82._fields_ = [
+    ('rjpci', u32, 16),
+    ('reserved6', u32, 16),
+]
+
+# /Users/saul/src/thundergate/include/status_block.h: 24
 class struct_status_block(Structure):
     pass
 
-# /home/saul/thundergate/include/tcp_seg_ctrl.h: 22
+struct_status_block._pack_ = 1
+struct_status_block.__slots__ = [
+    'unnamed_1',
+    'unnamed_2',
+    'unnamed_3',
+    'unnamed_4',
+    'unnamed_5',
+    'unnamed_6',
+]
+struct_status_block._anonymous_ = [
+    'unnamed_1',
+    'unnamed_2',
+    'unnamed_3',
+    'unnamed_4',
+    'unnamed_5',
+    'unnamed_6',
+]
+struct_status_block._fields_ = [
+    ('unnamed_1', struct_anon_77),
+    ('unnamed_2', struct_anon_78),
+    ('unnamed_3', struct_anon_79),
+    ('unnamed_4', struct_anon_80),
+    ('unnamed_5', struct_anon_81),
+    ('unnamed_6', struct_anon_82),
+]
+
+# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 22
 class struct_tsc_length_offset(Structure):
     pass
 
+struct_tsc_length_offset._pack_ = 1
 struct_tsc_length_offset.__slots__ = [
     'reserved23',
     'mbuf_offset',
@@ -10242,10 +12899,11 @@ struct_tsc_length_offset._fields_ = [
     ('length', u32, 16),
 ]
 
-# /home/saul/thundergate/include/tcp_seg_ctrl.h: 28
+# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 28
 class struct_tsc_dma_flags(Structure):
     pass
 
+struct_tsc_dma_flags._pack_ = 1
 struct_tsc_dma_flags.__slots__ = [
     'reserved20',
     'mbuf_offset_valid',
@@ -10291,10 +12949,11 @@ struct_tsc_dma_flags._fields_ = [
     ('no_byte_swap', u32, 1),
 ]
 
-# /home/saul/thundergate/include/tcp_seg_ctrl.h: 51
+# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 51
 class struct_tsc_vlan_tag(Structure):
     pass
 
+struct_tsc_vlan_tag._pack_ = 1
 struct_tsc_vlan_tag.__slots__ = [
     'reserved16',
     'vlan_tag',
@@ -10304,10 +12963,11 @@ struct_tsc_vlan_tag._fields_ = [
     ('vlan_tag', u32, 16),
 ]
 
-# /home/saul/thundergate/include/tcp_seg_ctrl.h: 56
+# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 56
 class struct_tsc_pre_dma_cmd_xchng(Structure):
     pass
 
+struct_tsc_pre_dma_cmd_xchng._pack_ = 1
 struct_tsc_pre_dma_cmd_xchng.__slots__ = [
     'ready',
     'pass_bit',
@@ -10325,10 +12985,11 @@ struct_tsc_pre_dma_cmd_xchng._fields_ = [
     ('bd_index', u32, 7),
 ]
 
-# /home/saul/thundergate/include/tcp_seg_ctrl.h: 65
+# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 65
 class struct_tcp_seg_ctrl_regs(Structure):
     pass
 
+struct_tcp_seg_ctrl_regs._pack_ = 1
 struct_tcp_seg_ctrl_regs.__slots__ = [
     'lower_host_addr',
     'upper_host_addr',
@@ -10346,10 +13007,11 @@ struct_tcp_seg_ctrl_regs._fields_ = [
     ('pre_dma_cmd_xchng', struct_tsc_pre_dma_cmd_xchng),
 ]
 
-# /home/saul/thundergate/include/wdma.h: 24
+# /Users/saul/src/thundergate/include/wdma.h: 24
 class struct_wdma_mode(Structure):
     pass
 
+struct_wdma_mode._pack_ = 1
 struct_wdma_mode.__slots__ = [
     'reserved',
     'status_tag_fix_enable',
@@ -10399,10 +13061,11 @@ struct_wdma_mode._fields_ = [
     ('reset', u32, 1),
 ]
 
-# /home/saul/thundergate/include/wdma.h: 49
+# /Users/saul/src/thundergate/include/wdma.h: 49
 class struct_wdma_status(Structure):
     pass
 
+struct_wdma_status._pack_ = 1
 struct_wdma_status.__slots__ = [
     'reserved',
     'write_dma_local_memory_read_longer_than_dma_length_error',
@@ -10422,10 +13085,11 @@ struct_wdma_status._fields_ = [
     ('reserved1', u32, 5),
 ]
 
-# /home/saul/thundergate/include/wdma.h: 59
+# /Users/saul/src/thundergate/include/wdma.h: 59
 class struct_wdma_regs(Structure):
     pass
 
+struct_wdma_regs._pack_ = 1
 struct_wdma_regs.__slots__ = [
     'mode',
     'status',
@@ -10435,683 +13099,1023 @@ struct_wdma_regs._fields_ = [
     ('status', struct_wdma_status),
 ]
 
-dmar_tbl_hdr = struct_dmar_tbl_hdr # /home/saul/thundergate/include/acpi.h: 32
+# /Users/saul/src/thundergate/include/acpi.h: 26
+try:
+    ANYSIZE_ARRAY = 1
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/ma.h: 62
+try:
+    MA_ALL_TRAPS = 0x00111d7c
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 24
+try:
+    TG3_MAGIC = 0x669955aa
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 25
+try:
+    CRC32_POLYNOMIAL = 0xEDB88320
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 27
+try:
+    TG3_IMAGE_TYPE_PXE = 0
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 28
+try:
+    TG3_IMAGE_TYPE_ASF_INIT = 1
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 30
+def TG3_IMAGE_TYPE(x):
+    return (x >> 24)
+
+# /Users/saul/src/thundergate/include/nvram.h: 31
+try:
+    TG3_IMAGE_EXE_A_MASK = 0x00800000
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 32
+try:
+    TG3_IMAGE_EXE_B_MASK = 0x00400000
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 33
+def TG3_IMAGE_LEN(x):
+    return ((x & 0x3fffff) << 2)
+
+# /Users/saul/src/thundergate/include/nvram.h: 41
+try:
+    TG3_FEAT_ASF = 0x80
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/nvram.h: 42
+try:
+    TG3_FEAT_PXE = 0x02
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 22
+try:
+    CMD_REPLY = 0x8000
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 23
+try:
+    ERR_REPLY = 0x9000
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 24
+try:
+    UNKNOWN_CMD = 0xffff
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 26
+try:
+    PING_CMD = 0x01
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 27
+try:
+    PING_REPLY = (PING_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 29
+try:
+    READ_LOCAL_CMD = 0x02
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 30
+try:
+    READ_LOCAL_REPLY = (READ_LOCAL_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 32
+try:
+    WRITE_LOCAL_CMD = 0x03
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 33
+try:
+    WRITE_LOCAL_ACK = (WRITE_LOCAL_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 35
+try:
+    READ_DMA_CMD = 0x04
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 36
+try:
+    READ_DMA_REPLY = (READ_DMA_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 38
+try:
+    SEND_MSI_CMD = 0x05
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 39
+try:
+    SEND_MSI_ACK = (SEND_MSI_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 41
+try:
+    CAP_CTRL_CMD = 0x06
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 42
+try:
+    CAP_CTRL_ACK = (CAP_CTRL_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 43
+try:
+    CAP_POWER_MANAGEMENT = 0x8
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 44
+try:
+    CAP_VPD = 0x4
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 45
+try:
+    CAP_MSI = 0x2
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 46
+try:
+    CAP_MSIX = 0x1
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 48
+try:
+    HIDE_FUNC_CMD = 0x07
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 49
+try:
+    HIDE_FUNC_ACK = (HIDE_FUNC_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 51
+try:
+    PME_ASSERT_CMD = 0x08
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 52
+try:
+    PME_ASSERT_ACK = (PME_ASSERT_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 54
+try:
+    READ_NVRAM_CMD = 0x09
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 55
+try:
+    READ_NVRAM_ACK = (READ_NVRAM_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 57
+try:
+    WRITE_NVRAM_CMD = 0x0a
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 58
+try:
+    WRITE_NVRAM_ACK = (WRITE_NVRAM_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 60
+try:
+    PCIE_RETRY_BUFFER_DUMP_CMD = 0x0b
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 61
+try:
+    PCIE_RETRY_BUFFER_DUMP_ACK = (PCIE_RETRY_BUFFER_DUMP_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 63
+try:
+    CLOAK_EN_CMD = 0x0c
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 64
+try:
+    CLOAK_EN_ACK = (CLOAK_EN_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 66
+try:
+    CLOAK_DIS_CMD = 0x0d
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 67
+try:
+    CLOAK_DIS_ACK = (CLOAK_DIS_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 69
+try:
+    TX_STD_ENQ_CMD = 0x0e
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 70
+try:
+    TX_STD_ENQ_ACK = (TX_STD_ENQ_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 71
+try:
+    TX_STD_ENQ_ERR = (TX_STD_ENQ_CMD | ERR_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/rbdrules.h: 45
+try:
+    RBD_RULE_OP_EQUAL = 0
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/rbdrules.h: 46
+try:
+    RBD_RULE_OP_NOTEQUAL = 1
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/rbdrules.h: 47
+try:
+    RBD_RULE_OP_GREATER = 2
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/rbdrules.h: 48
+try:
+    RBD_RULE_OP_LESS = 3
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/rbdrules.h: 49
+try:
+    RBD_RULE_HDR_FRAME = 0
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/rbdrules.h: 50
+try:
+    RBD_RULE_HDR_IP = 1
+except:
+    pass
 
-dmar_dev_scope = struct_dmar_dev_scope # /home/saul/thundergate/include/acpi.h: 47
+# /Users/saul/src/thundergate/include/rbdrules.h: 51
+try:
+    RBD_RULE_HDR_TCP = 2
+except:
+    pass
 
-dmar_drhd = struct_dmar_drhd # /home/saul/thundergate/include/acpi.h: 59
+# /Users/saul/src/thundergate/include/rbdrules.h: 52
+try:
+    RBD_RULE_HDR_UDP = 3
+except:
+    pass
 
-dmar_rmrr = struct_dmar_rmrr # /home/saul/thundergate/include/acpi.h: 68
+# /Users/saul/src/thundergate/include/rbdrules.h: 53
+try:
+    RBD_RULE_HDR_DATA = 4
+except:
+    pass
 
-dmar_atsr = struct_dmar_atsr # /home/saul/thundergate/include/acpi.h: 78
+dmar_tbl_hdr = struct_dmar_tbl_hdr# /Users/saul/src/thundergate/include/acpi.h: 32
 
-dmar_rhsa = struct_dmar_rhsa # /home/saul/thundergate/include/acpi.h: 87
+dmar_dev_scope = struct_dmar_dev_scope# /Users/saul/src/thundergate/include/acpi.h: 47
 
-dmar_andd = struct_dmar_andd # /home/saul/thundergate/include/acpi.h: 95
+dmar_drhd = struct_dmar_drhd# /Users/saul/src/thundergate/include/acpi.h: 59
 
-acpi_sdt_hdr = struct_acpi_sdt_hdr # /home/saul/thundergate/include/acpi.h: 103
+dmar_rmrr = struct_dmar_rmrr# /Users/saul/src/thundergate/include/acpi.h: 68
 
-xsdt = struct_xsdt # /home/saul/thundergate/include/acpi.h: 115
+dmar_atsr = struct_dmar_atsr# /Users/saul/src/thundergate/include/acpi.h: 78
 
-rsdp_t = struct_rsdp_t # /home/saul/thundergate/include/acpi.h: 120
+dmar_rhsa = struct_dmar_rhsa# /Users/saul/src/thundergate/include/acpi.h: 87
 
-rsdp2_t = struct_rsdp2_t # /home/saul/thundergate/include/acpi.h: 128
+dmar_andd = struct_dmar_andd# /Users/saul/src/thundergate/include/acpi.h: 95
 
-asf_control = struct_asf_control # /home/saul/thundergate/include/asf.h: 24
+acpi_sdt_hdr = struct_acpi_sdt_hdr# /Users/saul/src/thundergate/include/acpi.h: 103
 
-asf_smbus_input = struct_asf_smbus_input # /home/saul/thundergate/include/asf.h: 44
+xsdt = struct_xsdt# /Users/saul/src/thundergate/include/acpi.h: 115
 
-asf_smbus_output = struct_asf_smbus_output # /home/saul/thundergate/include/asf.h: 53
+rsdp_t = struct_rsdp_t# /Users/saul/src/thundergate/include/acpi.h: 120
 
-asf_watchdog_timer = struct_asf_watchdog_timer # /home/saul/thundergate/include/asf.h: 71
+rsdp2_t = struct_rsdp2_t# /Users/saul/src/thundergate/include/acpi.h: 128
 
-asf_heartbeat_timer = struct_asf_heartbeat_timer # /home/saul/thundergate/include/asf.h: 76
+asf_control = struct_asf_control# /Users/saul/src/thundergate/include/asf.h: 24
 
-asf_poll_timer = struct_asf_poll_timer # /home/saul/thundergate/include/asf.h: 81
+asf_smbus_input = struct_asf_smbus_input# /Users/saul/src/thundergate/include/asf.h: 44
 
-asf_poll_legacy_timer = struct_asf_poll_legacy_timer # /home/saul/thundergate/include/asf.h: 86
+asf_smbus_output = struct_asf_smbus_output# /Users/saul/src/thundergate/include/asf.h: 53
 
-asf_retransmission_timer = struct_asf_retransmission_timer # /home/saul/thundergate/include/asf.h: 91
+asf_watchdog_timer = struct_asf_watchdog_timer# /Users/saul/src/thundergate/include/asf.h: 71
 
-asf_time_stamp_counter = struct_asf_time_stamp_counter # /home/saul/thundergate/include/asf.h: 96
+asf_heartbeat_timer = struct_asf_heartbeat_timer# /Users/saul/src/thundergate/include/asf.h: 76
 
-asf_smbus_driver_select = struct_asf_smbus_driver_select # /home/saul/thundergate/include/asf.h: 100
+asf_poll_timer = struct_asf_poll_timer# /Users/saul/src/thundergate/include/asf.h: 81
 
-asf_regs = struct_asf_regs # /home/saul/thundergate/include/asf.h: 111
+asf_poll_legacy_timer = struct_asf_poll_legacy_timer# /Users/saul/src/thundergate/include/asf.h: 86
 
-sbd_flags = struct_sbd_flags # /home/saul/thundergate/include/bd.h: 24
+asf_retransmission_timer = struct_asf_retransmission_timer# /Users/saul/src/thundergate/include/asf.h: 91
 
-sbd = struct_sbd # /home/saul/thundergate/include/bd.h: 69
+asf_time_stamp_counter = struct_asf_time_stamp_counter# /Users/saul/src/thundergate/include/asf.h: 96
 
-rbd_flags = struct_rbd_flags # /home/saul/thundergate/include/bd.h: 91
+asf_smbus_driver_select = struct_asf_smbus_driver_select# /Users/saul/src/thundergate/include/asf.h: 100
 
-rbd_error_flags = struct_rbd_error_flags # /home/saul/thundergate/include/bd.h: 113
+asf_regs = struct_asf_regs# /Users/saul/src/thundergate/include/asf.h: 111
 
-rbd = struct_rbd # /home/saul/thundergate/include/bd.h: 137
+sbd_flags = struct_sbd_flags# /Users/saul/src/thundergate/include/bd.h: 24
 
-rbd_ex = struct_rbd_ex # /home/saul/thundergate/include/bd.h: 152
+sbd = struct_sbd# /Users/saul/src/thundergate/include/bd.h: 69
 
-bdrdma_mode = struct_bdrdma_mode # /home/saul/thundergate/include/bdrdma.h: 24
+rbd_flags = struct_rbd_flags# /Users/saul/src/thundergate/include/bd.h: 91
 
-bdrdma_status = struct_bdrdma_status # /home/saul/thundergate/include/bdrdma.h: 36
+rbd_error_flags = struct_rbd_error_flags# /Users/saul/src/thundergate/include/bd.h: 113
 
-bdrdma_len_dbg = struct_bdrdma_len_dbg # /home/saul/thundergate/include/bdrdma.h: 50
+rbd = struct_rbd# /Users/saul/src/thundergate/include/bd.h: 137
 
-bdrdma_rstates_dbg = struct_bdrdma_rstates_dbg # /home/saul/thundergate/include/bdrdma.h: 55
+rbd_ex = struct_rbd_ex# /Users/saul/src/thundergate/include/bd.h: 152
 
-bdrdma_rstate2_dbg = struct_bdrdma_rstate2_dbg # /home/saul/thundergate/include/bdrdma.h: 61
+bdrdma_mode = struct_bdrdma_mode# /Users/saul/src/thundergate/include/bdrdma.h: 24
 
-bdrdma_bd_status_dbg = struct_bdrdma_bd_status_dbg # /home/saul/thundergate/include/bdrdma.h: 66
+bdrdma_status = struct_bdrdma_status# /Users/saul/src/thundergate/include/bdrdma.h: 36
 
-bdrdma_req_ptr_dbg = struct_bdrdma_req_ptr_dbg # /home/saul/thundergate/include/bdrdma.h: 88
+bdrdma_len_dbg = struct_bdrdma_len_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 50
 
-bdrdma_hold_d_dmad_dbg = struct_bdrdma_hold_d_dmad_dbg # /home/saul/thundergate/include/bdrdma.h: 97
+bdrdma_rstates_dbg = struct_bdrdma_rstates_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 55
 
-bdrdma_len_and_addr_idx_dbg = struct_bdrdma_len_and_addr_idx_dbg # /home/saul/thundergate/include/bdrdma.h: 103
+bdrdma_rstate2_dbg = struct_bdrdma_rstate2_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 61
 
-bdrdma_addr_idx_dbg = struct_bdrdma_addr_idx_dbg # /home/saul/thundergate/include/bdrdma.h: 108
+bdrdma_bd_status_dbg = struct_bdrdma_bd_status_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 66
 
-bdrdma_pcie_dbg_status = struct_bdrdma_pcie_dbg_status # /home/saul/thundergate/include/bdrdma.h: 113
+bdrdma_req_ptr_dbg = struct_bdrdma_req_ptr_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 88
 
-bdrdma_pcie_dma_rd_req_addr_dbg = struct_bdrdma_pcie_dma_rd_req_addr_dbg # /home/saul/thundergate/include/bdrdma.h: 130
+bdrdma_hold_d_dmad_dbg = struct_bdrdma_hold_d_dmad_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 97
 
-bdrdma_pcie_dma_req_len_dbg = struct_bdrdma_pcie_dma_req_len_dbg # /home/saul/thundergate/include/bdrdma.h: 135
+bdrdma_len_and_addr_idx_dbg = struct_bdrdma_len_and_addr_idx_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 103
 
-bdrdma_fifo1_dbg = struct_bdrdma_fifo1_dbg # /home/saul/thundergate/include/bdrdma.h: 140
+bdrdma_addr_idx_dbg = struct_bdrdma_addr_idx_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 108
 
-bdrdma_fifo2_dbg = struct_bdrdma_fifo2_dbg # /home/saul/thundergate/include/bdrdma.h: 145
+bdrdma_pcie_dbg_status = struct_bdrdma_pcie_dbg_status# /Users/saul/src/thundergate/include/bdrdma.h: 113
 
-bdrdma_rsvrd_ctrl = struct_bdrdma_rsvrd_ctrl # /home/saul/thundergate/include/bdrdma.h: 151
+bdrdma_pcie_dma_rd_req_addr_dbg = struct_bdrdma_pcie_dma_rd_req_addr_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 130
 
-bdrdma_regs = struct_bdrdma_regs # /home/saul/thundergate/include/bdrdma.h: 161
+bdrdma_pcie_dma_req_len_dbg = struct_bdrdma_pcie_dma_req_len_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 135
 
-bufman_mode = struct_bufman_mode # /home/saul/thundergate/include/bufman.h: 22
+bdrdma_fifo1_dbg = struct_bdrdma_fifo1_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 140
 
-bufman_status = struct_bufman_status # /home/saul/thundergate/include/bufman.h: 38
+bdrdma_fifo2_dbg = struct_bdrdma_fifo2_dbg# /Users/saul/src/thundergate/include/bdrdma.h: 145
 
-bufman_mbuf_pool_bar = struct_bufman_mbuf_pool_bar # /home/saul/thundergate/include/bufman.h: 46
+bdrdma_rsvrd_ctrl = struct_bdrdma_rsvrd_ctrl# /Users/saul/src/thundergate/include/bdrdma.h: 151
 
-bufman_mbuf_pool_length = struct_bufman_mbuf_pool_length # /home/saul/thundergate/include/bufman.h: 51
+bdrdma_regs = struct_bdrdma_regs# /Users/saul/src/thundergate/include/bdrdma.h: 161
 
-bufman_rdma_mbuf_low_watermark = struct_bufman_rdma_mbuf_low_watermark # /home/saul/thundergate/include/bufman.h: 56
+bufman_mode = struct_bufman_mode# /Users/saul/src/thundergate/include/bufman.h: 22
 
-bufman_dma_mbuf_low_watermark = struct_bufman_dma_mbuf_low_watermark # /home/saul/thundergate/include/bufman.h: 61
+bufman_status = struct_bufman_status# /Users/saul/src/thundergate/include/bufman.h: 38
 
-bufman_mbuf_high_watermark = struct_bufman_mbuf_high_watermark # /home/saul/thundergate/include/bufman.h: 66
+bufman_mbuf_pool_bar = struct_bufman_mbuf_pool_bar# /Users/saul/src/thundergate/include/bufman.h: 46
 
-bufman_risc_mbuf_cluster_allocation_request = struct_bufman_risc_mbuf_cluster_allocation_request # /home/saul/thundergate/include/bufman.h: 71
+bufman_mbuf_pool_length = struct_bufman_mbuf_pool_length# /Users/saul/src/thundergate/include/bufman.h: 51
 
-bufman_risc_mbuf_cluster_allocation_response = struct_bufman_risc_mbuf_cluster_allocation_response # /home/saul/thundergate/include/bufman.h: 76
+bufman_rdma_mbuf_low_watermark = struct_bufman_rdma_mbuf_low_watermark# /Users/saul/src/thundergate/include/bufman.h: 56
 
-bufman_hardware_diagnostic_1 = struct_bufman_hardware_diagnostic_1 # /home/saul/thundergate/include/bufman.h: 80
+bufman_dma_mbuf_low_watermark = struct_bufman_dma_mbuf_low_watermark# /Users/saul/src/thundergate/include/bufman.h: 61
 
-bufman_hardware_diagnostic_2 = struct_bufman_hardware_diagnostic_2 # /home/saul/thundergate/include/bufman.h: 89
+bufman_mbuf_high_watermark = struct_bufman_mbuf_high_watermark# /Users/saul/src/thundergate/include/bufman.h: 66
 
-bufman_hardware_diagnostic_3 = struct_bufman_hardware_diagnostic_3 # /home/saul/thundergate/include/bufman.h: 97
+bufman_risc_mbuf_cluster_allocation_request = struct_bufman_risc_mbuf_cluster_allocation_request# /Users/saul/src/thundergate/include/bufman.h: 71
 
-bufman_receive_flow_threshold = struct_bufman_receive_flow_threshold # /home/saul/thundergate/include/bufman.h: 104
+bufman_risc_mbuf_cluster_allocation_response = struct_bufman_risc_mbuf_cluster_allocation_response# /Users/saul/src/thundergate/include/bufman.h: 76
 
-bufman_regs = struct_bufman_regs # /home/saul/thundergate/include/bufman.h: 109
+bufman_hardware_diagnostic_1 = struct_bufman_hardware_diagnostic_1# /Users/saul/src/thundergate/include/bufman.h: 80
 
-cfg_port_cap_ctrl = struct_cfg_port_cap_ctrl # /home/saul/thundergate/include/cfg_port.h: 22
+bufman_hardware_diagnostic_2 = struct_bufman_hardware_diagnostic_2# /Users/saul/src/thundergate/include/bufman.h: 89
 
-cfg_port_bar_ctrl = struct_cfg_port_bar_ctrl # /home/saul/thundergate/include/cfg_port.h: 30
+bufman_hardware_diagnostic_3 = struct_bufman_hardware_diagnostic_3# /Users/saul/src/thundergate/include/bufman.h: 97
 
-cfg_port_pci_id = struct_cfg_port_pci_id # /home/saul/thundergate/include/cfg_port.h: 38
+bufman_receive_flow_threshold = struct_bufman_receive_flow_threshold# /Users/saul/src/thundergate/include/bufman.h: 104
 
-cfg_port_pci_sid = struct_cfg_port_pci_sid # /home/saul/thundergate/include/cfg_port.h: 48
+bufman_regs = struct_bufman_regs# /Users/saul/src/thundergate/include/bufman.h: 109
 
-cfg_port_pci_class = struct_cfg_port_pci_class # /home/saul/thundergate/include/cfg_port.h: 58
+cfg_port_cap_ctrl = struct_cfg_port_cap_ctrl# /Users/saul/src/thundergate/include/cfg_port.h: 22
 
-cfg_port_regs = struct_cfg_port_regs # /home/saul/thundergate/include/cfg_port.h: 70
+cfg_port_bar_ctrl = struct_cfg_port_bar_ctrl# /Users/saul/src/thundergate/include/cfg_port.h: 30
 
-cpmu_control = struct_cpmu_control # /home/saul/thundergate/include/cpmu.h: 22
+cfg_port_pci_id = struct_cfg_port_pci_id# /Users/saul/src/thundergate/include/cfg_port.h: 38
 
-cpmu_clock = struct_cpmu_clock # /home/saul/thundergate/include/cpmu.h: 55
+cfg_port_pci_sid = struct_cfg_port_pci_sid# /Users/saul/src/thundergate/include/cfg_port.h: 48
 
-cpmu_override = struct_cpmu_override # /home/saul/thundergate/include/cpmu.h: 63
+cfg_port_pci_class = struct_cfg_port_pci_class# /Users/saul/src/thundergate/include/cfg_port.h: 58
 
-cpmu_status = struct_cpmu_status # /home/saul/thundergate/include/cpmu.h: 69
+cfg_port_regs = struct_cfg_port_regs# /Users/saul/src/thundergate/include/cfg_port.h: 70
 
-cpmu_clock_status = struct_cpmu_clock_status # /home/saul/thundergate/include/cpmu.h: 85
+cpmu_control = struct_cpmu_control# /Users/saul/src/thundergate/include/cpmu.h: 22
 
-cpmu_pcie_status = struct_cpmu_pcie_status # /home/saul/thundergate/include/cpmu.h: 100
+cpmu_clock = struct_cpmu_clock# /Users/saul/src/thundergate/include/cpmu.h: 55
 
-cpmu_gphy_control_status = struct_cpmu_gphy_control_status # /home/saul/thundergate/include/cpmu.h: 109
+cpmu_override = struct_cpmu_override# /Users/saul/src/thundergate/include/cpmu.h: 63
 
-cpmu_ram_control = struct_cpmu_ram_control # /home/saul/thundergate/include/cpmu.h: 127
+cpmu_status = struct_cpmu_status# /Users/saul/src/thundergate/include/cpmu.h: 69
 
-cpmu_cr_idle_det_debounce_ctrl = struct_cpmu_cr_idle_det_debounce_ctrl # /home/saul/thundergate/include/cpmu.h: 153
+cpmu_clock_status = struct_cpmu_clock_status# /Users/saul/src/thundergate/include/cpmu.h: 85
 
-cpmu_core_idle_det_debounce_ctrl = struct_cpmu_core_idle_det_debounce_ctrl # /home/saul/thundergate/include/cpmu.h: 158
+cpmu_pcie_status = struct_cpmu_pcie_status# /Users/saul/src/thundergate/include/cpmu.h: 100
 
-cpmu_pcie_idle_det_debounce_ctrl = struct_cpmu_pcie_idle_det_debounce_ctrl # /home/saul/thundergate/include/cpmu.h: 163
+cpmu_gphy_control_status = struct_cpmu_gphy_control_status# /Users/saul/src/thundergate/include/cpmu.h: 109
 
-cpmu_energy_det_debounce_ctrl = struct_cpmu_energy_det_debounce_ctrl # /home/saul/thundergate/include/cpmu.h: 168
+cpmu_ram_control = struct_cpmu_ram_control# /Users/saul/src/thundergate/include/cpmu.h: 127
 
-cpmu_dll_lock_timer = struct_cpmu_dll_lock_timer # /home/saul/thundergate/include/cpmu.h: 180
+cpmu_cr_idle_det_debounce_ctrl = struct_cpmu_cr_idle_det_debounce_ctrl# /Users/saul/src/thundergate/include/cpmu.h: 153
 
-cpmu_chip_id = struct_cpmu_chip_id # /home/saul/thundergate/include/cpmu.h: 186
+cpmu_core_idle_det_debounce_ctrl = struct_cpmu_core_idle_det_debounce_ctrl# /Users/saul/src/thundergate/include/cpmu.h: 158
 
-cpmu_mutex = struct_cpmu_mutex # /home/saul/thundergate/include/cpmu.h: 193
+cpmu_pcie_idle_det_debounce_ctrl = struct_cpmu_pcie_idle_det_debounce_ctrl# /Users/saul/src/thundergate/include/cpmu.h: 163
 
-cpmu_padring_control = struct_cpmu_padring_control # /home/saul/thundergate/include/cpmu.h: 205
+cpmu_energy_det_debounce_ctrl = struct_cpmu_energy_det_debounce_ctrl# /Users/saul/src/thundergate/include/cpmu.h: 168
 
-cpmu_regs = struct_cpmu_regs # /home/saul/thundergate/include/cpmu.h: 237
+cpmu_dll_lock_timer = struct_cpmu_dll_lock_timer# /Users/saul/src/thundergate/include/cpmu.h: 180
 
-cpu_mode = struct_cpu_mode # /home/saul/thundergate/include/cpu.h: 22
+cpmu_chip_id = struct_cpmu_chip_id# /Users/saul/src/thundergate/include/cpmu.h: 186
 
-cpu_status = struct_cpu_status # /home/saul/thundergate/include/cpu.h: 44
+cpmu_mutex = struct_cpmu_mutex# /Users/saul/src/thundergate/include/cpmu.h: 193
 
-cpu_event_mask = struct_cpu_event_mask # /home/saul/thundergate/include/cpu.h: 74
+cpmu_padring_control = struct_cpmu_padring_control# /Users/saul/src/thundergate/include/cpmu.h: 205
 
-cpu_breakpoint = struct_cpu_breakpoint # /home/saul/thundergate/include/cpu.h: 92
+cpmu_regs = struct_cpmu_regs# /Users/saul/src/thundergate/include/cpmu.h: 237
 
-cpu_last_branch_address = struct_cpu_last_branch_address # /home/saul/thundergate/include/cpu.h: 103
+cpu_mode = struct_cpu_mode# /Users/saul/src/thundergate/include/cpu.h: 22
 
-cpu_regs = struct_cpu_regs # /home/saul/thundergate/include/cpu.h: 114
+cpu_status = struct_cpu_status# /Users/saul/src/thundergate/include/cpu.h: 44
 
-cr_port_regs = struct_cr_port_regs # /home/saul/thundergate/include/cr_port.h: 22
+cpu_event_mask = struct_cpu_event_mask# /Users/saul/src/thundergate/include/cpu.h: 74
 
-dmac_mode = struct_dmac_mode # /home/saul/thundergate/include/dmac.h: 22
+cpu_breakpoint = struct_cpu_breakpoint# /Users/saul/src/thundergate/include/cpu.h: 92
 
-dmac_regs = struct_dmac_regs # /home/saul/thundergate/include/dmac.h: 33
+cpu_last_branch_address = struct_cpu_last_branch_address# /Users/saul/src/thundergate/include/cpu.h: 103
 
-dma_desc = struct_dma_desc # /home/saul/thundergate/include/dma.h: 22
+cpu_regs = struct_cpu_regs# /Users/saul/src/thundergate/include/cpu.h: 114
 
-emac_mode = struct_emac_mode # /home/saul/thundergate/include/emac.h: 24
+cr_port_regs = struct_cr_port_regs# /Users/saul/src/thundergate/include/cr_port.h: 22
 
-emac_status = struct_emac_status # /home/saul/thundergate/include/emac.h: 57
+dma_desc = struct_dma_desc# /Users/saul/src/thundergate/include/dma.h: 22
 
-emac_event_enable = struct_emac_event_enable # /home/saul/thundergate/include/emac.h: 71
+dmac_mode = struct_dmac_mode# /Users/saul/src/thundergate/include/dmac.h: 22
 
-emac_led_control = struct_emac_led_control # /home/saul/thundergate/include/emac.h: 86
+dmac_regs = struct_dmac_regs# /Users/saul/src/thundergate/include/dmac.h: 33
 
-transmit_mac_mode = struct_transmit_mac_mode # /home/saul/thundergate/include/emac.h: 112
+emac_mode = struct_emac_mode# /Users/saul/src/thundergate/include/emac.h: 24
 
-transmit_mac_status = struct_transmit_mac_status # /home/saul/thundergate/include/emac.h: 135
+emac_status = struct_emac_status# /Users/saul/src/thundergate/include/emac.h: 57
 
-transmit_mac_lengths = struct_transmit_mac_lengths # /home/saul/thundergate/include/emac.h: 150
+emac_event_enable = struct_emac_event_enable# /Users/saul/src/thundergate/include/emac.h: 71
 
-receive_mac_mode = struct_receive_mac_mode # /home/saul/thundergate/include/emac.h: 157
+emac_led_control = struct_emac_led_control# /Users/saul/src/thundergate/include/emac.h: 86
 
-receive_mac_status = struct_receive_mac_status # /home/saul/thundergate/include/emac.h: 189
+transmit_mac_mode = struct_transmit_mac_mode# /Users/saul/src/thundergate/include/emac.h: 112
 
-emac_mac_addr = struct_emac_mac_addr # /home/saul/thundergate/include/emac.h: 205
+transmit_mac_status = struct_transmit_mac_status# /Users/saul/src/thundergate/include/emac.h: 135
 
-emac_rx_rule_control = struct_emac_rx_rule_control # /home/saul/thundergate/include/emac.h: 225
+transmit_mac_lengths = struct_transmit_mac_lengths# /Users/saul/src/thundergate/include/emac.h: 150
 
-receive_mac_rules_configuration = struct_receive_mac_rules_configuration # /home/saul/thundergate/include/emac.h: 246
+receive_mac_mode = struct_receive_mac_mode# /Users/saul/src/thundergate/include/emac.h: 157
 
-emac_low_watermark_max_receive_frame = struct_emac_low_watermark_max_receive_frame # /home/saul/thundergate/include/emac.h: 252
+receive_mac_status = struct_receive_mac_status# /Users/saul/src/thundergate/include/emac.h: 189
 
-emac_mii_status = struct_emac_mii_status # /home/saul/thundergate/include/emac.h: 258
+emac_mac_addr = struct_emac_mac_addr# /Users/saul/src/thundergate/include/emac.h: 205
 
-emac_mii_mode = struct_emac_mii_mode # /home/saul/thundergate/include/emac.h: 265
+emac_rx_rule_control = struct_emac_rx_rule_control# /Users/saul/src/thundergate/include/emac.h: 225
 
-emac_autopolling_status = struct_emac_autopolling_status # /home/saul/thundergate/include/emac.h: 279
+receive_mac_rules_configuration = struct_receive_mac_rules_configuration# /Users/saul/src/thundergate/include/emac.h: 246
 
-emac_mii_communication = struct_emac_mii_communication # /home/saul/thundergate/include/emac.h: 284
+emac_low_watermark_max_receive_frame = struct_emac_low_watermark_max_receive_frame# /Users/saul/src/thundergate/include/emac.h: 252
 
-emac_regulator_voltage_control = struct_emac_regulator_voltage_control # /home/saul/thundergate/include/emac.h: 295
+emac_mii_status = struct_emac_mii_status# /Users/saul/src/thundergate/include/emac.h: 258
 
-emac_regs = struct_emac_regs # /home/saul/thundergate/include/emac.h: 320
+emac_mii_mode = struct_emac_mii_mode# /Users/saul/src/thundergate/include/emac.h: 265
 
-frame = struct_frame # /home/saul/thundergate/include/frame.h: 24
+emac_autopolling_status = struct_emac_autopolling_status# /Users/saul/src/thundergate/include/emac.h: 279
 
-vlan_frame = struct_vlan_frame # /home/saul/thundergate/include/frame.h: 31
+emac_mii_communication = struct_emac_mii_communication# /Users/saul/src/thundergate/include/emac.h: 284
 
-ftq_reset = struct_ftq_reset # /home/saul/thundergate/include/ftq.h: 22
+emac_regulator_voltage_control = struct_emac_regulator_voltage_control# /Users/saul/src/thundergate/include/emac.h: 295
 
-ftq_enqueue_dequeue = struct_ftq_enqueue_dequeue # /home/saul/thundergate/include/ftq.h: 48
+emac_regs = struct_emac_regs# /Users/saul/src/thundergate/include/emac.h: 320
 
-ftq_write_peek = struct_ftq_write_peek # /home/saul/thundergate/include/ftq.h: 60
+frame = struct_frame# /Users/saul/src/thundergate/include/frame.h: 24
 
-ftq_queue_regs = struct_ftq_queue_regs # /home/saul/thundergate/include/ftq.h: 74
+vlan_frame = struct_vlan_frame# /Users/saul/src/thundergate/include/frame.h: 31
 
-ftq_regs = struct_ftq_regs # /home/saul/thundergate/include/ftq.h: 81
+ftq_reset = struct_ftq_reset# /Users/saul/src/thundergate/include/ftq.h: 22
 
-gencomm = struct_gencomm # /home/saul/thundergate/include/gencomm.h: 24
+ftq_enqueue_dequeue = struct_ftq_enqueue_dequeue# /Users/saul/src/thundergate/include/ftq.h: 48
 
-grc_mode = struct_grc_mode # /home/saul/thundergate/include/grc.h: 22
+ftq_write_peek = struct_ftq_write_peek# /Users/saul/src/thundergate/include/ftq.h: 60
 
-grc_misc_config = struct_grc_misc_config # /home/saul/thundergate/include/grc.h: 56
+ftq_queue_regs = struct_ftq_queue_regs# /Users/saul/src/thundergate/include/ftq.h: 74
 
-grc_misc_local_control = struct_grc_misc_local_control # /home/saul/thundergate/include/grc.h: 80
+ftq_regs = struct_ftq_regs# /Users/saul/src/thundergate/include/ftq.h: 81
 
-grc_cpu_event = struct_grc_cpu_event # /home/saul/thundergate/include/grc.h: 111
+gencomm = struct_gencomm# /Users/saul/src/thundergate/include/gencomm.h: 24
 
-grc_cpu_semaphore = struct_grc_cpu_semaphore # /home/saul/thundergate/include/grc.h: 151
+grc_mode = struct_grc_mode# /Users/saul/src/thundergate/include/grc.h: 22
 
-grc_pcie_misc_status = struct_grc_pcie_misc_status # /home/saul/thundergate/include/grc.h: 156
+grc_misc_config = struct_grc_misc_config# /Users/saul/src/thundergate/include/grc.h: 56
 
-grc_cpu_event_enable = struct_grc_cpu_event_enable # /home/saul/thundergate/include/grc.h: 175
+grc_misc_local_control = struct_grc_misc_local_control# /Users/saul/src/thundergate/include/grc.h: 80
 
-grc_secfg_1 = struct_grc_secfg_1 # /home/saul/thundergate/include/grc.h: 215
+grc_cpu_event = struct_grc_cpu_event# /Users/saul/src/thundergate/include/grc.h: 111
 
-grc_secfg_2 = struct_grc_secfg_2 # /home/saul/thundergate/include/grc.h: 235
+grc_cpu_semaphore = struct_grc_cpu_semaphore# /Users/saul/src/thundergate/include/grc.h: 151
 
-grc_bond_id = struct_grc_bond_id # /home/saul/thundergate/include/grc.h: 243
+grc_pcie_misc_status = struct_grc_pcie_misc_status# /Users/saul/src/thundergate/include/grc.h: 156
 
-grc_clock_ctrl = struct_grc_clock_ctrl # /home/saul/thundergate/include/grc.h: 260
+grc_cpu_event_enable = struct_grc_cpu_event_enable# /Users/saul/src/thundergate/include/grc.h: 175
 
-grc_misc_control = struct_grc_misc_control # /home/saul/thundergate/include/grc.h: 288
+grc_secfg_1 = struct_grc_secfg_1# /Users/saul/src/thundergate/include/grc.h: 215
 
-grc_fastboot_program_counter = struct_grc_fastboot_program_counter # /home/saul/thundergate/include/grc.h: 305
+grc_secfg_2 = struct_grc_secfg_2# /Users/saul/src/thundergate/include/grc.h: 235
 
-grc_power_management_debug = struct_grc_power_management_debug # /home/saul/thundergate/include/grc.h: 315
+grc_bond_id = struct_grc_bond_id# /Users/saul/src/thundergate/include/grc.h: 243
 
-grc_seeprom_addr = struct_grc_seeprom_addr # /home/saul/thundergate/include/grc.h: 337
+grc_clock_ctrl = struct_grc_clock_ctrl# /Users/saul/src/thundergate/include/grc.h: 260
 
-grc_seeprom_ctrl = struct_grc_seeprom_ctrl # /home/saul/thundergate/include/grc.h: 348
+grc_misc_control = struct_grc_misc_control# /Users/saul/src/thundergate/include/grc.h: 288
 
-grc_mdi_ctrl = struct_grc_mdi_ctrl # /home/saul/thundergate/include/grc.h: 358
+grc_fastboot_program_counter = struct_grc_fastboot_program_counter# /Users/saul/src/thundergate/include/grc.h: 305
 
-grc_exp_rom_addr = struct_grc_exp_rom_addr # /home/saul/thundergate/include/grc.h: 366
+grc_power_management_debug = struct_grc_power_management_debug# /Users/saul/src/thundergate/include/grc.h: 315
 
-grc_regs = struct_grc_regs # /home/saul/thundergate/include/grc.h: 371
+grc_seeprom_addr = struct_grc_seeprom_addr# /Users/saul/src/thundergate/include/grc.h: 337
 
-hc_mode = struct_hc_mode # /home/saul/thundergate/include/hc.h: 24
+grc_seeprom_ctrl = struct_grc_seeprom_ctrl# /Users/saul/src/thundergate/include/grc.h: 348
 
-hc_status = struct_hc_status # /home/saul/thundergate/include/hc.h: 43
+grc_mdi_ctrl = struct_grc_mdi_ctrl# /Users/saul/src/thundergate/include/grc.h: 358
 
-hc_flow_attention = struct_hc_flow_attention # /home/saul/thundergate/include/hc.h: 49
+grc_exp_rom_addr = struct_grc_exp_rom_addr# /Users/saul/src/thundergate/include/grc.h: 366
 
-hc_regs = struct_hc_regs # /home/saul/thundergate/include/hc.h: 71
+grc_regs = struct_grc_regs# /Users/saul/src/thundergate/include/grc.h: 371
 
-ma_mode = struct_ma_mode # /home/saul/thundergate/include/ma.h: 22
+hc_mode = struct_hc_mode# /Users/saul/src/thundergate/include/hc.h: 24
 
-ma_status = struct_ma_status # /home/saul/thundergate/include/ma.h: 64
+hc_status = struct_hc_status# /Users/saul/src/thundergate/include/hc.h: 43
 
-ma_regs = struct_ma_regs # /home/saul/thundergate/include/ma.h: 85
+hc_flow_attention = struct_hc_flow_attention# /Users/saul/src/thundergate/include/hc.h: 49
 
-mailbox = struct_mailbox # /home/saul/thundergate/include/mbox.h: 33
+hc_regs = struct_hc_regs# /Users/saul/src/thundergate/include/hc.h: 71
 
-hpmb_regs = struct_hpmb_regs # /home/saul/thundergate/include/mbox.h: 38
+ma_mode = struct_ma_mode# /Users/saul/src/thundergate/include/ma.h: 22
 
-lpmb_regs = struct_lpmb_regs # /home/saul/thundergate/include/mbox.h: 42
+ma_status = struct_ma_status# /Users/saul/src/thundergate/include/ma.h: 64
 
-mbuf_hdr = struct_mbuf_hdr # /home/saul/thundergate/include/mbuf.h: 24
+ma_regs = struct_ma_regs# /Users/saul/src/thundergate/include/ma.h: 85
 
-mbuf_frame_desc = struct_mbuf_frame_desc # /home/saul/thundergate/include/mbuf.h: 42
+mailbox = struct_mailbox# /Users/saul/src/thundergate/include/mbox.h: 33
 
-mbuf = struct_mbuf # /home/saul/thundergate/include/mbuf.h: 99
+hpmb_regs = struct_hpmb_regs# /Users/saul/src/thundergate/include/mbox.h: 38
 
-msi_mode = struct_msi_mode # /home/saul/thundergate/include/msi.h: 22
+lpmb_regs = struct_lpmb_regs# /Users/saul/src/thundergate/include/mbox.h: 42
 
-msi_status = struct_msi_status # /home/saul/thundergate/include/msi.h: 37
+mbuf_hdr = struct_mbuf_hdr# /Users/saul/src/thundergate/include/mbuf.h: 24
 
-msi_regs = struct_msi_regs # /home/saul/thundergate/include/msi.h: 46
+mbuf_frame_desc = struct_mbuf_frame_desc# /Users/saul/src/thundergate/include/mbuf.h: 42
 
-nrdma_mode = struct_nrdma_mode # /home/saul/thundergate/include/nrdma.h: 24
+mbuf = struct_mbuf# /Users/saul/src/thundergate/include/mbuf.h: 99
 
-nrdma_status = struct_nrdma_status # /home/saul/thundergate/include/nrdma.h: 35
+msi_mode = struct_msi_mode# /Users/saul/src/thundergate/include/msi.h: 22
 
-nrdma_programmable_ipv6_extension_header = struct_nrdma_programmable_ipv6_extension_header # /home/saul/thundergate/include/nrdma.h: 49
+msi_status = struct_msi_status# /Users/saul/src/thundergate/include/msi.h: 37
 
-nrdma_rstates_debug = struct_nrdma_rstates_debug # /home/saul/thundergate/include/nrdma.h: 57
+msi_regs = struct_msi_regs# /Users/saul/src/thundergate/include/msi.h: 46
 
-nrdma_rstate2_debug = struct_nrdma_rstate2_debug # /home/saul/thundergate/include/nrdma.h: 69
+nrdma_mode = struct_nrdma_mode# /Users/saul/src/thundergate/include/nrdma.h: 24
 
-nrdma_bd_status_debug = struct_nrdma_bd_status_debug # /home/saul/thundergate/include/nrdma.h: 74
+nrdma_status = struct_nrdma_status# /Users/saul/src/thundergate/include/nrdma.h: 35
 
-nrdma_req_ptr_debug = struct_nrdma_req_ptr_debug # /home/saul/thundergate/include/nrdma.h: 81
+nrdma_programmable_ipv6_extension_header = struct_nrdma_programmable_ipv6_extension_header# /Users/saul/src/thundergate/include/nrdma.h: 49
 
-nrdma_hold_d_dmad_debug = struct_nrdma_hold_d_dmad_debug # /home/saul/thundergate/include/nrdma.h: 90
+nrdma_rstates_debug = struct_nrdma_rstates_debug# /Users/saul/src/thundergate/include/nrdma.h: 57
 
-nrdma_length_and_address_debug = struct_nrdma_length_and_address_debug # /home/saul/thundergate/include/nrdma.h: 95
+nrdma_rstate2_debug = struct_nrdma_rstate2_debug# /Users/saul/src/thundergate/include/nrdma.h: 69
 
-nrdma_mbuf_byte_count_debug = struct_nrdma_mbuf_byte_count_debug # /home/saul/thundergate/include/nrdma.h: 101
+nrdma_bd_status_debug = struct_nrdma_bd_status_debug# /Users/saul/src/thundergate/include/nrdma.h: 74
 
-nrdma_pcie_debug_status = struct_nrdma_pcie_debug_status # /home/saul/thundergate/include/nrdma.h: 106
+nrdma_req_ptr_debug = struct_nrdma_req_ptr_debug# /Users/saul/src/thundergate/include/nrdma.h: 81
 
-nrdma_pcie_dma_read_req_debug = struct_nrdma_pcie_dma_read_req_debug # /home/saul/thundergate/include/nrdma.h: 123
+nrdma_hold_d_dmad_debug = struct_nrdma_hold_d_dmad_debug# /Users/saul/src/thundergate/include/nrdma.h: 90
 
-nrdma_pcie_dma_req_length_debug = struct_nrdma_pcie_dma_req_length_debug # /home/saul/thundergate/include/nrdma.h: 128
+nrdma_length_and_address_debug = struct_nrdma_length_and_address_debug# /Users/saul/src/thundergate/include/nrdma.h: 95
 
-nrdma_fifo1_debug = struct_nrdma_fifo1_debug # /home/saul/thundergate/include/nrdma.h: 133
+nrdma_mbuf_byte_count_debug = struct_nrdma_mbuf_byte_count_debug# /Users/saul/src/thundergate/include/nrdma.h: 101
 
-nrdma_fifo2_debug = struct_nrdma_fifo2_debug # /home/saul/thundergate/include/nrdma.h: 138
+nrdma_pcie_debug_status = struct_nrdma_pcie_debug_status# /Users/saul/src/thundergate/include/nrdma.h: 106
 
-nrdma_post_proc_pkt_req_cnt = struct_nrdma_post_proc_pkt_req_cnt # /home/saul/thundergate/include/nrdma.h: 144
+nrdma_pcie_dma_read_req_debug = struct_nrdma_pcie_dma_read_req_debug# /Users/saul/src/thundergate/include/nrdma.h: 123
 
-nrdma_mbuf_addr_debug = struct_nrdma_mbuf_addr_debug # /home/saul/thundergate/include/nrdma.h: 149
+nrdma_pcie_dma_req_length_debug = struct_nrdma_pcie_dma_req_length_debug# /Users/saul/src/thundergate/include/nrdma.h: 128
 
-nrdma_tce_debug1 = struct_nrdma_tce_debug1 # /home/saul/thundergate/include/nrdma.h: 157
+nrdma_fifo1_debug = struct_nrdma_fifo1_debug# /Users/saul/src/thundergate/include/nrdma.h: 133
 
-nrdma_tce_debug2 = struct_nrdma_tce_debug2 # /home/saul/thundergate/include/nrdma.h: 164
+nrdma_fifo2_debug = struct_nrdma_fifo2_debug# /Users/saul/src/thundergate/include/nrdma.h: 138
 
-nrdma_tce_debug3 = struct_nrdma_tce_debug3 # /home/saul/thundergate/include/nrdma.h: 169
+nrdma_post_proc_pkt_req_cnt = struct_nrdma_post_proc_pkt_req_cnt# /Users/saul/src/thundergate/include/nrdma.h: 144
 
-nrdma_reserved_control = struct_nrdma_reserved_control # /home/saul/thundergate/include/nrdma.h: 178
+nrdma_mbuf_addr_debug = struct_nrdma_mbuf_addr_debug# /Users/saul/src/thundergate/include/nrdma.h: 149
 
-nrdma_flow_reserved_control = struct_nrdma_flow_reserved_control # /home/saul/thundergate/include/nrdma.h: 189
+nrdma_tce_debug1 = struct_nrdma_tce_debug1# /Users/saul/src/thundergate/include/nrdma.h: 157
 
-nrdma_corruption_enable_control = struct_nrdma_corruption_enable_control # /home/saul/thundergate/include/nrdma.h: 200
+nrdma_tce_debug2 = struct_nrdma_tce_debug2# /Users/saul/src/thundergate/include/nrdma.h: 164
 
-nrdma_regs = struct_nrdma_regs # /home/saul/thundergate/include/nrdma.h: 218
+nrdma_tce_debug3 = struct_nrdma_tce_debug3# /Users/saul/src/thundergate/include/nrdma.h: 169
 
-nvram_dir_item = struct_nvram_dir_item # /home/saul/thundergate/include/nvram.h: 35
+nrdma_reserved_control = struct_nrdma_reserved_control# /Users/saul/src/thundergate/include/nrdma.h: 178
 
-nvram_header = struct_nvram_header # /home/saul/thundergate/include/nvram.h: 44
+nrdma_flow_reserved_control = struct_nrdma_flow_reserved_control# /Users/saul/src/thundergate/include/nrdma.h: 189
 
-nvram_command = struct_nvram_command # /home/saul/thundergate/include/nvram.h: 95
+nrdma_corruption_enable_control = struct_nrdma_corruption_enable_control# /Users/saul/src/thundergate/include/nrdma.h: 200
 
-nvram_status = struct_nvram_status # /home/saul/thundergate/include/nvram.h: 119
+nrdma_regs = struct_nrdma_regs# /Users/saul/src/thundergate/include/nrdma.h: 218
 
-nvram_software_arbitration = struct_nvram_software_arbitration # /home/saul/thundergate/include/nvram.h: 129
+nvram_dir_item = struct_nvram_dir_item# /Users/saul/src/thundergate/include/nvram.h: 35
 
-nvram_access = struct_nvram_access # /home/saul/thundergate/include/nvram.h: 149
+nvram_header = struct_nvram_header# /Users/saul/src/thundergate/include/nvram.h: 44
 
-nvram_write1 = struct_nvram_write1 # /home/saul/thundergate/include/nvram.h: 159
+nvram_command = struct_nvram_command# /Users/saul/src/thundergate/include/nvram.h: 95
 
-nvram_arbitration_watchdog = struct_nvram_arbitration_watchdog # /home/saul/thundergate/include/nvram.h: 165
+nvram_status = struct_nvram_status# /Users/saul/src/thundergate/include/nvram.h: 119
 
-nvram_auto_sense_status = struct_nvram_auto_sense_status # /home/saul/thundergate/include/nvram.h: 175
+nvram_software_arbitration = struct_nvram_software_arbitration# /Users/saul/src/thundergate/include/nvram.h: 129
 
-nvram_regs = struct_nvram_regs # /home/saul/thundergate/include/nvram.h: 187
+nvram_access = struct_nvram_access# /Users/saul/src/thundergate/include/nvram.h: 149
 
-otp_mode = struct_otp_mode # /home/saul/thundergate/include/otp.h: 24
+nvram_write1 = struct_nvram_write1# /Users/saul/src/thundergate/include/nvram.h: 159
 
-otp_control = struct_otp_control # /home/saul/thundergate/include/otp.h: 29
+nvram_arbitration_watchdog = struct_nvram_arbitration_watchdog# /Users/saul/src/thundergate/include/nvram.h: 165
 
-otp_status = struct_otp_status # /home/saul/thundergate/include/otp.h: 49
+nvram_auto_sense_status = struct_nvram_auto_sense_status# /Users/saul/src/thundergate/include/nvram.h: 175
 
-otp_addr = struct_otp_addr # /home/saul/thundergate/include/otp.h: 65
+nvram_regs = struct_nvram_regs# /Users/saul/src/thundergate/include/nvram.h: 187
 
-otp_soft_reset = struct_otp_soft_reset # /home/saul/thundergate/include/otp.h: 70
+otp_mode = struct_otp_mode# /Users/saul/src/thundergate/include/otp.h: 24
 
-otp_regs = struct_otp_regs # /home/saul/thundergate/include/otp.h: 75
+otp_control = struct_otp_control# /Users/saul/src/thundergate/include/otp.h: 29
 
-pcie_pl_lo_regs = struct_pcie_pl_lo_regs # /home/saul/thundergate/include/pcie_alt.h: 22
+otp_status = struct_otp_status# /Users/saul/src/thundergate/include/otp.h: 49
 
-pcie_dl_lo_ftsmax = struct_pcie_dl_lo_ftsmax # /home/saul/thundergate/include/pcie_alt.h: 31
+otp_addr = struct_otp_addr# /Users/saul/src/thundergate/include/otp.h: 65
 
-pcie_dl_lo_regs = struct_pcie_dl_lo_regs # /home/saul/thundergate/include/pcie_alt.h: 36
+otp_soft_reset = struct_otp_soft_reset# /Users/saul/src/thundergate/include/otp.h: 70
 
-pcie_alt_regs = struct_pcie_alt_regs # /home/saul/thundergate/include/pcie_alt.h: 43
+otp_regs = struct_otp_regs# /Users/saul/src/thundergate/include/otp.h: 75
 
-pcie_tl_tlp_ctrl = struct_pcie_tl_tlp_ctrl # /home/saul/thundergate/include/pcie.h: 22
+pci_status = struct_pci_status# /Users/saul/src/thundergate/include/pci.h: 22
 
-pcie_tl_transaction_config = struct_pcie_tl_transaction_config # /home/saul/thundergate/include/pcie.h: 46
+pci_command = struct_pci_command# /Users/saul/src/thundergate/include/pci.h: 43
 
-pcie_tl_wdma_len_byte_en_req_diag = struct_pcie_tl_wdma_len_byte_en_req_diag # /home/saul/thundergate/include/pcie.h: 75
+pci_pm_cap = struct_pci_pm_cap# /Users/saul/src/thundergate/include/pci.h: 63
 
-pcie_tl_rdma_len_req_diag = struct_pcie_tl_rdma_len_req_diag # /home/saul/thundergate/include/pcie.h: 82
+pci_pm_ctrl_status = struct_pci_pm_ctrl_status# /Users/saul/src/thundergate/include/pci.h: 76
 
-pcie_tl_msi_len_req_diag = struct_pcie_tl_msi_len_req_diag # /home/saul/thundergate/include/pcie.h: 88
+pci_msi_cap_hdr = struct_pci_msi_cap_hdr# /Users/saul/src/thundergate/include/pci.h: 89
 
-pcie_tl_slave_req_len_type_diag = struct_pcie_tl_slave_req_len_type_diag # /home/saul/thundergate/include/pcie.h: 94
+pci_misc_host_ctrl = struct_pci_misc_host_ctrl# /Users/saul/src/thundergate/include/pci.h: 100
 
-pcie_tl_flow_control_inputs_diag = struct_pcie_tl_flow_control_inputs_diag # /home/saul/thundergate/include/pcie.h: 102
+pci_dma_rw_ctrl = struct_pci_dma_rw_ctrl# /Users/saul/src/thundergate/include/pci.h: 115
 
-pcie_tl_xmt_state_machines_gated_reqs_diag = struct_pcie_tl_xmt_state_machines_gated_reqs_diag # /home/saul/thundergate/include/pcie.h: 111
+pci_state = struct_pci_state# /Users/saul/src/thundergate/include/pci.h: 126
 
-pcie_tl_tlp_bdf = struct_pcie_tl_tlp_bdf # /home/saul/thundergate/include/pcie.h: 122
+pci_device_id = struct_pci_device_id# /Users/saul/src/thundergate/include/pci.h: 152
 
-pcie_tl_regs = struct_pcie_tl_regs # /home/saul/thundergate/include/pcie.h: 130
+pci_class_code_rev_id = struct_pci_class_code_rev_id# /Users/saul/src/thundergate/include/pci.h: 157
 
-pcie_dl_ctrl = struct_pcie_dl_ctrl # /home/saul/thundergate/include/pcie.h: 174
+pci_regs = struct_pci_regs# /Users/saul/src/thundergate/include/pci.h: 162
 
-pcie_dl_status = struct_pcie_dl_status # /home/saul/thundergate/include/pcie.h: 190
+pcie_pl_lo_regs = struct_pcie_pl_lo_regs# /Users/saul/src/thundergate/include/pcie_alt.h: 22
 
-pcie_dl_attn = struct_pcie_dl_attn # /home/saul/thundergate/include/pcie.h: 210
+pcie_dl_lo_ftsmax = struct_pcie_dl_lo_ftsmax# /Users/saul/src/thundergate/include/pcie_alt.h: 31
 
-pcie_dl_attn_mask = struct_pcie_dl_attn_mask # /home/saul/thundergate/include/pcie.h: 219
+pcie_dl_lo_regs = struct_pcie_dl_lo_regs# /Users/saul/src/thundergate/include/pcie_alt.h: 36
 
-pcie_dl_seq_no = struct_pcie_dl_seq_no # /home/saul/thundergate/include/pcie.h: 229
+pcie_alt_regs = struct_pcie_alt_regs# /Users/saul/src/thundergate/include/pcie_alt.h: 43
 
-pcie_dl_replay = struct_pcie_dl_replay # /home/saul/thundergate/include/pcie.h: 234
+pcie_tl_tlp_ctrl = struct_pcie_tl_tlp_ctrl# /Users/saul/src/thundergate/include/pcie.h: 22
 
-pcie_dl_ack_timeout = struct_pcie_dl_ack_timeout # /home/saul/thundergate/include/pcie.h: 240
+pcie_tl_transaction_config = struct_pcie_tl_transaction_config# /Users/saul/src/thundergate/include/pcie.h: 46
 
-pcie_dl_pm_threshold = struct_pcie_dl_pm_threshold # /home/saul/thundergate/include/pcie.h: 245
+pcie_tl_wdma_len_byte_en_req_diag = struct_pcie_tl_wdma_len_byte_en_req_diag# /Users/saul/src/thundergate/include/pcie.h: 75
 
-pcie_dl_retry_buffer_ptr = struct_pcie_dl_retry_buffer_ptr # /home/saul/thundergate/include/pcie.h: 253
+pcie_tl_rdma_len_req_diag = struct_pcie_tl_rdma_len_req_diag# /Users/saul/src/thundergate/include/pcie.h: 82
 
-pcie_dl_test = struct_pcie_dl_test # /home/saul/thundergate/include/pcie.h: 258
+pcie_tl_msi_len_req_diag = struct_pcie_tl_msi_len_req_diag# /Users/saul/src/thundergate/include/pcie.h: 88
 
-pcie_dl_packet_bist = struct_pcie_dl_packet_bist # /home/saul/thundergate/include/pcie.h: 278
+pcie_tl_slave_req_len_type_diag = struct_pcie_tl_slave_req_len_type_diag# /Users/saul/src/thundergate/include/pcie.h: 94
 
-pcie_dl_regs = struct_pcie_dl_regs # /home/saul/thundergate/include/pcie.h: 290
+pcie_tl_flow_control_inputs_diag = struct_pcie_tl_flow_control_inputs_diag# /Users/saul/src/thundergate/include/pcie.h: 102
 
-pcie_pl_regs = struct_pcie_pl_regs # /home/saul/thundergate/include/pcie.h: 320
+pcie_tl_xmt_state_machines_gated_reqs_diag = struct_pcie_tl_xmt_state_machines_gated_reqs_diag# /Users/saul/src/thundergate/include/pcie.h: 111
 
-pci_status = struct_pci_status # /home/saul/thundergate/include/pci.h: 22
+pcie_tl_tlp_bdf = struct_pcie_tl_tlp_bdf# /Users/saul/src/thundergate/include/pcie.h: 122
 
-pci_command = struct_pci_command # /home/saul/thundergate/include/pci.h: 43
+pcie_tl_regs = struct_pcie_tl_regs# /Users/saul/src/thundergate/include/pcie.h: 130
 
-pci_pm_cap = struct_pci_pm_cap # /home/saul/thundergate/include/pci.h: 63
+pcie_dl_ctrl = struct_pcie_dl_ctrl# /Users/saul/src/thundergate/include/pcie.h: 174
 
-pci_pm_ctrl_status = struct_pci_pm_ctrl_status # /home/saul/thundergate/include/pci.h: 76
+pcie_dl_status = struct_pcie_dl_status# /Users/saul/src/thundergate/include/pcie.h: 190
 
-pci_msi_cap_hdr = struct_pci_msi_cap_hdr # /home/saul/thundergate/include/pci.h: 89
+pcie_dl_attn = struct_pcie_dl_attn# /Users/saul/src/thundergate/include/pcie.h: 210
 
-pci_misc_host_ctrl = struct_pci_misc_host_ctrl # /home/saul/thundergate/include/pci.h: 100
+pcie_dl_attn_mask = struct_pcie_dl_attn_mask# /Users/saul/src/thundergate/include/pcie.h: 219
 
-pci_dma_rw_ctrl = struct_pci_dma_rw_ctrl # /home/saul/thundergate/include/pci.h: 115
+pcie_dl_seq_no = struct_pcie_dl_seq_no# /Users/saul/src/thundergate/include/pcie.h: 229
 
-pci_state = struct_pci_state # /home/saul/thundergate/include/pci.h: 126
+pcie_dl_replay = struct_pcie_dl_replay# /Users/saul/src/thundergate/include/pcie.h: 234
 
-pci_device_id = struct_pci_device_id # /home/saul/thundergate/include/pci.h: 152
+pcie_dl_ack_timeout = struct_pcie_dl_ack_timeout# /Users/saul/src/thundergate/include/pcie.h: 240
 
-pci_class_code_rev_id = struct_pci_class_code_rev_id # /home/saul/thundergate/include/pci.h: 157
+pcie_dl_pm_threshold = struct_pcie_dl_pm_threshold# /Users/saul/src/thundergate/include/pcie.h: 245
 
-pci_regs = struct_pci_regs # /home/saul/thundergate/include/pci.h: 162
+pcie_dl_retry_buffer_ptr = struct_pcie_dl_retry_buffer_ptr# /Users/saul/src/thundergate/include/pcie.h: 253
 
-rbdc_mode = struct_rbdc_mode # /home/saul/thundergate/include/rbdc.h: 22
+pcie_dl_test = struct_pcie_dl_test# /Users/saul/src/thundergate/include/pcie.h: 258
 
-rbdc_status = struct_rbdc_status # /home/saul/thundergate/include/rbdc.h: 31
+pcie_dl_packet_bist = struct_pcie_dl_packet_bist# /Users/saul/src/thundergate/include/pcie.h: 278
 
-rbdc_rbd_pi = struct_rbdc_rbd_pi # /home/saul/thundergate/include/rbdc.h: 37
+pcie_dl_regs = struct_pcie_dl_regs# /Users/saul/src/thundergate/include/pcie.h: 290
 
-rbdc_regs = struct_rbdc_regs # /home/saul/thundergate/include/rbdc.h: 42
+pcie_pl_regs = struct_pcie_pl_regs# /Users/saul/src/thundergate/include/pcie.h: 320
 
-rbdi_mode = struct_rbdi_mode # /home/saul/thundergate/include/rbdi.h: 22
+rbdc_mode = struct_rbdc_mode# /Users/saul/src/thundergate/include/rbdc.h: 22
 
-rbdi_status = struct_rbdi_status # /home/saul/thundergate/include/rbdi.h: 34
+rbdc_status = struct_rbdc_status# /Users/saul/src/thundergate/include/rbdc.h: 31
 
-rbdi_ring_replenish_threshold = struct_rbdi_ring_replenish_threshold # /home/saul/thundergate/include/rbdi.h: 40
+rbdc_rbd_pi = struct_rbdc_rbd_pi# /Users/saul/src/thundergate/include/rbdc.h: 37
 
-rbdi_regs = struct_rbdi_regs # /home/saul/thundergate/include/rbdi.h: 45
+rbdc_regs = struct_rbdc_regs# /Users/saul/src/thundergate/include/rbdc.h: 42
 
-rbd_rule = struct_rbd_rule # /home/saul/thundergate/include/rbdrules.h: 24
+rbdi_mode = struct_rbdi_mode# /Users/saul/src/thundergate/include/rbdi.h: 22
 
-rbd_value_mask = struct_rbd_value_mask # /home/saul/thundergate/include/rbdrules.h: 40
+rbdi_status = struct_rbdi_status# /Users/saul/src/thundergate/include/rbdi.h: 34
 
-rcb_flags = struct_rcb_flags # /home/saul/thundergate/include/rcb.h: 22
+rbdi_ring_replenish_threshold = struct_rbdi_ring_replenish_threshold# /Users/saul/src/thundergate/include/rbdi.h: 40
 
-rcb = struct_rcb # /home/saul/thundergate/include/rcb.h: 28
+rbdi_regs = struct_rbdi_regs# /Users/saul/src/thundergate/include/rbdi.h: 45
 
-rdc_mode = struct_rdc_mode # /home/saul/thundergate/include/rdc.h: 22
+rbd_rule = struct_rbd_rule# /Users/saul/src/thundergate/include/rbdrules.h: 24
 
-rdc_regs = struct_rdc_regs # /home/saul/thundergate/include/rdc.h: 34
+rbd_value_mask = struct_rbd_value_mask# /Users/saul/src/thundergate/include/rbdrules.h: 40
 
-rdi_mode = struct_rdi_mode # /home/saul/thundergate/include/rdi.h: 22
+rcb_flags = struct_rcb_flags# /Users/saul/src/thundergate/include/rcb.h: 22
 
-rdi_status = struct_rdi_status # /home/saul/thundergate/include/rdi.h: 31
+rcb = struct_rcb# /Users/saul/src/thundergate/include/rcb.h: 28
 
-rcb_registers = struct_rcb_registers # /home/saul/thundergate/include/rdi.h: 38
+rdc_mode = struct_rdc_mode# /Users/saul/src/thundergate/include/rdc.h: 22
 
-rdi_regs = struct_rdi_regs # /home/saul/thundergate/include/rdi.h: 50
+rdc_regs = struct_rdc_regs# /Users/saul/src/thundergate/include/rdc.h: 34
 
-rdma_mode = struct_rdma_mode # /home/saul/thundergate/include/rdma.h: 24
+rdi_mode = struct_rdi_mode# /Users/saul/src/thundergate/include/rdi.h: 22
 
-rdma_status = struct_rdma_status # /home/saul/thundergate/include/rdma.h: 52
+rdi_status = struct_rdi_status# /Users/saul/src/thundergate/include/rdi.h: 31
 
-rdma_programmable_ipv6_extension_header = struct_rdma_programmable_ipv6_extension_header # /home/saul/thundergate/include/rdma.h: 69
+rcb_registers = struct_rcb_registers# /Users/saul/src/thundergate/include/rdi.h: 38
 
-rdma_rstates_debug = struct_rdma_rstates_debug # /home/saul/thundergate/include/rdma.h: 77
+rdi_regs = struct_rdi_regs# /Users/saul/src/thundergate/include/rdi.h: 50
 
-rdma_rstate2_debug = struct_rdma_rstate2_debug # /home/saul/thundergate/include/rdma.h: 84
+rdma_mode = struct_rdma_mode# /Users/saul/src/thundergate/include/rdma.h: 24
 
-rdma_bd_status_debug = struct_rdma_bd_status_debug # /home/saul/thundergate/include/rdma.h: 89
+rdma_status = struct_rdma_status# /Users/saul/src/thundergate/include/rdma.h: 52
 
-rdma_req_ptr_debug = struct_rdma_req_ptr_debug # /home/saul/thundergate/include/rdma.h: 96
+rdma_programmable_ipv6_extension_header = struct_rdma_programmable_ipv6_extension_header# /Users/saul/src/thundergate/include/rdma.h: 69
 
-rdma_hold_d_dmad_debug = struct_rdma_hold_d_dmad_debug # /home/saul/thundergate/include/rdma.h: 105
+rdma_rstates_debug = struct_rdma_rstates_debug# /Users/saul/src/thundergate/include/rdma.h: 77
 
-rdma_length_and_address_index_debug = struct_rdma_length_and_address_index_debug # /home/saul/thundergate/include/rdma.h: 110
+rdma_rstate2_debug = struct_rdma_rstate2_debug# /Users/saul/src/thundergate/include/rdma.h: 84
 
-rdma_mbuf_byte_count_debug = struct_rdma_mbuf_byte_count_debug # /home/saul/thundergate/include/rdma.h: 115
+rdma_bd_status_debug = struct_rdma_bd_status_debug# /Users/saul/src/thundergate/include/rdma.h: 89
 
-rdma_pcie_mbuf_byte_count_debug = struct_rdma_pcie_mbuf_byte_count_debug # /home/saul/thundergate/include/rdma.h: 120
+rdma_req_ptr_debug = struct_rdma_req_ptr_debug# /Users/saul/src/thundergate/include/rdma.h: 96
 
-rdma_pcie_read_request_address_debug = struct_rdma_pcie_read_request_address_debug # /home/saul/thundergate/include/rdma.h: 137
+rdma_hold_d_dmad_debug = struct_rdma_hold_d_dmad_debug# /Users/saul/src/thundergate/include/rdma.h: 105
 
-rdma_fifo1_debug = struct_rdma_fifo1_debug # /home/saul/thundergate/include/rdma.h: 142
+rdma_length_and_address_index_debug = struct_rdma_length_and_address_index_debug# /Users/saul/src/thundergate/include/rdma.h: 110
 
-rdma_fifo2_debug = struct_rdma_fifo2_debug # /home/saul/thundergate/include/rdma.h: 147
+rdma_mbuf_byte_count_debug = struct_rdma_mbuf_byte_count_debug# /Users/saul/src/thundergate/include/rdma.h: 115
 
-rdma_packet_request_debug_1 = struct_rdma_packet_request_debug_1 # /home/saul/thundergate/include/rdma.h: 153
+rdma_pcie_mbuf_byte_count_debug = struct_rdma_pcie_mbuf_byte_count_debug# /Users/saul/src/thundergate/include/rdma.h: 120
 
-rdma_packet_request_debug_2 = struct_rdma_packet_request_debug_2 # /home/saul/thundergate/include/rdma.h: 158
+rdma_pcie_read_request_address_debug = struct_rdma_pcie_read_request_address_debug# /Users/saul/src/thundergate/include/rdma.h: 137
 
-rdma_packet_request_debug_3 = struct_rdma_packet_request_debug_3 # /home/saul/thundergate/include/rdma.h: 162
+rdma_fifo1_debug = struct_rdma_fifo1_debug# /Users/saul/src/thundergate/include/rdma.h: 142
 
-rdma_tcp_checksum_debug = struct_rdma_tcp_checksum_debug # /home/saul/thundergate/include/rdma.h: 173
+rdma_fifo2_debug = struct_rdma_fifo2_debug# /Users/saul/src/thundergate/include/rdma.h: 147
 
-rdma_ip_tcp_header_checksum_debug = struct_rdma_ip_tcp_header_checksum_debug # /home/saul/thundergate/include/rdma.h: 180
+rdma_packet_request_debug_1 = struct_rdma_packet_request_debug_1# /Users/saul/src/thundergate/include/rdma.h: 153
 
-rdma_pseudo_checksum_debug = struct_rdma_pseudo_checksum_debug # /home/saul/thundergate/include/rdma.h: 185
+rdma_packet_request_debug_2 = struct_rdma_packet_request_debug_2# /Users/saul/src/thundergate/include/rdma.h: 158
 
-rdma_mbuf_address_debug = struct_rdma_mbuf_address_debug # /home/saul/thundergate/include/rdma.h: 190
+rdma_packet_request_debug_3 = struct_rdma_packet_request_debug_3# /Users/saul/src/thundergate/include/rdma.h: 162
 
-rdma_misc_ctrl_1 = struct_rdma_misc_ctrl_1 # /home/saul/thundergate/include/rdma.h: 201
+rdma_tcp_checksum_debug = struct_rdma_tcp_checksum_debug# /Users/saul/src/thundergate/include/rdma.h: 173
 
-rdma_misc_ctrl_2 = struct_rdma_misc_ctrl_2 # /home/saul/thundergate/include/rdma.h: 212
+rdma_ip_tcp_header_checksum_debug = struct_rdma_ip_tcp_header_checksum_debug# /Users/saul/src/thundergate/include/rdma.h: 180
 
-rdma_misc_ctrl_3 = struct_rdma_misc_ctrl_3 # /home/saul/thundergate/include/rdma.h: 222
+rdma_pseudo_checksum_debug = struct_rdma_pseudo_checksum_debug# /Users/saul/src/thundergate/include/rdma.h: 185
 
-rdma_regs = struct_rdma_regs # /home/saul/thundergate/include/rdma.h: 232
+rdma_mbuf_address_debug = struct_rdma_mbuf_address_debug# /Users/saul/src/thundergate/include/rdma.h: 190
 
-receive_list_placement_mode = struct_receive_list_placement_mode # /home/saul/thundergate/include/rlp.h: 22
+rdma_misc_ctrl_1 = struct_rdma_misc_ctrl_1# /Users/saul/src/thundergate/include/rdma.h: 201
 
-receive_list_placement_status = struct_receive_list_placement_status # /home/saul/thundergate/include/rlp.h: 31
+rdma_misc_ctrl_2 = struct_rdma_misc_ctrl_2# /Users/saul/src/thundergate/include/rdma.h: 212
 
-receive_selector_not_empty_bits = struct_receive_selector_not_empty_bits # /home/saul/thundergate/include/rlp.h: 39
+rdma_misc_ctrl_3 = struct_rdma_misc_ctrl_3# /Users/saul/src/thundergate/include/rdma.h: 222
 
-receive_list_placement_configuration = struct_receive_list_placement_configuration # /home/saul/thundergate/include/rlp.h: 44
+rdma_regs = struct_rdma_regs# /Users/saul/src/thundergate/include/rdma.h: 232
 
-receive_list_placement_statistics_control = struct_receive_list_placement_statistics_control # /home/saul/thundergate/include/rlp.h: 52
+receive_list_placement_mode = struct_receive_list_placement_mode# /Users/saul/src/thundergate/include/rlp.h: 22
 
-receive_list_placement_statistics_enable_mask = struct_receive_list_placement_statistics_enable_mask # /home/saul/thundergate/include/rlp.h: 59
+receive_list_placement_status = struct_receive_list_placement_status# /Users/saul/src/thundergate/include/rlp.h: 31
 
-receive_list_placement_statistics_increment_mask = struct_receive_list_placement_statistics_increment_mask # /home/saul/thundergate/include/rlp.h: 79
+receive_selector_not_empty_bits = struct_receive_selector_not_empty_bits# /Users/saul/src/thundergate/include/rlp.h: 39
 
-receive_list_local_statistics_counter = struct_receive_list_local_statistics_counter # /home/saul/thundergate/include/rlp.h: 86
+receive_list_placement_configuration = struct_receive_list_placement_configuration# /Users/saul/src/thundergate/include/rlp.h: 44
 
-receive_list_lock = struct_receive_list_lock # /home/saul/thundergate/include/rlp.h: 91
+receive_list_placement_statistics_control = struct_receive_list_placement_statistics_control# /Users/saul/src/thundergate/include/rlp.h: 52
 
-rlp_regs = struct_rlp_regs # /home/saul/thundergate/include/rlp.h: 96
+receive_list_placement_statistics_enable_mask = struct_receive_list_placement_statistics_enable_mask# /Users/saul/src/thundergate/include/rlp.h: 59
 
-rss_ind_table_1 = struct_rss_ind_table_1 # /home/saul/thundergate/include/rss.h: 22
+receive_list_placement_statistics_increment_mask = struct_receive_list_placement_statistics_increment_mask# /Users/saul/src/thundergate/include/rlp.h: 79
 
-rss_ind_table_2 = struct_rss_ind_table_2 # /home/saul/thundergate/include/rss.h: 40
+receive_list_local_statistics_counter = struct_receive_list_local_statistics_counter# /Users/saul/src/thundergate/include/rlp.h: 86
 
-rss_ind_table_3 = struct_rss_ind_table_3 # /home/saul/thundergate/include/rss.h: 58
+receive_list_lock = struct_receive_list_lock# /Users/saul/src/thundergate/include/rlp.h: 91
 
-rss_ind_table_4 = struct_rss_ind_table_4 # /home/saul/thundergate/include/rss.h: 76
+rlp_regs = struct_rlp_regs# /Users/saul/src/thundergate/include/rlp.h: 96
 
-rss_ind_table_5 = struct_rss_ind_table_5 # /home/saul/thundergate/include/rss.h: 94
+rss_ind_table_1 = struct_rss_ind_table_1# /Users/saul/src/thundergate/include/rss.h: 22
 
-rss_ind_table_6 = struct_rss_ind_table_6 # /home/saul/thundergate/include/rss.h: 112
+rss_ind_table_2 = struct_rss_ind_table_2# /Users/saul/src/thundergate/include/rss.h: 40
 
-rss_ind_table_7 = struct_rss_ind_table_7 # /home/saul/thundergate/include/rss.h: 130
+rss_ind_table_3 = struct_rss_ind_table_3# /Users/saul/src/thundergate/include/rss.h: 58
 
-rss_ind_table_8 = struct_rss_ind_table_8 # /home/saul/thundergate/include/rss.h: 148
+rss_ind_table_4 = struct_rss_ind_table_4# /Users/saul/src/thundergate/include/rss.h: 76
 
-rss_ind_table_9 = struct_rss_ind_table_9 # /home/saul/thundergate/include/rss.h: 166
+rss_ind_table_5 = struct_rss_ind_table_5# /Users/saul/src/thundergate/include/rss.h: 94
 
-rss_ind_table_10 = struct_rss_ind_table_10 # /home/saul/thundergate/include/rss.h: 185
+rss_ind_table_6 = struct_rss_ind_table_6# /Users/saul/src/thundergate/include/rss.h: 112
 
-rss_ind_table_11 = struct_rss_ind_table_11 # /home/saul/thundergate/include/rss.h: 203
+rss_ind_table_7 = struct_rss_ind_table_7# /Users/saul/src/thundergate/include/rss.h: 130
 
-rss_ind_table_12 = struct_rss_ind_table_12 # /home/saul/thundergate/include/rss.h: 221
+rss_ind_table_8 = struct_rss_ind_table_8# /Users/saul/src/thundergate/include/rss.h: 148
 
-rss_ind_table_13 = struct_rss_ind_table_13 # /home/saul/thundergate/include/rss.h: 239
+rss_ind_table_9 = struct_rss_ind_table_9# /Users/saul/src/thundergate/include/rss.h: 166
 
-rss_ind_table_14 = struct_rss_ind_table_14 # /home/saul/thundergate/include/rss.h: 257
+rss_ind_table_10 = struct_rss_ind_table_10# /Users/saul/src/thundergate/include/rss.h: 185
 
-rss_ind_table_15 = struct_rss_ind_table_15 # /home/saul/thundergate/include/rss.h: 275
+rss_ind_table_11 = struct_rss_ind_table_11# /Users/saul/src/thundergate/include/rss.h: 203
 
-rss_ind_table_16 = struct_rss_ind_table_16 # /home/saul/thundergate/include/rss.h: 293
+rss_ind_table_12 = struct_rss_ind_table_12# /Users/saul/src/thundergate/include/rss.h: 221
 
-rss_hash_key = struct_rss_hash_key # /home/saul/thundergate/include/rss.h: 311
+rss_ind_table_13 = struct_rss_ind_table_13# /Users/saul/src/thundergate/include/rss.h: 239
 
-rmac_programmable_ipv6_extension_header = struct_rmac_programmable_ipv6_extension_header # /home/saul/thundergate/include/rss.h: 317
+rss_ind_table_14 = struct_rss_ind_table_14# /Users/saul/src/thundergate/include/rss.h: 257
 
-rss_regs = struct_rss_regs # /home/saul/thundergate/include/rss.h: 325
+rss_ind_table_15 = struct_rss_ind_table_15# /Users/saul/src/thundergate/include/rss.h: 275
 
-rtsdi_mode = struct_rtsdi_mode # /home/saul/thundergate/include/rtsdi.h: 24
+rss_ind_table_16 = struct_rss_ind_table_16# /Users/saul/src/thundergate/include/rss.h: 293
 
-rtsdi_status = struct_rtsdi_status # /home/saul/thundergate/include/rtsdi.h: 34
+rss_hash_key = struct_rss_hash_key# /Users/saul/src/thundergate/include/rss.h: 311
 
-rtsdi_statistics_control = struct_rtsdi_statistics_control # /home/saul/thundergate/include/rtsdi.h: 40
+rmac_programmable_ipv6_extension_header = struct_rmac_programmable_ipv6_extension_header# /Users/saul/src/thundergate/include/rss.h: 317
 
-rtsdi_statistics_mask = struct_rtsdi_statistics_mask # /home/saul/thundergate/include/rtsdi.h: 49
+rss_regs = struct_rss_regs# /Users/saul/src/thundergate/include/rss.h: 325
 
-rtsdi_statistics_increment_mask = struct_rtsdi_statistics_increment_mask # /home/saul/thundergate/include/rtsdi.h: 54
+rtsdi_mode = struct_rtsdi_mode# /Users/saul/src/thundergate/include/rtsdi.h: 24
 
-rtsdi_regs = struct_rtsdi_regs # /home/saul/thundergate/include/rtsdi.h: 61
+rtsdi_status = struct_rtsdi_status# /Users/saul/src/thundergate/include/rtsdi.h: 34
 
-sbdc_mode = struct_sbdc_mode # /home/saul/thundergate/include/sbdc.h: 24
+rtsdi_statistics_control = struct_rtsdi_statistics_control# /Users/saul/src/thundergate/include/rtsdi.h: 40
 
-sbdc_debug = struct_sbdc_debug # /home/saul/thundergate/include/sbdc.h: 31
+rtsdi_statistics_mask = struct_rtsdi_statistics_mask# /Users/saul/src/thundergate/include/rtsdi.h: 49
 
-sbdc_regs = struct_sbdc_regs # /home/saul/thundergate/include/sbdc.h: 36
+rtsdi_statistics_increment_mask = struct_rtsdi_statistics_increment_mask# /Users/saul/src/thundergate/include/rtsdi.h: 54
 
-sbdi_mode = struct_sbdi_mode # /home/saul/thundergate/include/sbdi.h: 24
+rtsdi_regs = struct_rtsdi_regs# /Users/saul/src/thundergate/include/rtsdi.h: 61
 
-sbdi_status = struct_sbdi_status # /home/saul/thundergate/include/sbdi.h: 34
+sbdc_mode = struct_sbdc_mode# /Users/saul/src/thundergate/include/sbdc.h: 24
 
-sbdi_regs = struct_sbdi_regs # /home/saul/thundergate/include/sbdi.h: 40
+sbdc_debug = struct_sbdc_debug# /Users/saul/src/thundergate/include/sbdc.h: 31
 
-sbds_mode = struct_sbds_mode # /home/saul/thundergate/include/sbds.h: 22
+sbdc_regs = struct_sbdc_regs# /Users/saul/src/thundergate/include/sbdc.h: 36
 
-sbds_status = struct_sbds_status # /home/saul/thundergate/include/sbds.h: 29
+sbdi_mode = struct_sbdi_mode# /Users/saul/src/thundergate/include/sbdi.h: 24
 
-sbds_local_nic_send_bd_consumer_idx = struct_sbds_local_nic_send_bd_consumer_idx # /home/saul/thundergate/include/sbds.h: 35
+sbdi_status = struct_sbdi_status# /Users/saul/src/thundergate/include/sbdi.h: 34
 
-sbds_regs = struct_sbds_regs # /home/saul/thundergate/include/sbds.h: 40
+sbdi_regs = struct_sbdi_regs# /Users/saul/src/thundergate/include/sbdi.h: 40
 
-sdc_mode = struct_sdc_mode # /home/saul/thundergate/include/sdc.h: 24
+sbds_mode = struct_sbds_mode# /Users/saul/src/thundergate/include/sbds.h: 22
 
-sdc_pre_dma_command_exchange = struct_sdc_pre_dma_command_exchange # /home/saul/thundergate/include/sdc.h: 32
+sbds_status = struct_sbds_status# /Users/saul/src/thundergate/include/sbds.h: 29
 
-sdc_regs = struct_sdc_regs # /home/saul/thundergate/include/sdc.h: 41
+sbds_local_nic_send_bd_consumer_idx = struct_sbds_local_nic_send_bd_consumer_idx# /Users/saul/src/thundergate/include/sbds.h: 35
 
-sdi_mode = struct_sdi_mode # /home/saul/thundergate/include/sdi.h: 24
+sbds_regs = struct_sbds_regs# /Users/saul/src/thundergate/include/sbds.h: 40
 
-sdi_status = struct_sdi_status # /home/saul/thundergate/include/sdi.h: 34
+sdc_mode = struct_sdc_mode# /Users/saul/src/thundergate/include/sdc.h: 24
 
-sdi_statistics_control = struct_sdi_statistics_control # /home/saul/thundergate/include/sdi.h: 40
+sdc_pre_dma_command_exchange = struct_sdc_pre_dma_command_exchange# /Users/saul/src/thundergate/include/sdc.h: 32
 
-sdi_statistics_mask = struct_sdi_statistics_mask # /home/saul/thundergate/include/sdi.h: 49
+sdc_regs = struct_sdc_regs# /Users/saul/src/thundergate/include/sdc.h: 41
 
-sdi_statistics_increment_mask = struct_sdi_statistics_increment_mask # /home/saul/thundergate/include/sdi.h: 54
+sdi_mode = struct_sdi_mode# /Users/saul/src/thundergate/include/sdi.h: 24
 
-sdi_regs = struct_sdi_regs # /home/saul/thundergate/include/sdi.h: 61
+sdi_status = struct_sdi_status# /Users/saul/src/thundergate/include/sdi.h: 34
 
-mac_stats_regs = struct_mac_stats_regs # /home/saul/thundergate/include/stats.h: 22
+sdi_statistics_control = struct_sdi_statistics_control# /Users/saul/src/thundergate/include/sdi.h: 40
 
-status_block = struct_status_block # /home/saul/thundergate/include/status_block.h: 24
+sdi_statistics_mask = struct_sdi_statistics_mask# /Users/saul/src/thundergate/include/sdi.h: 49
 
-tsc_length_offset = struct_tsc_length_offset # /home/saul/thundergate/include/tcp_seg_ctrl.h: 22
+sdi_statistics_increment_mask = struct_sdi_statistics_increment_mask# /Users/saul/src/thundergate/include/sdi.h: 54
 
-tsc_dma_flags = struct_tsc_dma_flags # /home/saul/thundergate/include/tcp_seg_ctrl.h: 28
+sdi_regs = struct_sdi_regs# /Users/saul/src/thundergate/include/sdi.h: 61
 
-tsc_vlan_tag = struct_tsc_vlan_tag # /home/saul/thundergate/include/tcp_seg_ctrl.h: 51
+mac_stats_regs = struct_mac_stats_regs# /Users/saul/src/thundergate/include/stats.h: 22
 
-tsc_pre_dma_cmd_xchng = struct_tsc_pre_dma_cmd_xchng # /home/saul/thundergate/include/tcp_seg_ctrl.h: 56
+status_block = struct_status_block# /Users/saul/src/thundergate/include/status_block.h: 24
 
-tcp_seg_ctrl_regs = struct_tcp_seg_ctrl_regs # /home/saul/thundergate/include/tcp_seg_ctrl.h: 65
+tsc_length_offset = struct_tsc_length_offset# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 22
 
-wdma_mode = struct_wdma_mode # /home/saul/thundergate/include/wdma.h: 24
+tsc_dma_flags = struct_tsc_dma_flags# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 28
 
-wdma_status = struct_wdma_status # /home/saul/thundergate/include/wdma.h: 49
+tsc_vlan_tag = struct_tsc_vlan_tag# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 51
 
-wdma_regs = struct_wdma_regs # /home/saul/thundergate/include/wdma.h: 59
+tsc_pre_dma_cmd_xchng = struct_tsc_pre_dma_cmd_xchng# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 56
+
+tcp_seg_ctrl_regs = struct_tcp_seg_ctrl_regs# /Users/saul/src/thundergate/include/tcp_seg_ctrl.h: 65
+
+wdma_mode = struct_wdma_mode# /Users/saul/src/thundergate/include/wdma.h: 24
+
+wdma_status = struct_wdma_status# /Users/saul/src/thundergate/include/wdma.h: 49
+
+wdma_regs = struct_wdma_regs# /Users/saul/src/thundergate/include/wdma.h: 59
 
 # No inserted files
+
+# No prefix-stripping
 
