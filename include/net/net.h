@@ -68,9 +68,11 @@ void arp_cache_put(const u8 *ip, const u8 *mac);
 void icmp_input(const u8 *ip, const u8 *payload, u32 plen);
 void udp_input(const u8 *ip, const u8 *payload, u32 plen);
 
-/* Build and transmit an IPv4 datagram to `dst_ip` (resolving its MAC via
- * ARP). `proto` is an IP_PROTO_* value; `payload`/`plen` is the transport
- * data, already including its own header and checksum. */
-void ip_output(const u8 *dst_ip, u8 proto, const u8 *payload, u32 plen);
+/* Build and transmit an IPv4 datagram. The transport segment -- already
+ * complete, with its own header and checksum -- must already sit in
+ * net_txbuf at offset NET_L4_OFF; `plen` is its length and `proto` an
+ * IP_PROTO_* value. ip_output() resolves the next-hop MAC via ARP. */
+#define NET_L4_OFF 34   /* past the 14-byte Ethernet + 20-byte IPv4 headers */
+void ip_output(const u8 *dst_ip, u8 proto, u32 plen);
 
 #endif
