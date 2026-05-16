@@ -84,8 +84,8 @@ def main(args):
     if sys_name == "Linux":
         parser.add_argument("--device", help="BDF of tg3 PCI device", default=None)
         parser.add_argument("--devid", help="id of tg3 PCI device", default=None)
-    parser.add_argument("-p", "--ptvsd", help="enable ptvsd server", action="store_true")
-    parser.add_argument("--ptvsdpass", help="ptvsd server password", default=None)
+    parser.add_argument("-p", "--debugpy", help="enable the debugpy debug server", action="store_true")
+    parser.add_argument("--debugpy-port", help="debugpy server port", type=int, default=5678)
     parser.add_argument("-t", "--tests", help="run tests", action="store_true")
     parser.add_argument("-s", "--shell", help="ipython cli", action="store_true")
     parser.add_argument("-b", "--backup", help="create eeprom backup", action="store_true", default=False)
@@ -114,16 +114,16 @@ def main(args):
     logger.info("tg3 %s initializing" % ima)
     logger.debug("process id is %d" % os.getpid())
 
-    if args.ptvsd:
-        import ptvsd
-        ptvsd.enable_attach(secret=args.ptvsdpass)
+    if args.debugpy:
+        import debugpy
+        debugpy.listen(args.debugpy_port)
         if args.wait:
-            logger.info("waiting for ptvsd client...")
-            ptvsd.wait_for_attach()
-            logger.info("ptvsd client attached!")
-            ptvsd.break_into_debugger()
+            logger.info("waiting for debugpy client on port %d..." % args.debugpy_port)
+            debugpy.wait_for_client()
+            logger.info("debugpy client attached!")
+            debugpy.breakpoint()
         else:
-            logger.info("ptvsd server enabled")
+            logger.info("debugpy server listening on port %d" % args.debugpy_port)
     elif args.wait:
         print("[!] press 'enter' to continue...")
         input()
