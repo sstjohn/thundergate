@@ -89,9 +89,9 @@ tg3_mem = [
     ("gencomm", tg.gencomm, 0xb50, 1),
     ("txbd", tg.sbd, 0x4000, 0x200),
     ("rxbd", tg.rbd, 0x6000, 0x100),
-    ("txmbuf0", tg.mbuf, 0x8000, (22 * 1024) / sizeof(tg.mbuf)),
-    ("txmbuf1", tg.mbuf, 0xd800, (8 * 1024) / sizeof(tg.mbuf)),
-    ("rxmbuf", tg.mbuf, 0x10000, (40 * 1024) / sizeof(tg.mbuf))
+    ("txmbuf0", tg.mbuf, 0x8000, (22 * 1024) // sizeof(tg.mbuf)),
+    ("txmbuf1", tg.mbuf, 0xd800, (8 * 1024) // sizeof(tg.mbuf)),
+    ("rxmbuf", tg.mbuf, 0x10000, (40 * 1024) // sizeof(tg.mbuf))
 ]
 
 class Device(object):
@@ -179,7 +179,7 @@ class Device(object):
         x = cast(self.bar0 + offset, POINTER(t)).contents
         x.block_name = name
         x.offset = offset
-        x._block_regs = cast(self.bar0 + offset, POINTER(c_uint32 * (sizeof(t) / 4))).contents 
+        x._block_regs = cast(self.bar0 + offset, POINTER(c_uint32 * (sizeof(t) // 4))).contents 
         x._dev = self
         return x
 
@@ -213,7 +213,7 @@ class Device(object):
             self.pci.misc_host_ctrl.mask_interrupt = 0
 
     def map_registers(self):
-        self.reg = cast(self.bar0, POINTER(c_uint32 * (0x8000 / 4))).contents
+        self.reg = cast(self.bar0, POINTER(c_uint32 * (0x8000 // 4))).contents
 
         for (name, offset, t) in tg3_blocks:
             setattr(self, name, self.block_at(name, offset, t))

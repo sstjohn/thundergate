@@ -21,7 +21,7 @@ import ctypes
 
 def _init_xx_ring(self, bdtype):
     mm = self.mm
-    ring_len = mm.page_sz / ctypes.sizeof(bdtype)
+    ring_len = mm.page_sz // ctypes.sizeof(bdtype)
     if ring_len > 512:
         ring_len = 512
 

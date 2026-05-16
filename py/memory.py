@@ -19,6 +19,7 @@
 from ctypes import *
 from socket import htonl
 import struct
+from functools import reduce
 
 def is_bf(t):
     try:

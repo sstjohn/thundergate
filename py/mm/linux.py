@@ -85,7 +85,7 @@ class LinuxMemMgr(_MemMgr):
             page_sz = self._page_sz
             page = vaddr & ~(page_sz - 1)
             offset = vaddr ^ page
-            page_idx = page / page_sz
+            page_idx = page // page_sz
 
             fd = os.open("/proc/self/pagemap", os.O_RDONLY)
             os.lseek(fd, page_idx << 3, os.SEEK_SET)

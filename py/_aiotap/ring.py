@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 import tglib as tg
 
 def _init_xx_ring(self, bdtype):
-    ring_len = self.mm.page_sz / ctypes.sizeof(bdtype)
+    ring_len = self.mm.page_sz // ctypes.sizeof(bdtype)
     if ring_len > 512:
         ring_len = 512
 

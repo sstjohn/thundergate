@@ -54,7 +54,7 @@ def dump(self):
             if 0 == i % 0x10:
                     print()
                     print("0x%04x: " % (self.offset + i), end=' ')
-            print("%08x" % self.mem[i / 4], end=' ')
+            print("%08x" % self.mem[i // 4], end=' ')
     print()
 
 def _enable(self,reset=0,quiet=0):

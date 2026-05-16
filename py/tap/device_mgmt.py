@@ -125,7 +125,7 @@ def _rbdi_setup(driver):
     prepare_block(driver.device.rbdi, regflags)
 
 def __init_xx_ring(mm, bdtype):
-    ring_len = min(mm.page_sz / sizeof(bdtype), 512)
+    ring_len = min(mm.page_sz // sizeof(bdtype), 512)
 
     for i in range(4):
         ring_len |= (ring_len >> (2 ** i))

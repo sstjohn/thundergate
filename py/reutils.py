@@ -200,9 +200,9 @@ def disp_diff(a, b, ilvl=0, title=""):
                     print(title)
                     title = ""
                 print("%s%s:" % (" " * ilvl, f[0]), end=' ')
-                print("\t" * (6 - (len(f[0]) + ilvl + 2) / 8), end=' ')
+                print("\t" * (6 - (len(f[0]) + ilvl + 2) // 8), end=' ')
                 print("%x" % av, end=' ')
-                print("\t" * (3 - (len("%x" % av) + 1) / 8), end=' ')
+                print("\t" * (3 - (len("%x" % av) + 1) // 8), end=' ')
                 print("%x" % bv)
 
 
@@ -312,7 +312,7 @@ def whats_at(addr):
     try:
         if Array in reg_t.__bases__:
             reg_size = sizeof(reg_t._type_)
-            index = (addr - (reg_offset + block_offset)) / reg_size
+            index = (addr - (reg_offset + block_offset)) // reg_size
             reg_name = reg_name + ("[0x%x]" % index)
             reg_offset += index * reg_size
             reg_t = reg_t._type_
@@ -358,11 +358,11 @@ def __blargh():
                         sov = getattr(o, g[0])
                         snv = getattr(n, g[0])
                         if sov != snv:
-                            tabs = (6 - (len(g[0]) + 3) / 8)
+                            tabs = (6 - (len(g[0]) + 3) // 8)
                             fmtstr = "   %s" + ('\t' * tabs) + "%x\t\t%x"
                             print(fmtstr % (g[0], sov, snv))
                 else:
                     if ov != nv:
-                        tabs = (6 - (len(f[0]) + 2) / 8)
+                        tabs = (6 - (len(f[0]) + 2) // 8)
                         fmtstr = "  %s" + ('\t' * tabs) + "%x\t\t%x"
                         print(fmtstr % (f[0], ov, nv))
