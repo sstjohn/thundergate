@@ -24,6 +24,9 @@ struct gate_config config = {
 	DEFAULT_CLOAK_VID,
 	DEFAULT_CLOAK_DID,
 	DEFAULT_CLOAK_CC,
+	DEFAULT_IP_ADDR,
+	DEFAULT_NETMASK,
+	DEFAULT_GATEWAY,
 };
 
 struct gate_state state = {

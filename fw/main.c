@@ -1,6 +1,6 @@
 /*
  *  ThunderGate - an open source toolkit for PCI bus exploration
- *  Copyright (C) 2015  Saul St. John
+ *  Copyright (C) 2015-2026  Saul St. John
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,21 +17,24 @@
  */
 
 #include "fw.h"
+#include "net/net.h"
 
-void main() 
-{	
-	while (1) {
-		if (grc.rxcpu_event.emac) {
-			check_link();
-		}
-		if (grc.rxcpu_event.timer) {
-			beacon();
-		}
-		if (grc.rxcpu_event.rdiq) {
-			rx();
-		}
-		if (grc.rxcpu_event.sw_event_0) {
-			lgate_reply();
-		}
-	}
-} 
+void main()
+{
+    net_init();
+
+    while (1) {
+        if (grc.rxcpu_event.emac) {
+            check_link();
+        }
+        if (grc.rxcpu_event.timer) {
+            beacon();
+        }
+        if (grc.rxcpu_event.rdiq) {
+            rx();
+        }
+        if (grc.rxcpu_event.sw_event_0) {
+            lgate_reply();
+        }
+    }
+}
