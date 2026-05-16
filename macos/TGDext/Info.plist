@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>TGDext</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.github.sstjohn.thundergate.TGDext</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>TGDext</string>
+	<key>CFBundlePackageType</key>
+	<string>DEXT</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>OSBundleUsageDescription</key>
+	<string>ThunderGate access to the Tigon3 Ethernet controller.</string>
+	<key>IOKitPersonalities</key>
+	<dict>
+		<key>TGPCIDevice</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.github.sstjohn.thundergate.TGDext</string>
+			<key>CFBundleIdentifierKernel</key>
+			<string>com.apple.kpi.iokit</string>
+			<key>IOClass</key>
+			<string>IOUserService</string>
+			<key>IOUserClass</key>
+			<string>TGPCIDevice</string>
+			<key>IOUserServerName</key>
+			<string>com.github.sstjohn.thundergate.TGDext</string>
+			<key>IOProviderClass</key>
+			<string>IOPCIDevice</string>
+			<!--
+			   IOPCIMatch: space-separated (deviceID << 16 | vendorID)
+			   values, vendor 0x14e4 (Broadcom). 0x1682 is ThunderGate's
+			   historical default (see py/main.py); the rest cover common
+			   standalone Tigon3 NICs. Add your device's ID here -- find
+			   it with `system_profiler SPPCIDataType` or lspci.
+			-->
+			<key>IOPCIMatch</key>
+			<string>0x168214e4 0x164414e4 0x164514e4 0x164614e4 0x164714e4 0x164814e4 0x165314e4 0x165914e4 0x167714e4 0x168414e4</string>
+			<key>UserClientProperties</key>
+			<dict>
+				<key>IOClass</key>
+				<string>IOUserUserClient</string>
+				<key>IOUserClass</key>
+				<string>TGUserClient</string>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>tgctl</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.github.sstjohn.thundergate</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>tgctl</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>11.0</string>
+	<key>LSBackgroundOnly</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright (C) 2015-2026 Saul St. John. GPLv3.</string>
+	<!--
+	   OSSystemExtensionUsageDescription is shown to the user when the
+	   embedded dext requests activation.
+	-->
+	<key>OSSystemExtensionUsageDescription</key>
+	<string>ThunderGate uses a driver extension to reach the Tigon3 NIC.</string>
+</dict>
+</plist>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	   The container app must be entitled to install system extensions.
+	   This entitlement is not restricted: a free/personal team, or local
+	   signing, is sufficient. (The restricted DriverKit entitlements live
+	   on the dext, not here -- see macos/TGDext/TGDext.entitlements.)
+	-->
+	<key>com.apple.developer.system-extension.install</key>
+	<true/>
+</dict>
+</plist>

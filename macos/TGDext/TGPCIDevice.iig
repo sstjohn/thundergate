@@ -1,0 +1,61 @@
+/*
+ *  ThunderGate - an open source toolkit for PCI bus exploration
+ *  Copyright (C) 2015-2026  Saul St. John
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * TGPCIDevice -- the ThunderGate dext's matching IOService.
+ *
+ * It matches the Tigon3 PCI device (Info.plist IOKitPersonalities),
+ * opens it, keeps a descriptor for BAR 0, and vends a TGUserClient.
+ *
+ * BUILD NOTE: .iig files are processed by Xcode's `iig` tool -- this
+ * dext must be built from an Xcode DriverKit target (see
+ * doc/INSTALL.macos.md). The DriverKit / PCIDriverKit API calls in the
+ * matching .cpp target the current SDK; verify signatures against the
+ * installed SDK headers when the Xcode project is first built.
+ */
+
+#ifndef TGPCIDevice_h
+#define TGPCIDevice_h
+
+#include <Availability.h>
+#include <DriverKit/IOService.iig>
+#include <DriverKit/IOMemoryDescriptor.iig>
+
+class TGPCIDevice: public IOService
+{
+public:
+    virtual bool init() override;
+    virtual void free() override;
+
+    virtual kern_return_t Start(IOService * provider) override;
+    virtual kern_return_t Stop(IOService * provider) override;
+
+    virtual kern_return_t NewUserClient(uint32_t type,
+                                        IOUserClient ** userClient) override;
+
+    /*
+     * Helpers invoked by TGUserClient. Both objects live in this dext,
+     * so these are local (in-process) calls, not cross-process IPC.
+     */
+    virtual kern_return_t ConfigRead32(uint64_t offset, uint32_t * value);
+    virtual kern_return_t ConfigWrite32(uint64_t offset, uint32_t value);
+    virtual kern_return_t GetBAR0Size(uint64_t * size);
+    virtual kern_return_t CopyBAR0Memory(IOMemoryDescriptor ** memory);
+};
+
+#endif /* TGPCIDevice_h */
