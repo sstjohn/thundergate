@@ -31,7 +31,7 @@ class SysfsInterface(object):
         self.mm = LinuxMemMgr()
 
     def _open_device(self):
-        with file(self.dd + "/enable", "w") as f:
+        with open(self.dd + "/enable", "w") as f:
             f.write('1')
             self.cfgfd = os.open(self.dd + "/config", os.O_RDWR)
             try: self.barfd = os.open(self.dd + "/resource0_wc", os.O_RDWR)

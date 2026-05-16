@@ -57,7 +57,7 @@ class TapWinInterface(object):
 
     def _set_tapdev_status(self, connected):
         if self.verbose:
-            print "[+] setting tapdev status to %s" % ("up" if connected else "down")
+            print("[+] setting tapdev status to %s" % ("up" if connected else "down"))
         val = c_int32(1 if connected else 0)
         if not DeviceIoControl(self.tfd, TAP_WIN_IOCTL_SET_MEDIA_STATUS, pointer(val), 4, pointer(val), 4, None, None):
             raise WinError()

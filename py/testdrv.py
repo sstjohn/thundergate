@@ -64,7 +64,7 @@ class TestDriver(object):
     def gate_send(self):
         dev = self.dev
 
-        print "[+] constructing buffer:",
+        print("[+] constructing buffer:", end=' ')
         buf_vaddr = dev.interface.mm.alloc(1024)
         buf = cast(buf_vaddr, POINTER(c_char))
         for b in range(0, 1024, 4):
@@ -73,9 +73,9 @@ class TestDriver(object):
             buf[b+2] = '\xbe'
             buf[b+3] = '\xef'
         buf_paddr = dev.interface.mm.get_paddr(buf_vaddr)
-        print "vaddr %x, paddr %x" % (buf_vaddr, buf_paddr)
+        print("vaddr %x, paddr %x" % (buf_vaddr, buf_paddr))
 
-        print "[+] resetting device"
+        print("[+] resetting device")
         dev.mem.write_dword(0xe00, 0)
         self.clear_txmbufs()
         self.clear_txbds()
@@ -84,31 +84,31 @@ class TestDriver(object):
         if dev.mem.gencomm.dword[0xac] >> 16 != 0x88b5:
             raise Exception("thundergate firmware does not appear to be runing.")
 
-        print "[+] posting command to local thundergate command window"
+        print("[+] posting command to local thundergate command window")
         dev.mem.write_dword(0xe04, buf_paddr >> 32)
         dev.mem.write_dword(0xe08, buf_paddr & 0xffffffff)
         dev.mem.write_dword(0xe0c, 0x400)
         dev.mem.write_dword(0xe00, 0x88b5000e)
 
-        print "[+] saving state"
+        print("[+] saving state")
         initial = reutils.state_save(dev)
 
-        print "[+] setting sw event 0"
+        print("[+] setting sw event 0")
         dev.grc.rxcpu_event.sw_event_0 = 1
 
         cntr = 0
         while (dev.grc.rxcpu_event.sw_event_0):
             cntr += 1
             if cntr > 100:
-                print "[!] timed out waiting for command completion"
+                print("[!] timed out waiting for command completion")
                 break
             usleep(100)
 
         if cntr <= 100:
-            print "[+] command completed after usleeping for %d" % (cntr * 100)
+            print("[+] command completed after usleeping for %d" % (cntr * 100))
 
         if dev.mem.gencomm.dword[0xac] != 0x88b5000e:
-            print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
+            print("[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac])
 
         intermediate = reutils.state_diff(dev, initial)
 
@@ -118,26 +118,26 @@ class TestDriver(object):
             buf[b+2] = '\xd0'
             buf[b+3] = '\x0d'
 
-        print "[+] setting sw event 0 again"
+        print("[+] setting sw event 0 again")
         dev.grc.rxcpu_event.sw_event_0 = 1
 
         cntr = 0
         while (dev.grc.rxcpu_event.sw_event_0):
             cntr += 1
             if cntr > 100:
-                print "[!] timed out waiting for command completion"
+                print("[!] timed out waiting for command completion")
                 break
             usleep(100)
 
         if cntr <= 100:
-            print "[+] command completed after usleeping for %d" % (cntr * 100)
+            print("[+] command completed after usleeping for %d" % (cntr * 100))
 
         if dev.mem.gencomm.dword[0xac] != 0x88b5000e:
-            print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
+            print("[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac])
 
         inter2 = reutils.state_diff(dev, intermediate)
     
-        print "[+] constructing new buffer:",
+        print("[+] constructing new buffer:", end=' ')
         buf_vaddr = dev.interface.mm.alloc(1024)
         buf = cast(buf_vaddr, POINTER(c_char))
         for b in range(0, 1024, 4):
@@ -146,27 +146,27 @@ class TestDriver(object):
             buf[b+2] = '\xdc'
             buf[b+3] = '\xba'
         buf_paddr = dev.interface.mm.get_paddr(buf_vaddr)
-        print "vaddr %x, paddr %x" % (buf_vaddr, buf_paddr)
+        print("vaddr %x, paddr %x" % (buf_vaddr, buf_paddr))
 
         dev.mem.write_dword(0xe04, buf_paddr >> 32)
         dev.mem.write_dword(0xe08, buf_paddr & 0xffffffff)
 
-        print "[+] setting sw event 0 again"
+        print("[+] setting sw event 0 again")
         dev.grc.rxcpu_event.sw_event_0 = 1
 
         cntr = 0
         while (dev.grc.rxcpu_event.sw_event_0):
             cntr += 1
             if cntr > 100:
-                print "[!] timed out waiting for command completion"
+                print("[!] timed out waiting for command completion")
                 break
             usleep(100)
 
         if cntr <= 100:
-            print "[+] command completed after usleeping for %d" % (cntr * 100)
+            print("[+] command completed after usleeping for %d" % (cntr * 100))
 
         if dev.mem.gencomm.dword[0xac] != 0x88b5000e:
-            print "[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac]
+            print("[!] unexpected response: %08x" % dev.mem.gencomm.dword[0xac])
 
         final = reutils.state_diff(dev, inter2)
     def pxeidiff(self):
@@ -201,9 +201,9 @@ class TestDriver(object):
         dev.reset(quick=True)
         cpu.mode.halt = 1
 
-        print
-        print "[!] read rom now"
-        print
+        print()
+        print("[!] read rom now")
+        print()
 
         r_is = {}
         for i in range(1000000):
@@ -224,20 +224,20 @@ class TestDriver(object):
             except:
                 uniq += [(i, r_is[i])]
 
-        print "[+] rom-unique insns:"
+        print("[+] rom-unique insns:")
         for i in uniq:
-            print "\t%08x: %d" % (i[0], i[1])
+            print("\t%08x: %d" % (i[0], i[1]))
 
     def read_oprom(self, count = 4):
         dev = self.dev
         bdf = dev.interface.bdf
         words = []
-        print "[+] reading oprom..."
-        with file("/sys/bus/pci/devices/%s/rom" % bdf, "rb+") as rom:
+        print("[+] reading oprom...")
+        with open("/sys/bus/pci/devices/%s/rom" % bdf, "rb+") as rom:
             try:
                 x = rom.read(4)
             except:
-                print "[+] enabling oprom"
+                print("[+] enabling oprom")
                 rom.write("1")
                 x = rom.read(4)
 
@@ -248,7 +248,7 @@ class TestDriver(object):
 
                 words += [unpack(">I", x)[0]]
 
-        print "[+] last word read: %08x" % unpack(">I", x)[0]
+        print("[+] last word read: %08x" % unpack(">I", x)[0])
         return words
 
     def pxediff(self):
@@ -274,8 +274,8 @@ class TestDriver(object):
         dev.nvram.setpxe()
         dev.reset()
 
-        print "[+] press any key to continue..."
-        raw_input()
+        print("[+] press any key to continue...")
+        input()
         dev.interface.reattach()
         dev.init()
 
@@ -346,7 +346,7 @@ class TestDriver(object):
             bn = bn[:-2]
         if bn.endswith("_regs"):
             bn = bn[:-5]
-        print "[+] pumping %s" % bn
+        print("[+] pumping %s" % bn)
         block.block_enable(quiet = 1)
         usleep(10)
         block.block_disable(quiet = 1)
@@ -360,8 +360,8 @@ class TestDriver(object):
         test_buf_v = dev.interface.mm.alloc(8)
         cast(test_buf_v, POINTER(c_uint64))[0] = ~0
         test_buf_p = dev.interface.mm.get_paddr(test_buf_v)
-        print "test buf is at %x" % test_buf_p
-        print "test buf starts %s" % repr(cast(test_buf_v, POINTER(c_char * 8)).contents.raw)
+        print("test buf is at %x" % test_buf_p)
+        print("test buf starts %s" % repr(cast(test_buf_v, POINTER(c_char * 8)).contents.raw))
 
         dev.pci.msi_lower_address = test_buf_p & 0xffffffff
         dev.pci.msi_upper_address = test_buf_p >> 32
@@ -370,7 +370,7 @@ class TestDriver(object):
         dev.pci.msi_cap_hdr.msi_enable = 1
         dev.msi.status.msi_pci_request = 1
         usleep(1000)
-        print "test buf is now %s" % repr(cast(test_buf_v, POINTER(c_char * 8)).contents.raw)
+        print("test buf is now %s" % repr(cast(test_buf_v, POINTER(c_char * 8)).contents.raw))
 
         
         for tl in (False, True):
@@ -382,11 +382,11 @@ class TestDriver(object):
 
                     for i in range(0x7c00, 0x8000, 4):
                         if 0 == i % 32:
-                            print
-                            print "%04x'%d%d%d: " % (i, 1 if hi else 0, 1 if pl else 0, 1 if tl else 0),
+                            print()
+                            print("%04x'%d%d%d: " % (i, 1 if hi else 0, 1 if pl else 0, 1 if tl else 0), end=' ')
                         elif 0 == i % 16:
-                            print "\t",
-                        print "%08x" % dev.reg[i >> 2],
+                            print("\t", end=' ')
+                        print("%08x" % dev.reg[i >> 2], end=' ')
 
     def spy_read(self, tap):
         dev = self.dev
@@ -401,7 +401,7 @@ class TestDriver(object):
 
         test_buf_v = dev.interface.mm.alloc(128)
         test_buf_p = dev.interface.mm.get_paddr(test_buf_v)
-        print "[+] allocated test buffer at vaddr %x, paddr %x" % (test_buf_v, test_buf_p)
+        print("[+] allocated test buffer at vaddr %x, paddr %x" % (test_buf_v, test_buf_p))
         for i in range(128):
             cast(test_buf_v, POINTER(c_char))[i] = '\xb4'
 
@@ -429,11 +429,11 @@ class TestDriver(object):
         dev.mem.txbd[0].vlan_tag = 0
         dev.mem.txbd[0].reserved = 0
 
-        print "[+] txbd[0] forged"
+        print("[+] txbd[0] forged")
         state = reutils.state_diff(dev, state)
 
         dev.sbdi.ofs_48 = 0x210
-        print "[+] sbdi mailbox msg delivered"
+        print("[+] sbdi mailbox msg delivered")
         state = reutils.state_diff(dev, state)
 
 
@@ -453,10 +453,10 @@ class TestDriver(object):
         #dev.sdc.reset()
 
 
-        print "[+] saving initial state"
+        print("[+] saving initial state")
         state = reutils.state_save(dev)
         
-        print "[+] submitting test packet to tap driver"
+        print("[+] submitting test packet to tap driver")
         tap.send('\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x88\xb5' + ('\xaa\x55' * 25)) #, flags=("cpu_post_dma"))
         usleep(10)
         state = reutils.state_diff(dev, state)
@@ -472,7 +472,7 @@ class TestDriver(object):
         dev = self.dev
         dev.reset()
 
-        print "[+] testing remote dma read"
+        print("[+] testing remote dma read")
 
         vaddr = dev.interface.mm.alloc(8)
         paddr = dev.interface.mm.get_paddr(vaddr)
@@ -486,7 +486,7 @@ class TestDriver(object):
         while dev.mem.read_dword(0xb50) >> 16 != 0x88b5:
             cnt += 1
             if cnt > 10000:
-                print "[-] fw signature not found in gencomm"
+                print("[-] fw signature not found in gencomm")
                 return
             usleep(10)
 
@@ -498,9 +498,9 @@ class TestDriver(object):
             pass
 
         if buf[0] != dev.mem.read_dword(0xb54) or buf[1] != dev.mem.read_dword(0xb58):
-            print "[-] remote dma read test failed"
+            print("[-] remote dma read test failed")
         else:
-            print "[+] remote dma read test complete"
+            print("[+] remote dma read test complete")
 
         dev.interface.mm.free(vaddr)
 
@@ -514,7 +514,7 @@ class TestDriver(object):
         dev.hpmb.box[tg.mb_rbd_standard_producer].low = 0
         
         end = 0x6000 + (size * 4)
-        print "[+] clearing device memory from 0x6000 to 0x%04x" % end
+        print("[+] clearing device memory from 0x6000 to 0x%04x" % end)
         for i in range(0x6000, end, 4):
                 dev.mem.write_dword(i, 0)
 
@@ -522,7 +522,7 @@ class TestDriver(object):
                 if dev.mem.read_dword(i) != 0:
                         raise Exception("buffer not clear")
         
-        print "[+] zapping rdi std rcb"
+        print("[+] zapping rdi std rcb")
         dev.rdi.std_rcb.host_addr_hi = 0
         dev.rdi.std_rcb.host_addr_low = 0
         dev.rdi.std_rcb.ring_size = 0
@@ -539,7 +539,7 @@ class TestDriver(object):
         
         state = reutils.state_save(dev)
 
-        print "[+] setting up standard rcb"
+        print("[+] setting up standard rcb")
 
         dev.rdi.std_rcb.host_addr_hi = (paddr >> 32)
         dev.rdi.std_rcb.host_addr_low = (paddr & 0xffffffff)
@@ -550,7 +550,7 @@ class TestDriver(object):
         
         state = reutils.state_diff(dev, state)
 
-        print "[+] initiating dma read of sz %x to buffer at vaddr %x, paddr %x" % (size, vaddr, paddr)
+        print("[+] initiating dma read of sz %x to buffer at vaddr %x, paddr %x" % (size, vaddr, paddr))
         dev.hpmb.box[tg.mb_rbd_standard_producer].low = size >> 3
 
         blocks = ["rbdi", "rdma"]
@@ -563,7 +563,7 @@ class TestDriver(object):
                 if dev.mem.read_dword(i) != buf[(i - 0x6000) >> 2]:
                         raise Exception("dma read test failed")
 
-        print "[+] dma read test complete"
+        print("[+] dma read test complete")
 
         dev.interface.mm.free(vaddr)
 
@@ -598,29 +598,29 @@ class TestDriver(object):
 
         state = reutils.state_diff(dev, state) 
 
-        print "[*] coalescing"
+        print("[*] coalescing")
         dev.hc.mode.coalesce_now = 1
         state = reutils.state_diff(dev, state)
 
-        print "[*] status block is now"
-        print "    %s" % repr(sbuf.contents.raw)
-        print
+        print("[*] status block is now")
+        print("    %s" % repr(sbuf.contents.raw))
+        print()
 
 
         dev.wdma.block_enable()
         state = reutils.state_diff(dev, state)
 
-        print "[*] status block is now"
-        print "    %s" % repr(sbuf.contents.raw)
-        print
+        print("[*] status block is now")
+        print("    %s" % repr(sbuf.contents.raw))
+        print()
        
-        print "[*] coalescing"
+        print("[*] coalescing")
         dev.hc.mode.coalesce_now = 1
         state = reutils.state_diff(dev, state)
 
-        print "[*] status block is now"
-        print "    %s" % repr(sbuf.contents.raw)
-        print
+        print("[*] status block is now")
+        print("    %s" % repr(sbuf.contents.raw))
+        print()
 
     def reg_finder(self):
         dev = self.dev
@@ -674,7 +674,7 @@ class TestDriver(object):
 
             for i in range(0x100, 0x7c00, 4):
                 if i % 0x400 == 0:
-                    print "now at %04x" % i
+                    print("now at %04x" % i)
                 if 0 == os.system("dmesg -c | grep -q dmar"):
                     raise Exception("noticed dmar freaking out at %04x" % i)
 
@@ -709,7 +709,7 @@ class TestDriver(object):
                     pass
 
                 if regs[i]['name'].startswith('ofs') and regs[i]['rw']:
-                    print "Unknown rw register at %04x" % i
+                    print("Unknown rw register at %04x" % i)
 
                 w.writerow(regs[i])
 

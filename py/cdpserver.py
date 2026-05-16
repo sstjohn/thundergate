@@ -42,7 +42,7 @@ try:
     from capstone import *
     from capstone.mips import *
     if cs_version()[0] < 3:
-        print "[-] capstone outdated - disassembly unavailable"
+        print("[-] capstone outdated - disassembly unavailable")
         _no_capstone = True
     else:
         _no_capstone = False
@@ -54,10 +54,10 @@ try:
 
         def _disassemble_word(word):
             i = struct.pack(">I", word)
-            r = md.disasm(i, 4).next()
+            r = next(md.disasm(i, 4))
             return "%s %s" % (r.mnemonic, r.op_str)
 except:
-    print "[-] capstone not present - disassembly unavailable"
+    print("[-] capstone not present - disassembly unavailable")
     _no_capstone = True
 
 class ScopeModel(GenericModel):
@@ -88,7 +88,7 @@ class Var_Tracker(object):
         self._add_scope(s, fl)
 
     def _add_scope(self, s, fl=0):
-        print "adding scope %s" % s.name
+        print("adding scope %s" % s.name)
         s.fl = fl
         self._assign_variablesReference(s)
         self._scopes += [s]
@@ -263,7 +263,7 @@ class CDPServer(object):
                 ir_reg_val = self.dev.rxcpu.ir
                 insn_from_mem = struct.unpack(">I", self.dev.rxcpu.tr_read(current_pc, 1))[0]
                 if ir_reg_val != insn_from_mem:
-                    print "ir reg is %x, should be %x, fixing." % (ir_reg_val, insn_from_mem)
+                    print("ir reg is %x, should be %x, fixing." % (ir_reg_val, insn_from_mem))
                     self.dev.rxcpu.ir = insn_from_mem
                     ir_reg_val = self.dev.rxcpu.ir
                 assert ir_reg_val == insn_from_mem
@@ -312,7 +312,7 @@ class CDPServer(object):
         b = {"stackFrames": []}
         for f in self._stack:
             loc = self._image.loc_at(f["pc"])
-            print "0x%x" % f["pc"]
+            print("0x%x" % f["pc"])
             source_path = loc[3] + os.sep + loc[1]
             source_name = "fw" + os.sep + loc[1]
             s = {"name": source_name, "path": source_path}
@@ -461,7 +461,7 @@ class CDPServer(object):
         self._respond(cmd, False)
 
     def _log_write(self, data):
-        print data.strip()
+        print(data.strip())
         sys.stdout.flush()
 
     def _evt_stopped(self):
@@ -470,21 +470,21 @@ class CDPServer(object):
         if self.dev.rxcpu.status.halted:
             b["reason"] = "pause"
             if not self._image.addr2line(pc):
-                print "halted at unknown pc %x, advancing..." % pc
+                print("halted at unknown pc %x, advancing..." % pc)
                 self.__advance_to_next_line()
                 pc = self.dev.rxcpu.pc
                 cl = self._image.addr2line(pc)
-                print "finished halting at pc %x, \"%s\"" % (pc, cl)
+                print("finished halting at pc %x, \"%s\"" % (pc, cl))
                 self.__prepare_resume_from_breakpoint()
         else:
             if pc in self._bp_replaced_insn:
                 b["reason"] = "breakpoint"
-                print "breakpoint reached at %x (\"%s\")" % (pc, self._image.addr2line(pc))
+                print("breakpoint reached at %x (\"%s\")" % (pc, self._image.addr2line(pc)))
                 self.__prepare_resume_from_breakpoint()
             else:
                 b["reason"] = "exception"
                 b["text"] = "status: %x" % self.dev.rxcpu.status.word
-                print "stopped on unknown rxcpu exception at %x (\"%s\"), status: %x" % (pc, self._image.addr2line(pc), self.dev.rxcpu.status.word)
+                print("stopped on unknown rxcpu exception at %x (\"%s\"), status: %x" % (pc, self._image.addr2line(pc), self.dev.rxcpu.status.word))
         self._event("stopped", body = b)
 
     def _event(self, event, body = None):
@@ -542,12 +542,12 @@ class CDPServer(object):
 
         for addr in line_addrs:
             if line in current_breakpoints and addr in current_breakpoints[line]:
-                print "breakpoint at %s+%d already set" % (filename, line)
+                print("breakpoint at %s+%d already set" % (filename, line))
             else:
                 self._bp_replaced_insn[addr] = self.__insn_repl(addr, 0xd)
                 try: current_breakpoints[line] += [addr]
                 except: current_breakpoints[line] = [addr]
-                print "breakpoint set at \"%s+%d\" (%x)" % (filename, line, addr)
+                print("breakpoint set at \"%s+%d\" (%x)" % (filename, line, addr))
         return True
 
     def _clear_breakpoint(self, filename, line_no = None):
@@ -564,14 +564,14 @@ class CDPServer(object):
             for addr in line_addrs:
                 self.__insn_repl(addr, self._bp_replaced_insn[addr])
                 del self._bp_replaced_insn[addr]
-                print "breakpoint cleared at \"%s+%d\" (%x)" % (filename, line, addr)
+                print("breakpoint cleared at \"%s+%d\" (%x)" % (filename, line, addr))
             del self._breakpoints[filename][line]
 
     def __prepare_resume_from_breakpoint(self):
         pc = self.dev.rxcpu.pc
         if pc in self._bp_replaced_insn:
             replacement = self._bp_replaced_insn[pc]
-            print "pc %x is a soft breakpoint, restoring ir with %x" % (pc, replacement) 
+            print("pc %x is a soft breakpoint, restoring ir with %x" % (pc, replacement)) 
             self.dev.rxcpu.ir = replacement
 
     def send(self, resp):

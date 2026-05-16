@@ -47,6 +47,6 @@ class IOMemMgr(LinuxMemMgr):
             res = c.ioctl(self.container, c.VFIO_IOMMU_MAP_DMA, c.byref(dma_map))
             e = c.errno.value
 
-        print "[+] mapped page sz %d at vaddr %x paddr %x for dma" % (page_sz, page, dma_map.iova)
+        print("[+] mapped page sz %d at vaddr %x paddr %x for dma" % (page_sz, page, dma_map.iova))
 
         return page, page_sz

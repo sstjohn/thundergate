@@ -25,14 +25,14 @@ def device_setup(self):
     dev = self.dev
     mm = self.mm
     dev.drv = self
-    print "[+] initializing device"
+    print("[+] initializing device")
     dev.init()
-    print "[+] resetting device"
+    print("[+] resetting device")
     dev.reset()
     sleep(0.5)
 
     if dev.pci.misc_host_ctrl.enable_tagged_status_mode == 0:
-        print "[+] enabling tagged status mode"
+        print("[+] enabling tagged status mode")
         dev.pci.misc_host_ctrl.enable_tagged_status_mode = 1
 
     dma_wmm = 0x6
@@ -42,55 +42,55 @@ def device_setup(self):
     except: pass
 
     if dev.pci.dma_rw_ctrl.dma_write_watermark != dma_wmm:
-        print "[+] configuring dma write watermark"
+        print("[+] configuring dma write watermark")
         dev.pci.dma_rw_ctrl.dma_write_watermark = dma_wmm
 
     if not dev.pci.dma_rw_ctrl.disable_cache_alignment:
-        print "[+] disabling pci dma alignment"
+        print("[+] disabling pci dma alignment")
         dev.pci.dma_rw_ctrl.disable_cache_alignment = 1
 
     if dev.msi.mode.msix_multi_vector_mode:
-        print "[+] disabling multi vector mode"
+        print("[+] disabling multi vector mode")
         dev.msi.mode.msix_multi_vector_mode = 0
 
     if not dev.grc.misc_local_control.interrupt_on_attention:
-        print "[+] configuring interrupts on grc attention"
+        print("[+] configuring interrupts on grc attention")
         dev.grc.misc_local_control.interrupt_on_attention = 1
 
     if not dev.grc.misc_local_control.auto_seeprom:
-        print "[+] configuring automatic eeprom access mode"
+        print("[+] configuring automatic eeprom access mode")
         dev.grc.misc_local_control.auto_seeprom = 1
 
     if not dev.grc.misc_config.timer_prescaler == 0x41:
-        print "[+] configuring grc timer prescaler"
+        print("[+] configuring grc timer prescaler")
         dev.grc.misc_config.timer_prescaler = 0x41
 
     if not dev.grc.mode.host_send_bds:
-        print "[+] enabling host send bds"
+        print("[+] enabling host send bds")
         self.dev.grc.mode.send_no_pseudo_header_cksum = 1
         self.dev.grc.mode.host_send_bds = 1
 
     if not dev.grc.mode.host_stack_up:
-        print "[+] setting host stack up"
+        print("[+] setting host stack up")
         dev.grc.mode.host_stack_up = 1
 
     if dev.bufman.dma_mbuf_low_watermark.count != 0x2a:
-        print "[+] setting dma mbuf low watermark"
+        print("[+] setting dma mbuf low watermark")
         dev.bufman.dma_mbuf_low_watermark.count = 0x2a
 
     if dev.bufman.mbuf_high_watermark.count != 0xa0:
-        print "[+] setting mbuf high watermark"
+        print("[+] setting mbuf high watermark")
         dev.bufman.mbuf_high_watermark.count = 0xa0
 
     if dev.emac.low_watermark_max_receive_frame.count != 1:
-        print "[+] configuring dma low watermark flow control"
+        print("[+] configuring dma low watermark flow control")
         dev.emac.low_watermark_max_receive_frame.count = 1
     
     dev.bufman.mode.attention_enable = 1
     dev.bufman.block_enable()
 
     if dev.rbdi.std_ring_replenish_threshold.count != 0x19:
-        print "[+] configuring standard rx producer ring replenish threshold"
+        print("[+] configuring standard rx producer ring replenish threshold")
         dev.rbdi.std_ring_replenish_threshold.count = 0x19
 
     self._init_rx_rings()
@@ -106,25 +106,25 @@ def device_setup(self):
 
     self.mac_addr = [getattr(dev.emac.addr[0], "byte_%d" % (i + 1)) for i in range(6)]
 
-    print ("[+] device mac addr: %02x" + (":%02x" * 5)) % tuple(self.mac_addr)
+    print(("[+] device mac addr: %02x" + (":%02x" * 5)) % tuple(self.mac_addr))
 
-    print "[+] configuring tx mac"
+    print("[+] configuring tx mac")
     dev.emac.tx_random_backoff = sum(self.mac_addr) & 0x3ff
     dev.emac.tx_mac_lengths.ipg = 0x6
     dev.emac.tx_mac_lengths.ipg_crs = 0x2
     dev.emac.tx_mac_lengths.slot = 0x20
    
-    print "[+] configuring rx mac"
+    print("[+] configuring rx mac")
     dev.emac.rx_mtu = 1500
     dev.emac.rx_rules_conf.no_rules_matches_default_class = 2
 
-    print "[+] configuring receive list placement"
+    print("[+] configuring receive list placement")
     dev.rlp.config.default_interrupt_distribution_queue = 0
     dev.rlp.config.bad_frames_class = 1
     dev.rlp.config.number_of_active_lists = 0x10
     dev.rlp.config.number_of_lists_per_distribution_group = 1
 
-    print "[+] enabling rx statistics"
+    print("[+] enabling rx statistics")
     dev.rlp.stats_enable_mask.a1_silent_indication = 1
     dev.rlp.stats_enable_mask.cpu_mactq_priority_disable = 1
     dev.rlp.stats_enable_mask.enable_cos_stats = 1
@@ -137,13 +137,13 @@ def device_setup(self):
     assert dev.rlp.stats_enable_mask.word == 0x7bffff
     dev.rlp.stats_control.statistics_enable = 1
 
-    print "[+] enabling tx statistics"
+    print("[+] enabling tx statistics")
     dev.sdi.statistics_mask.counters_enable_mask = 1
     dev.sdi.statistics_control.faster_update = 1
     dev.sdi.statistics_control.statistics_enable = 1
     
     dev.hc.block_disable()
-    print "[+] configuring host coalesence"
+    print("[+] configuring host coalesence")
 
     dev.hc.mode.status_block_size = 2
     dev.hc.mode.clear_ticks_mode_on_rx = 1
@@ -171,21 +171,21 @@ def device_setup(self):
     dev.rlp.block_enable()
 
     if not dev.emac.mode.en_fhde:
-        print "[+] enabling frame header dma engine"
+        print("[+] enabling frame header dma engine")
         dev.emac.mode.en_fhde = 1
 
     if not dev.emac.mode.en_rde:
-        print "[+] enabling receive dma engine"
+        print("[+] enabling receive dma engine")
         dev.emac.mode.en_rde = 1
 
     if not dev.emac.mode.en_tde:
-        print "[+] enabling transmit dma engine"
+        print("[+] enabling transmit dma engine")
         dev.emac.mode.en_tde = 1
 
-    print "[+] clearing rx statistics"
+    print("[+] clearing rx statistics")
     dev.emac.mode.clear_rx_statistics = 1
 
-    print "[+] clearing tx statistics"
+    print("[+] clearing tx statistics")
     dev.emac.mode.clear_tx_statistics = 1
 
     while dev.emac.mode.clear_rx_statistics:
@@ -195,22 +195,22 @@ def device_setup(self):
         pass
 
     if not dev.emac.mode.en_rx_statistics:
-        print "[+] enabling rx statistics"
+        print("[+] enabling rx statistics")
         dev.emac.mode.en_rx_statistics = 1
 
     if not dev.emac.mode.en_tx_statistics:
-        print "[+] enabling tx statistics"
+        print("[+] enabling tx statistics")
         dev.emac.mode.en_tx_statistics = 1
 
     if not dev.emac.event_enable.link_state_changed:
-        print "[+] enabling emac attention on link statue changed"
+        print("[+] enabling emac attention on link statue changed")
         dev.emac.event_enable.link_state_changed = 1
 
     if not dev.grc.mode.int_on_mac_attn:
-        print "[+] enabling interrupt on mac attention"
+        print("[+] enabling interrupt on mac attention")
         dev.grc.mode.int_on_mac_attn = 1
 
-    print "[+] configuringing write dma engine"
+    print("[+] configuringing write dma engine")
     dev.wdma.mode.write_dma_pci_target_abort_attention_enable = 1
     dev.wdma.mode.write_dma_pci_master_abort_attention_enable = 1
     dev.wdma.mode.write_dma_pci_parity_attention_enable = 1
@@ -225,7 +225,7 @@ def device_setup(self):
     dev.wdma.mode.reserved2 = 0
     dev.wdma.block_enable()
 
-    print "[+] configuring read dma engine"
+    print("[+] configuring read dma engine")
     dev.rdma.mode.read_dma_pci_target_abort_attention_enable = 1
     dev.rdma.mode.read_dma_pci_master_abort_attention_enable = 1
     dev.rdma.mode.read_dma_pci_parity_error_attention_enable = 1
@@ -277,14 +277,14 @@ def device_setup(self):
 
     self._populate_rx_ring()
 
-    print "[+] enabling transmit mac"
+    print("[+] enabling transmit mac")
     dev.emac.tx_mac_mode.enable_bad_txmbuf_lockup_fix = 1
     #dev.emac.tx_mac_mode.enable_flow_control = 1
     dev.emac.tx_mac_mode.enable = 1
     
     usleep(100)
 
-    print "[+] enabling receive mac"
+    print("[+] enabling receive mac")
     #dev.emac.mac_hash_0 = 0xffffffff
     #dev.emac.mac_hash_1 = 0xffffffff
     #dev.emac.mac_hash_2 = 0xffffffff
@@ -301,7 +301,7 @@ def device_setup(self):
 
     usleep(100)
 
-    print "[+] configuring led"
+    print("[+] configuring led")
     dev.emac.led_control.word = 0x800
 
     dev.emac.low_watermark_max_receive_frames = 1

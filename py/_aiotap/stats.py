@@ -26,7 +26,7 @@ class TapStatistics(object):
         self.inbound = (0, 0)
         self.outbound = (0, 0)
         if not quiet:
-            print "[+] statistics reset"
+            print("[+] statistics reset")
 
 
     def pkt_in(self, length):
@@ -36,11 +36,11 @@ class TapStatistics(object):
         self.outbound = _ctr_inc(self.outbound, length)
 
     def display(self):
-        print
-        print "\t\t\t statistics "
-        print "\t\t\t------------"
-        print
-        print "inbound:\t%8d pkts\t\t%8d bytes" % self.inbound
-        print "outbound:\t%8d pkts\t\t%8d bytes" % self.outbound
-        print
-        print
+        print()
+        print("\t\t\t statistics ")
+        print("\t\t\t------------")
+        print()
+        print("inbound:\t%8d pkts\t\t%8d bytes" % self.inbound)
+        print("outbound:\t%8d pkts\t\t%8d bytes" % self.outbound)
+        print()
+        print()

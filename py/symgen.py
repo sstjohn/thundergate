@@ -30,9 +30,9 @@ xtra = [("reg", 0xc0000000),
 
 if __name__ == "__main__":
     for m in device.tg3_mem:
-        print "%s = 0x%x;" % (m[0], m[2])
+        print("%s = 0x%x;" % (m[0], m[2]))
     for r in device.tg3_blocks:
-        print "%s = 0x%x;" % (r[0], r[1] + 0xc0000000)
+        print("%s = 0x%x;" % (r[0], r[1] + 0xc0000000))
     for x in xtra:
-        print "%s = 0x%x;" % (x[0], x[1])
+        print("%s = 0x%x;" % (x[0], x[1]))
 

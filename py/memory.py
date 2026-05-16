@@ -154,7 +154,7 @@ class Memory(object):
 
         if self.dev.pci.mem_base_addr != window:
             if verbose:
-                print "[+] shifting memory aperature to %06x" % window
+                print("[+] shifting memory aperature to %06x" % window)
             self.dev.pci.mem_base_addr = window
 
         return window, offset
@@ -172,7 +172,7 @@ class Memory(object):
             rlength += 4 - (rlength % 4)
         
         if verbose:
-            print "[.] reading memory length %x at %08x:%04x" % (rlength, addr ^ offset, rstart)
+            print("[.] reading memory length %x at %08x:%04x" % (rlength, addr ^ offset, rstart))
 
         tmp = ''
         assert rlength > 0
@@ -208,7 +208,7 @@ class Memory(object):
             value = value + self.read(window + wstart + len(value), 4 - (len(value) % 4), verbose)
 
         if verbose:
-            print "[.] writing memory length %x at %08x:%04x" % (len(value), window, wstart)
+            print("[.] writing memory length %x at %08x:%04x" % (len(value), window, wstart))
 
         length = len(value) >> 2
 

@@ -319,7 +319,7 @@ def _device_setup(self):
     dev.sbds.mode.attention_enable = 1
     dev.sbds.block_enable()
 
-    print "[+] configuring led"
+    print("[+] configuring led")
     dev.emac.led_control.word = 0x800
 
 @coroutine

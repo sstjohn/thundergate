@@ -60,7 +60,7 @@ class TapWinInterface(object):
             raise WinError()
 
         if 0 == rr.value:
-            print "[!] no input records available (??)"
+            print("[!] no input records available (??)")
             return ''
 
         for i in range(rr.value):
@@ -87,17 +87,17 @@ class TapWinInterface(object):
  
     def _get_packet(self):
         if self.verbose:
-            print "[+] getting a packet from tap device...",
+            print("[+] getting a packet from tap device...", end=' ')
         pkt_len = self._tap_evt.pkt_len
         pkt = self._tap_evt.buffer
         self._tap_evt.reset()
         if self.verbose:
-            print "read %d bytes" % pkt_len
+            print("read %d bytes" % pkt_len)
         return (pkt, pkt_len)
 
     def _tap_write_completion(self, overlapped, pkt, errcode, written, overlapped_ptr):
         if self.verbose:
-            print "[.] freeing sent packet at %x" % addressof(pkt)
+            print("[.] freeing sent packet at %x" % addressof(pkt))
         self.mm.free(addressof(pkt))
         del self._pending_completions[addressof(pkt)]
 
@@ -106,18 +106,18 @@ class TapWinInterface(object):
             return
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         if self.verbose:
-            print "[!] attempting to write to the tap device...",
+            print("[!] attempting to write to the tap device...", end=' ')
         completion = FileIOCompletion(functools.partial(TapWinInterface._tap_write_completion, self, o, pkt))
         if not WriteFileEx(self.tfd, pkt, length, pointer(o), completion):
             raise WinError()
         else:
             self._pending_completions[addressof(pkt)] = completion
         if self.verbose:
-            print "queued %d bytes" % len(pkt)
+            print("queued %d bytes" % len(pkt))
 
     def _set_tapdev_status(self, connected):
         if self.verbose:
-            print "[+] setting tapdev status to %s" % ("up" if connected else "down")
+            print("[+] setting tapdev status to %s" % ("up" if connected else "down"))
         o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
         try:
             val = c_int32(1 if connected else 0)

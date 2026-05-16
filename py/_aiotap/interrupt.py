@@ -160,29 +160,29 @@ def _free_sent_bds(self):
             self._tx_ci += 1
 
 def _dump_bd(self, ci, rbd):
-    print "consuming bd 0x%x" % ci
-    print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
-    print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))
-    print " length:    %04x" % rbd.length
-    print " index:     %04x" % rbd.index
-    print " type:      %04x" % rbd.type
-    print " flags:    ",
+    print("consuming bd 0x%x" % ci)
+    print(" addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low))
+    print("  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index])))
+    print(" length:    %04x" % rbd.length)
+    print(" index:     %04x" % rbd.index)
+    print(" type:      %04x" % rbd.type)
+    print(" flags:    ", end=' ')
     for j in ["is_ipv6", "is_tcp", "l4_checksum_correct", "ip_checksum_correct", "reserved", "has_error", "has_vlan_tag", "reserved2", "reserved3", "rss_hash_valid", "packet_end", "reserved4", "reserved5"]:
         if getattr(rbd.flags, j):
-            print j,
-    print
+            print(j, end=' ')
+    print()
 
     if rbd.flags.rss_hash_type != 0:
-        print " rss hash type: %x" % rbd.flags.rss_hash_type
+        print(" rss hash type: %x" % rbd.flags.rss_hash_type)
 
-    print " ip cksum:  %04x" % rbd.ip_cksum
-    print " l4 cksum: %04x" % rbd.l4_cksum
-    print " err flags:",
+    print(" ip cksum:  %04x" % rbd.ip_cksum)
+    print(" l4 cksum: %04x" % rbd.l4_cksum)
+    print(" err flags:", end=' ')
     for j in ["reserved1", "reserved2", "reserved3", "reserved4", "reserved5", "reserved6", "reserved7", "giant_packet", "trunc_no_res", "len_less_64", "mac_abort", "dribble_nibble", "phy_decode_error", "link_lost", "collision", "bad_crc"]:
         if getattr(rbd.error_flags, j):
-            print j,
-    print
-    print " vlan_tag:  %04x" % rbd.vlan_tag
-    print " rss_hash:  %08x" % rbd.rss_hash
-    print " opaque:    %08x" % rbd.opaque
+            print(j, end=' ')
+    print()
+    print(" vlan_tag:  %04x" % rbd.vlan_tag)
+    print(" rss_hash:  %08x" % rbd.rss_hash)
+    print(" opaque:    %08x" % rbd.opaque)
 

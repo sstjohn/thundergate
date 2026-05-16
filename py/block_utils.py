@@ -25,14 +25,14 @@ def disp(b, ilvl=0):
         if name[0] == "_":
             name = "<%s>" % f[1].__name__
         if ctypes.Structure in f[1].__bases__:
-            print "%sstruct %s:" % (" " * ilvl, name)
+            print("%sstruct %s:" % (" " * ilvl, name))
             disp(getattr(b, f[0]), ilvl+1)
         elif ctypes.Union in f[1].__bases__:
-            print "%sunion %s:" % (" " * ilvl, name)
+            print("%sunion %s:" % (" " * ilvl, name))
             disp(getattr(b, f[0]), ilvl+1)
         elif ctypes.Array in f[1].__bases__:
             a = getattr(b, f[0])
-            print "%s%s[%d]:" % (" " * ilvl, name, len(a)),
+            print("%s%s[%d]:" % (" " * ilvl, name, len(a)), end=' ')
             tmp = None
             if type(a) == str:
                 tmp = '"%s"' % a
@@ -45,17 +45,17 @@ def disp(b, ilvl=0):
                             tmp = "%s, %x" % (tmp, v)
                     except:
                         tmp = "<error>"
-                    print "%s]" % tmp
+                    print("%s]" % tmp)
         else:
-            print "%s%s: %x" % (" " * ilvl, name, getattr(b, f[0]))
+            print("%s%s: %x" % (" " * ilvl, name, getattr(b, f[0])))
         
 def dump(self):
     for i in range(0, ctypes.sizeof(self.mem), 4):
             if 0 == i % 0x10:
-                    print
-                    print "0x%04x: " % (self.offset + i),
-            print "%08x" % self.mem[i / 4],
-    print
+                    print()
+                    print("0x%04x: " % (self.offset + i), end=' ')
+            print("%08x" % self.mem[i / 4], end=' ')
+    print()
 
 def _enable(self,reset=0,quiet=0):
     bn = self.block_name
@@ -65,14 +65,14 @@ def _enable(self,reset=0,quiet=0):
         bn = bn[:-5]
     if reset:
         if not quiet:
-            print "[+] resetting and enabling %s" % bn
+            print("[+] resetting and enabling %s" % bn)
             quiet = 1
         _disable(self, quiet=1)
         _reset(self, quiet=1)
 
     if self.mode.enable == 0:
         if not quiet:
-            print "[+] enabling %s" % bn
+            print("[+] enabling %s" % bn)
         self.mode.enable = 1
         return 0
     return 1
@@ -85,7 +85,7 @@ def _disable(self, quiet=0):
         bn = bn[:-5]
     if self.mode.enable:
         if not quiet:
-            print "[+] disabling %s" % bn,
+            print("[+] disabling %s" % bn, end=' ')
         self.mode.enable = 0
         slept = 0
         while self.mode.enable:
@@ -95,9 +95,9 @@ def _disable(self, quiet=0):
             slept += 1
             self.mode.enable = 0
         if slept and not quiet:
-            print "took %d ms" % slept
+            print("took %d ms" % slept)
         else:
-            print
+            print()
         return 1
     return 0
 
@@ -108,7 +108,7 @@ def _reset(self, quiet=0):
     if bn.endswith("_regs"):
         bn = bn[:-5]
     if not quiet:
-        print "[+] resetting %s" % bn
+        print("[+] resetting %s" % bn)
     tmp = _disable(self, quiet=1)
     self.mode.reset = 1
     cntr = 0

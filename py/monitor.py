@@ -48,7 +48,7 @@ class ExecutionMonitor(object):
         while not (self._dev.rxcpu.status.word & 0x7ff):
             yield_quantum()
         self._watching = False
-        print "stopped watching at pc = %x" % self._dev.rxcpu.pc
+        print("stopped watching at pc = %x" % self._dev.rxcpu.pc)
         try:
             callback()
         except Exception as e:

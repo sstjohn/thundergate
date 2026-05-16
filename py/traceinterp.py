@@ -110,7 +110,7 @@ def explain_r(reg, value, length):
                                     typ = ttyp
                                     break
                         except:
-                            print "WARNING (read %x, %s is %x in length)" % (length, s._fields_[m], size)
+                            print("WARNING (read %x, %s is %x in length)" % (length, s._fields_[m], size))
                     try:
                         return "%s.%s: %s" % (i, name, fdump(typ, value))
                     except:
@@ -160,7 +160,7 @@ def describe_r(op, offset, length, value):
             return
         fmt = "%s %08x <- %08x %s"
 
-    print fmt % (op, ioff, ival, explain_r(ioff, ival, ilen))
+    print(fmt % (op, ioff, ival, explain_r(ioff, ival, ilen)))
 
 def describe_m(op, offset, length, value):
     ioff = int(offset, 16)
@@ -172,7 +172,7 @@ def describe_m(op, offset, length, value):
     elif op[0] == 'W':
         fmt = "%s %08x <- %08x"
 
-    print fmt % (op, ioff, ival)
+    print(fmt % (op, ioff, ival))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -196,41 +196,41 @@ if __name__ == "__main__":
             _, domain, bus, device, function, offset, value, length, _ = cw_p.split(args)
             describe_r("WC ", offset, length, value)
         elif op == "vfio_intx_interrupt":
-            print "intx_interrupt"
+            print("intx_interrupt")
         elif op == "vfio_eoi":
-            print "EOI"
+            print("EOI")
         elif op == "vfio_initfn":
-            print "init"
+            print("init")
         elif op == "vfio_listener_region_add_ram":
-            print "listener_region_add_ram"
+            print("listener_region_add_ram")
         elif op == "vfio_listener_region_add_skip":
-            print "listener_region_add_skip"
+            print("listener_region_add_skip")
         elif op == "vfio_get_device":
-            print "get_device"
+            print("get_device")
         elif op == "vfio_populate_device_region":
-            print "populate_device_region"
+            print("populate_device_region")
             pargs.tracefile.readline()
         elif op == "vfio_populate_device_config":
-            print "populate_device_config"
+            print("populate_device_config")
             pargs.tracefile.readline()
         elif op == "vfio_early_setup_msix":
-            print "early_setup_msix"
+            print("early_setup_msix")
         elif op == "vfio_setup_msi":
-            print "setup_msi"
+            print("setup_msi")
         elif op == "vfio_enable_intx":
-            print "enable_intx"
+            print("enable_intx")
         elif op == "vfio_pci_reset":
-            print "pci_reset"
+            print("pci_reset")
         elif op == "vfio_disable_intx":
-            print "disable_intx"
+            print("disable_intx")
         elif op == "vfio_pci_reset_flr":
-            print "pci_reset_flr"
+            print("pci_reset_flr")
         elif op == "vfio_listener_region_del":
-            print "listener_region_del"
+            print("listener_region_del")
         elif op == "vfio_listener_region_del_skip":
-            print "listener_region_del_skip"
+            print("listener_region_del_skip")
         elif op == "vfio_update_irq":
-            print "update_irq"
+            print("update_irq")
         else:
-            print "UNKNOWN OP: %s" % line
+            print("UNKNOWN OP: %s" % line)
         line = pargs.tracefile.readline()

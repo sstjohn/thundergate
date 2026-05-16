@@ -229,9 +229,9 @@ class Device(object):
         for i in range(len(self.reg)):
             a = i * 4
             if 0 == (a % 0x10):
-                print
-                print "0x%04x: " % a,
-            print "%08x" % self.reg[i],
+                print()
+                print("0x%04x: " % a, end=' ')
+            print("%08x" % self.reg[i], end=' ')
 
     def reg_save(self):
         buf = (c_uint32 * len(self.reg))()

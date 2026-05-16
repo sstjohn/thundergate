@@ -20,17 +20,17 @@ def gui_handler(driver):
 @coroutine
 def help_handler(driver):
     '''display keypress bindings'''
-    print
+    print()
     for key in KEYPRESS_HANDLERS:
-        print "%s - %s" % (key, KEYPRESS_HANDLERS[key].__doc__)
-    print
+        print("%s - %s" % (key, KEYPRESS_HANDLERS[key].__doc__))
+    print()
 
 @coroutine
 def verbosity_handler(driver):
     '''toggle tap driver verbosity'''
     driver.verbose = not driver.verbose
-    print "tap driver verbosity %s" % (
-            "enabled" if driver.verbose else "disabled")
+    print("tap driver verbosity %s" % (
+            "enabled" if driver.verbose else "disabled"))
 
 @coroutine
 def quit_handler(driver):
@@ -40,7 +40,7 @@ def quit_handler(driver):
 
 @coroutine
 def unknown_keypress_handler(key):
-    print "read unknown keypress '%s'" % key
+    print("read unknown keypress '%s'" % key)
 
 KEYPRESS_HANDLERS = {
     'g': gui_handler,

@@ -55,12 +55,12 @@ class LinuxMemMgr(_MemMgr):
         sz = 2048 * 1024
         a = c.mmap(0, sz, prot, flags, -1, 0)
         if a != c.MAP_FAILED:
-            print "[+] huge pages available"
+            print("[+] huge pages available")
             c.munmap(a, sz)
             self._hugetlb_available = True
             self._hugetlb_pgsz = sz
         else:
-            print "[-] huge pages unavailable"
+            print("[-] huge pages unavailable")
             self._hugetlb_available = False
 
     def read_pmem(self, paddr, count):
@@ -74,12 +74,12 @@ class LinuxMemMgr(_MemMgr):
         data = self.read_pmem(paddr, count)
         for i in range(0, count, 4):
             if 0 == i % 0x10:
-                print
-                print "%08x: " % (paddr + i),
+                print()
+                print("%08x: " % (paddr + i), end=' ')
 
             tmp, = struct.unpack('I', data[i:i+4])
-            print "%04x %04x" % (tmp >> 16, tmp & 0xffff),
-        print
+            print("%04x %04x" % (tmp >> 16, tmp & 0xffff), end=' ')
+        print()
 
     def get_paddr(self, vaddr):
             page_sz = self._page_sz

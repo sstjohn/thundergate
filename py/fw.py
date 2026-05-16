@@ -49,13 +49,13 @@ class FirmwareImage(object):
 
     def describe_image(self):
         if hasattr(self, "shdrs"):
-            print "segmented image in %d parts" % len(self.shdrs)
+            print("segmented image in %d parts" % len(self.shdrs))
             for i in range(len(self.shdrs)):
                 h = self.shdrs[i]
 
-                print " segment %d: version %08x, base_addr: %08x, length %08x" % (i, h.version, h.base_addr, h.length)
+                print(" segment %d: version %08x, base_addr: %08x, length %08x" % (i, h.version, h.base_addr, h.length))
 
         else:
-            print "unitary image, version %08x, base_addr: %08x, length: %08x" % (self.hdr.version, self.hdr.base_addr, self.hdr.length)
+            print("unitary image, version %08x, base_addr: %08x, length: %08x" % (self.hdr.version, self.hdr.base_addr, self.hdr.length))
 
 

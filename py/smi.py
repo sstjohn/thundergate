@@ -125,13 +125,13 @@ class Smi(object):
         for i in range(0, 32):
             if exp18 and i == 0x18:
                 for j in range(0, 8):
-                    print "%02x.%x : %04x" % (0x18, j, self.read_shd18(port, j))
+                    print("%02x.%x : %04x" % (0x18, j, self.read_shd18(port, j)))
             elif exp1c and i == 0x1c:
                 for j in range(0, 32):
-                    print "%02x.%02x : %04x" % (0x1c, j, self.read_shd1c(port, j))
+                    print("%02x.%02x : %04x" % (0x1c, j, self.read_shd1c(port, j)))
             elif exp1d and i == 0x1d:
                 for j in range(0, 2):
-                    print "1d.%x : %04x" % (j, self.read_shd1d(port, j))
+                    print("1d.%x : %04x" % (j, self.read_shd1d(port, j)))
             else:
                 val = self.read_reg(port, i)
-                print "%02x   : %04x" % (i, val)
+                print("%02x   : %04x" % (i, val))

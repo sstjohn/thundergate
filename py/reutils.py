@@ -42,7 +42,7 @@ def rread(dev, ofs, count=16):
         usleep(10)
 
     if dev.mem.read_dword(0xb50) != 0x88b50400:
-        print "unknown rxcpu response %08x" % dev.mem.read_dword(0xb50)
+        print("unknown rxcpu response %08x" % dev.mem.read_dword(0xb50))
         raise Exception("unknown rxcpu response found at 0xb50: %08x" % dev.mem.read_dword(0xb50))
 
     return dev.mem.read(0xb54, 64)
@@ -67,7 +67,7 @@ def map_mem(dev):
             for i in range(0xfffff):
                 addr = i << 12
                 if 0 == (i % 0x400):
-                    print "now at %x" % addr
+                    print("now at %x" % addr)
                 v = try_read(dev, addr)
                 if v is None:
                     d.write("%08x: \n" % addr)
@@ -109,7 +109,7 @@ def regsearch(dev, val, mask=0xffffffff):
         _ = dev.pci.reg_base_addr
         tmp = dev.pci.reg_data
         if ((val ^ tmp) & mask) == 0:
-            print "value %08x found at register offset %04x" % (tmp, i)
+            print("value %08x found at register offset %04x" % (tmp, i))
 
 def regcheck(dev):
     for i in range(0, 0x8000, 4):
@@ -127,10 +127,10 @@ def regcheck(dev):
         tmp4 = dev.mem.read_dword(0xb54)
         if tmp != tmp2 or tmp2 != tmp3 or tmp3 != tmp4 or tmp4 != tmp:
             block, name, _, _ = whats_at(i)
-            print "views differ at \"%s.%s\", offset %04x: %08x %08x %08x %08x" % (block, name, i, tmp, tmp2, tmp3, tmp4)
+            print("views differ at \"%s.%s\", offset %04x: %08x %08x %08x %08x" % (block, name, i, tmp, tmp2, tmp3, tmp4))
 
 def mem_diff(start, end):
-    print "memory diff: "
+    print("memory diff: ")
 
     offset = 0
     quiesced = True
@@ -140,23 +140,23 @@ def mem_diff(start, end):
 
         if scur == ecur:
             if not quiesced:
-                print " ..."
+                print(" ...")
                 quiesced = True
         else:
             quiesced = False
-            print " 0x%04x:" % offset,
+            print(" 0x%04x:" % offset, end=' ')
             for i in range(0, 8):
-                print "%02x" % ord(scur[i]),
+                print("%02x" % ord(scur[i]), end=' ')
 
-            print " -> ",
+            print(" -> ", end=' ')
             for i in range(0, 8):
-                print "%02x" % ord(ecur[i]),
+                print("%02x" % ord(ecur[i]), end=' ')
 
-            print
+            print()
 
         offset += 8
-    print "memory diff ends"
-    print
+    print("memory diff ends")
+    print()
 
 def reg_diff(old, cur):
     m = create_string_buffer(len(cur) * 4)
@@ -177,10 +177,10 @@ def reg_diff(old, cur):
 
 def dump_diff(diff):
     m = diff[0]
-    print
+    print()
     for i in range(0, len(m), 64):
-        print "%04x: %s" % (i, m[i:i+64])
-    print
+        print("%04x: %s" % (i, m[i:i+64]))
+    print()
 
 def disp_diff(a, b, ilvl=0, title=""):
     for f in a._fields_:
@@ -197,13 +197,13 @@ def disp_diff(a, b, ilvl=0, title=""):
         else:
             if av != bv:
                 if len(title) > 0:
-                    print title
+                    print(title)
                     title = ""
-                print "%s%s:" % (" " * ilvl, f[0]),
-                print "\t" * (6 - (len(f[0]) + ilvl + 2) / 8),
-                print "%x" % av,
-                print "\t" * (3 - (len("%x" % av) + 1) / 8),
-                print "%x" % bv
+                print("%s%s:" % (" " * ilvl, f[0]), end=' ')
+                print("\t" * (6 - (len(f[0]) + ilvl + 2) / 8), end=' ')
+                print("%x" % av, end=' ')
+                print("\t" * (3 - (len("%x" % av) + 1) / 8), end=' ')
+                print("%x" % bv)
 
 
 def analyze_diff(diff):
@@ -236,7 +236,7 @@ def analyze_diff(diff):
             if not desc in diffs_at:
                 diffs_at[desc] = (offset, size)
 
-    print "register diff:"
+    print("register diff:")
     for d in sorted(diffs_at.keys(), key=lambda x: diffs_at[x][0]):
         offset, size = diffs_at[d]
         title = "%s (%04x-%04x)" % (d, offset, (offset + size) - 1)
@@ -275,13 +275,13 @@ def analyze_diff(diff):
             o = cast(ob, POINTER(t))[0]
             nb = create_string_buffer(struct.pack("I", newval))
             n = cast(nb, POINTER(t))[0]
-            print " %s" % title
-            print ("  was %0" + str(size * 2) + "x, now %0" + str(size * 2) + "x") % (oldval, newval)
+            print(" %s" % title)
+            print(("  was %0" + str(size * 2) + "x, now %0" + str(size * 2) + "x") % (oldval, newval))
             disp_diff(o, n, 3)
         else:
-            print (" %s:\t\t%0" + str(size * 2) + "x\t\t%0" + str(size * 2) + "x") % (title, oldval, newval)
-    print "register diff ends"
-    print
+            print((" %s:\t\t%0" + str(size * 2) + "x\t\t%0" + str(size * 2) + "x") % (title, oldval, newval))
+    print("register diff ends")
+    print()
 
 def whats_at(addr):
     block_name = "unknown"
@@ -353,16 +353,16 @@ def __blargh():
                 ov = getattr(o, f[0])
                 nv = getattr(n, f[0])
                 if hasattr(ov, "_fields_"):
-                    print "  %s:" % f[0]
+                    print("  %s:" % f[0])
                     for g in t._fields_:
                         sov = getattr(o, g[0])
                         snv = getattr(n, g[0])
                         if sov != snv:
                             tabs = (6 - (len(g[0]) + 3) / 8)
                             fmtstr = "   %s" + ('\t' * tabs) + "%x\t\t%x"
-                            print fmtstr % (g[0], sov, snv)
+                            print(fmtstr % (g[0], sov, snv))
                 else:
                     if ov != nv:
                         tabs = (6 - (len(f[0]) + 2) / 8)
                         fmtstr = "  %s" + ('\t' * tabs) + "%x\t\t%x"
-                        print fmtstr % (f[0], ov, nv)
+                        print(fmtstr % (f[0], ov, nv))

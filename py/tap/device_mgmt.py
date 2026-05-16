@@ -186,5 +186,5 @@ def arrive_device(driver, dev):
     try:
         asyncio.wait(tasks)
     except Exception:
-        print "there was an exception!"
+        print("there was an exception!")
     logger.info("device arrival concluded")

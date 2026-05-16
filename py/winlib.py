@@ -446,7 +446,7 @@ def create_tap_if(name = None):
     sz = DWORD(0)
 
     ioctl(hdev, TAP_WIN_IOCTL_GET_VERSION, info, info)
-    print "[+] tap-windows v%d.%d%s device %s created" % (info[0], info[1], "d" if info[2] else "", cfg_iid.value)
+    print("[+] tap-windows v%d.%d%s device %s created" % (info[0], info[1], "d" if info[2] else "", cfg_iid.value))
 
     tap_interfaces[hdev] = (h, devInfoData)
     return hdev
@@ -502,7 +502,7 @@ def add_account_privilege(privilege_name):
         raise WinError(LsaNtStatusToWinError(result))
 
     CloseHandle(token)
-    print "[!] privilege \"%s\" added to current user account" % privilege_name
+    print("[!] privilege \"%s\" added to current user account" % privilege_name)
 
 def add_process_privilege(privilege_name):
     token = HANDLE()
@@ -515,9 +515,9 @@ def add_process_privilege(privilege_name):
     if not AdjustTokenPrivileges(token, False, pointer(info), 0, None, None):
         raise WinError()
     if GetLastError() == ERROR_NOT_ALL_ASSIGNED:
-        print "[!] failed to enable privilege \"%s\" in process token" % privilege_name
+        print("[!] failed to enable privilege \"%s\" in process token" % privilege_name)
         add_account_privilege(privilege_name)
-        print "[!] you'll need to log out and log back in"
+        print("[!] you'll need to log out and log back in")
         sys.exit(1)
     CloseHandle(token)
 
@@ -528,7 +528,7 @@ def elevate():
     see.lpVerb = LPCSTR("runas")
     see.lpFile = LPCSTR(sys.executable)
     see.lpParameters = sys.argv[0]
-    print "sys.argv[0] is %s" % sys.argv[0]
+    print("sys.argv[0] is %s" % sys.argv[0])
     see.nShow = 1
     if ShellExecuteEx(pointer(see)):
         WaitForSingleObject(see.hProcess, INFINITE)

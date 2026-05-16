@@ -33,7 +33,7 @@ class ExprLiveEval(GenericExprVisitor):
     def process_expr(self, dev, expr, frame):
         self._dev = dev
         self._frame = frame
-        print "processing expr %s" % str(expr)
+        print("processing expr %s" % str(expr))
         assert isinstance(expr, list) and len(expr) > 0
         if isinstance(expr[0], LocationEntry):
             cur_pc = frame["pc"]
@@ -46,9 +46,9 @@ class ExprLiveEval(GenericExprVisitor):
             expr = selected_expr
         super(ExprLiveEval, self).process_expr(expr)
         try:
-            print "expr %s evaluates to %x" % (expr, self.value)
+            print("expr %s evaluates to %x" % (expr, self.value))
         except:
-            print "expr %s produces error message %s" % (expr, self.value)
+            print("expr %s produces error message %s" % (expr, self.value))
         return self.value
 
     @property
@@ -58,8 +58,8 @@ class ExprLiveEval(GenericExprVisitor):
     def _after_visit(self, opcode, opcode_name, args):
         if isinstance(self._val, str):
             return
-        print
-        print "processing opcode: %s (0x%x), args: %s" % (opcode_name, opcode, args)
+        print()
+        print("processing opcode: %s (0x%x), args: %s" % (opcode_name, opcode, args))
         if 0x3 == opcode:
             v = self._dev.rxcpu.tr_read(args[0], 1)
             self._val = struct.unpack("!I", v)[0]
@@ -68,9 +68,9 @@ class ExprLiveEval(GenericExprVisitor):
         elif 0x50 <= opcode and opcode < 0x70:
             self._val = self._frame["r%d" % (opcode - 0x50)]
         elif 0x70 <= opcode and opcode < 0x90:
-            print "val was %x" % self._val
+            print("val was %x" % self._val)
             b = self._frame["r%d" % (opcode - 0x70)]
-            print "register %d contains %x" % ((opcode - 0x70), b)
+            print("register %d contains %x" % ((opcode - 0x70), b))
             if len(args) > 0:
                 assert len(args) == 1
                 b += args[0]
@@ -82,7 +82,7 @@ class ExprLiveEval(GenericExprVisitor):
             cur_pc = self._frame["pc"]
             fname, cu_name, cu_line_no, cu_comp_dir = self._image.loc_at(cur_pc)
             frame_base = self._image._compile_units[cu_name]["functions"][fname]["fb"]
-            print "frame base is %s" % str(frame_base)
+            print("frame base is %s" % str(frame_base))
             assert isinstance(frame_base, list) and len(frame_base) > 0
             expr = None
             if isinstance(frame_base[0], LocationEntry):
@@ -94,28 +94,28 @@ class ExprLiveEval(GenericExprVisitor):
                     return
             else:
                 expr = frame_base
-            print "frame base expression is %s" % str(expr)
+            print("frame base expression is %s" % str(expr))
             evaluator = self._image.get_expr_evaluator()
             fb_value = evaluator.process_expr(self._dev, expr, self._frame)
             if isinstance(fb_value, str):
                 self._val = fb_value + " (encountered by frame base evaluator)"
             else:
-                print "frame base expression evaluates to %x" % fb_value
+                print("frame base expression evaluates to %x" % fb_value)
                 addr = fb_value
                 if len(args) > 0:
                     assert len(args) == 1
-                    print "offset is %d" % args[0]
+                    print("offset is %d" % args[0])
                     addr += args[0]
-                print "frame base plus offset is %x" % addr
+                print("frame base plus offset is %x" % addr)
                 self._val = addr
                 #v = self._dev.rxcpu.tr_read(addr, 1)
                 #self._val = struct.unpack("!I", v)[0]
         else:
             self._val = "(unable to handle opcode %x (%s))" % (opcode, opcode_name)
         try: 
-            print "val is now %x" % self._val
+            print("val is now %x" % self._val)
         except: 
-            print "val is now \"%s\"" % self._val
+            print("val is now \"%s\"" % self._val)
 
 class Image(object):
     def __init__(self, fname):
@@ -155,7 +155,7 @@ class Image(object):
             img += s.data()
 
             s = self.elf.get_section(3)
-            print "%s" % str(s.header)
+            print("%s" % str(s.header))
             if s.header["sh_flags"] & 2 and s.header["sh_type"] == "SHT_PROGBITS":
                 if s.header["sh_addr"] != base_addr + len(img):
                     raise Exception("bad section vaddr - #3 should follow #2")
@@ -176,13 +176,13 @@ class Image(object):
         cfi = None
         if dw.has_EH_CFI():
             cfi = dw.EH_CFI_entries()
-            print "we have EH CFI entries"
+            print("we have EH CFI entries")
         elif dw.has_CFI():
             cfi = dw.CFI_entries()
-            print "we have CFI entries"
+            print("we have CFI entries")
         
         else:
-            print "no (EH) CFI"
+            print("no (EH) CFI")
 
         if None is not cfi:
             self._cfa_rule = {}
@@ -190,15 +190,15 @@ class Image(object):
                 try:
                     decoded = c.get_decoded()
                 except:
-                    print "CFI decoding exception"
+                    print("CFI decoding exception")
                     break
 
                 for entry in decoded.table:
                     if entry["pc"] in self._cfa_rule:
-                        print "duplicate cfa rule found at pc %x" % entry["pc"]
-                        print "\t%s" % str(self._cfa_rule[entry["pc"]])
-                        print "\t%s" % str(entry)
-                        print
+                        print("duplicate cfa rule found at pc %x" % entry["pc"])
+                        print("\t%s" % str(self._cfa_rule[entry["pc"]]))
+                        print("\t%s" % str(entry))
+                        print()
                     #assert (not entry["pc"] in self._cfa_rule) or (self._cfa_rule[entry["pc"]] == entry)
                     self._cfa_rule[entry["pc"]] = entry
 
@@ -301,9 +301,9 @@ class Image(object):
                     except: self._compile_units[c]["lines"][state.line] = [state.address]
         
         if not cfi is None:
-            print "CFA table:"
+            print("CFA table:")
             for pc in sorted(self._cfa_rule.keys()):
-                print "%x: %s\t\t(%s)" % (pc, str(self._cfa_rule[pc]), self.addr2line(pc))
+                print("%x: %s\t\t(%s)" % (pc, str(self._cfa_rule[pc]), self.addr2line(pc)))
 
     def addr2line(self, addr):
         try: return self._addresses[addr]
@@ -336,7 +336,7 @@ def _select_from_location_list(pc, cu_base, ll):
     assert isinstance(ll[0], LocationEntry)
     
     offset = pc - cu_base
-    print "slecting from location list. pc: %x, cu_base: %x, offset: %x, ll: %s" % (pc, cu_base, offset, str(ll))
+    print("slecting from location list. pc: %x, cu_base: %x, offset: %x, ll: %s" % (pc, cu_base, offset, str(ll)))
 
     expr = None
 
@@ -346,8 +346,8 @@ def _select_from_location_list(pc, cu_base, ll):
             break
             
     if expr:
-        print "selecting expr %s" % str(expr)
+        print("selecting expr %s" % str(expr))
     else:
-        print "did not find expr"
+        print("did not find expr")
         
     return expr

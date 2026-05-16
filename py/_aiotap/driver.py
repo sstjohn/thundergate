@@ -79,7 +79,7 @@ class TapDriver(TDInt):
         self._connected = False
 
     def __enter__(self):
-        print "[+] tap driver initializing"
+        print("[+] tap driver initializing")
         super(TapDriver, self).__enter__()
         self.old_msleep = self.dev.msleep
         self.dev.msleep = async_msleep.__get__(self.dev)
@@ -89,7 +89,7 @@ class TapDriver(TDInt):
         self.dev.msleep = self.old_msleep
         super(TapDriver, self).__exit__()
         self.dev.close()
-        print "[+] tap driver terminated"
+        print("[+] tap driver terminated")
 
     device_setup = _device_setup
     enable_rx = _enable_rx
@@ -107,16 +107,16 @@ class TapDriver(TDInt):
     @coroutine
     def help_handler(self):
         '''display keypress bindings'''
-        print 
+        print() 
         for k in self.keypress_handlers:
-            print "%s - %s" % (k, self.keypress_handlers[k].__doc__)
-        print
+            print("%s - %s" % (k, self.keypress_handlers[k].__doc__))
+        print()
 
     @coroutine
     def verbosity_handler(self):
         '''toggle tap driver verbosity'''
         self.verbose = not self.verbose
-        print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
+        print("[+] verbosity %s" % ("enabled" if self.verbose else "disabled"))
 
     @coroutine
     def quit_handler(self):
@@ -126,7 +126,7 @@ class TapDriver(TDInt):
 
     @coroutine
     def unknown_keypress_handler(self, k):
-        print "read unknown keypress '%s'" % k
+        print("read unknown keypress '%s'" % k)
 
     @coroutine
     def keypress_dispatch(self):

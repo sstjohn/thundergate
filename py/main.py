@@ -64,7 +64,7 @@ import reutils
 import argparse
 
 def banner():
-    print """
+    print("""
 
  #######                                            #####
     #    #    # #    # #    # #####  ###### #####  #     #   ##   ##### ######
@@ -77,7 +77,7 @@ def banner():
                                  Version 0.9.9
                     Copyright (c) 2015-2016 Saul St John
                              http://thundergate.io
-"""
+""")
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -125,8 +125,8 @@ def main(args):
         else:
             logger.info("ptvsd server enabled")
     elif args.wait:
-        print "[!] press 'enter' to continue..."
-        raw_input()
+        print("[!] press 'enter' to continue...")
+        input()
 
     if sys_name == 'Linux':
         if args.device is None:
@@ -172,7 +172,7 @@ def main(args):
         if not os.path.exists("eeprom.bak"):
             logger.warn("no backup image found")
             if not args.cdpserver:
-                resp = raw_input("\n\n" + 
+                resp = input("\n\n" + 
                         "would you like to create a backup image (y/n): ")
                 if resp[0] in "yY":
                     args.backup = True

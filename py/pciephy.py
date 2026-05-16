@@ -53,6 +53,6 @@ class PCIePhy(object):
 
     def dump_blocks(self):
         for b in blocks:
-            print b[0] + ":"
+            print(b[0] + ":")
             self.dump_regs(b[1])
-            print
+            print()

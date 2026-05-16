@@ -43,7 +43,7 @@ class nvram(rflip.nvram):
         if lh: self.load_eeprom_header()
 
     def _dump_sw_arb(self):
-        print "[.] sw_arb:",
+        print("[.] sw_arb:", end=' ')
         tmp = "r"
         if self.sw_arb.req3: tmp += "3"
         if self.sw_arb.req2: tmp += "2"
@@ -64,13 +64,13 @@ class nvram(rflip.nvram):
         if self.sw_arb.req_set2: tmp += "2"
         if self.sw_arb.req_set1: tmp += "1"
         if self.sw_arb.req_set0: tmp += "0"
-        print tmp
+        print(tmp)
 
     def reset(self):
         self.acquire_lock()
         self.access_enable()
 
-        print "[+] resetting nvram state machine"
+        print("[+] resetting nvram state machine")
         self.command.reset = 1
 
         cntr = 0
@@ -92,19 +92,19 @@ class nvram(rflip.nvram):
 
         self._locked = 0
         cntr = 0
-        print "[+] requesting nvram lock... ",
+        print("[+] requesting nvram lock... ", end=' ')
         self.sw_arb.req_set1 = 1
         while not self.sw_arb.arb_won1:
             cntr += 1
             if cntr > 1000:
-                print "\n[!] nvram arbitration timed out"
+                print("\n[!] nvram arbitration timed out")
                 self._dump_sw_arb()
                 raise Exception("timed out waiting for nvram arbitration")
             usleep(100)
         if cntr == 0:
-            print "granted."
+            print("granted.")
         else:
-            print "granted after %d us." % (cntr * 10)
+            print("granted after %d us." % (cntr * 10))
 
         self._locked = 1
 
@@ -112,36 +112,36 @@ class nvram(rflip.nvram):
         if not self._locked:
             return
         if self.sw_arb.req1:
-                print "[-] clearing nvram arbitration request 1"
+                print("[-] clearing nvram arbitration request 1")
                 self.sw_arb.req_clr1 = 1
         self._locked = 0
 
     def access_enable(self):
         if not self._dev.grc.misc_local_control.auto_seeprom:
-            print "[+] enabling auto seeprom in grc misc local control"
+            print("[+] enabling auto seeprom in grc misc local control")
             self._dev.grc.misc_local_control.auto_seeprom = 1
 
         if not self.access.enable:
-            print "[+] enabling nvram access"
+            print("[+] enabling nvram access")
             self.access.enable = 1
 
     def access_disable(self):
         if self.access.enable:
-            print "[+] disabling nvram access"
+            print("[+] disabling nvram access")
             self.access.enable = 0
 
     def write_enable(self):
         if not self._dev.grc.mode.nvram_write_enable:
-            print "[+] enabling nvram write in grc block"
+            print("[+] enabling nvram write in grc block")
             self._dev.grc.mode.nvram_write_enable = 1
 
         if not self.access.write_enable:
-            print "[+] enabling nvram write access"
+            print("[+] enabling nvram write access")
             self.access.write_enable = 1
 
     def write_disable(self):
         if self.access.write_enable:
-            print "[+] disabling nvram write access"
+            print("[+] disabling nvram write access")
             self.access.write_enable = 0
 
     def read_dword(self, offset):
@@ -196,7 +196,7 @@ class nvram(rflip.nvram):
     def load_eeprom_header(self):
         hdr_len = sizeof(tg.nvram_header)
         if tg.TG3_MAGIC != self.read_dword(0):
-            print "[-] warning: unknown nvram format"
+            print("[-] warning: unknown nvram format")
 
         self._eeprom_hdr_buf = create_string_buffer(sizeof(tg.nvram_header))
         eeprom_words = cast(self._eeprom_hdr_buf, POINTER(c_uint32))
@@ -261,7 +261,7 @@ class nvram(rflip.nvram):
         if updater is not None:
             updater(0)
         else:
-            print "[+] writing block length %x at offset %x..." % (len(data), offset),
+            print("[+] writing block length %x at offset %x..." % (len(data), offset), end=' ')
             sys.stdout.flush()
 
         for i in range(0, len(data), 4):
@@ -275,7 +275,7 @@ class nvram(rflip.nvram):
         if updater is not None:
             updater(len(data))
         else:
-            print
+            print()
 
     def read_block(self, offset, length, updater = None):
         assert length >=4 and 0 == (length % 4)
@@ -283,7 +283,7 @@ class nvram(rflip.nvram):
         if updater is not None:
             updater(0)
         else:
-            print "[+] reading block length %x at offset %x..." % (length, offset),
+            print("[+] reading block length %x at offset %x..." % (length, offset), end=' ')
             sys.stdout.flush()
 
 
@@ -299,7 +299,7 @@ class nvram(rflip.nvram):
         if updater is not None:
             updater(length)
         else:
-            print
+            print()
         return ret
 
     def get_directory(self, force_reload = False):
@@ -328,19 +328,19 @@ class nvram(rflip.nvram):
         directory = self.get_directory()
         for d in directory:
                 index, nv_type, nv_ofs, sram_ofs, nv_len, nv_xa, nv_xb = d
-                print "nvram image #%d. " % index,
-                print "attrs: type %02x, " % nv_type,
-                print "nv_ofs %x, " % nv_ofs,
-                print "sram_ofs: %x, " % sram_ofs,
-                print "len %x, " % nv_len,
+                print("nvram image #%d. " % index, end=' ')
+                print("attrs: type %02x, " % nv_type, end=' ')
+                print("nv_ofs %x, " % nv_ofs, end=' ')
+                print("sram_ofs: %x, " % sram_ofs, end=' ')
+                print("len %x, " % nv_len, end=' ')
                 if nv_xa and nv_xb:
-                    print "xab"
+                    print("xab")
                 elif nv_xa:
-                    print "xa"
+                    print("xa")
                 elif nv_xb:
-                    print "xb"
+                    print("xb")
                 else:
-                    print "nx"
+                    print("nx")
 
     def get_dir_image(self, index, updater = None):
         dentry = self.eeprom_hdr.directory[index]
@@ -445,14 +445,14 @@ class nvram(rflip.nvram):
         data = ''
         with open(cpufw, "rb") as f:
             data = f.read()
-        print "[+] installing thundergate bootcode"
+        print("[+] installing thundergate bootcode")
         bcstart, bclen = self.install_bc(data)
         #bclen = len(data) + 0x204
 
         with open(efidrv, "rb") as f:
             data = f.read()
         oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
-        print "[+] installing thundergate oprom"
+        print("[+] installing thundergate oprom")
         start += self.write_dir_image(0, oprom, nv_ofs=bcstart+bclen)
 
         self._dev.reset()
@@ -505,7 +505,7 @@ class nvram(rflip.nvram):
             if not self.eeprom_hdr.mfg.feat_cfg & tg.TG3_FEAT_ASF:
                 raise Exception("asf not enabled")
 
-            print "[+] disabling asf in mfg feat cfg"
+            print("[+] disabling asf in mfg feat cfg")
 
             self.eeprom_hdr.mfg.feat_cfg &= ~tg.TG3_FEAT_ASF
         
@@ -513,7 +513,7 @@ class nvram(rflip.nvram):
             if self.eeprom_hdr.mfg.feat_cfg & tg.TG3_FEAT_ASF:
                 raise Exception("asf already enabled")
             
-            print "[+] enabling asf in mfg feat cfg"
+            print("[+] enabling asf in mfg feat cfg")
             self.eeprom_hdr.mfg.feat_cfg |= tg.TG3_FEAT_ASF
 
         self._flush_mfg_feat_cfg()
@@ -523,14 +523,14 @@ class nvram(rflip.nvram):
             if not self.eeprom_hdr.mfg.feat_cfg & tg.TG3_FEAT_PXE:
                 raise Exception("asf not enabled")
             
-            print "[+] disabling pxe in mfg feat cfg"
+            print("[+] disabling pxe in mfg feat cfg")
             self.eeprom_hdr.mfg.feat_cfg &= ~tg.TG3_FEAT_PXE
         
         else:
             if self.eeprom_hdr.mfg.feat_cfg & tg.TG3_FEAT_PXE:
                 raise Exception("asf already enabled")
             
-            print "[+] enabling pxe in mfg feat cfg"
+            print("[+] enabling pxe in mfg feat cfg")
             self.eeprom_hdr.mfg.feat_cfg |= tg.TG3_FEAT_PXE
 
         self._flush_mfg_feat_cfg()
@@ -563,6 +563,6 @@ class nvram(rflip.nvram):
         
         f.write(bc_data)
         f.close()
-        print "bootcode length: %d bytes" % bc_len
-        print "bootcode load addr: %x" % bc_load_addr
+        print("bootcode length: %d bytes" % bc_len)
+        print("bootcode load addr: %x" % bc_load_addr)
 

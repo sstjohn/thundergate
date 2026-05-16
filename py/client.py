@@ -64,7 +64,7 @@ class ThunderGateInterface:
         s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x88b5))
         info = ioctl(s.fileno(), SIOCGIFHWADDR, pack('256s', iface[:15].encode('utf-8')))
         self._local_mac = info[18:24]
-        print("local if mac is %s" % ':'.join(get_bytes_strs(self._local_mac)))
+        print(("local if mac is %s" % ':'.join(get_bytes_strs(self._local_mac))))
         
         s.bind((iface, 0))
         self._socket = s
@@ -74,7 +74,7 @@ class ThunderGateInterface:
         self._send_cmd(1)
         resp = self._recv_resp()
         self._tg_mac = resp[6:12]
-        print("found thundergate at %s" % ":".join(get_bytes_strs((self._tg_mac))))
+        print(("found thundergate at %s" % ":".join(get_bytes_strs((self._tg_mac)))))
 
     def _send_pkt(self, payload, src = None,
             dst = None, etype = b"\x88\xb5"):
@@ -153,10 +153,10 @@ class ThunderGateInterface:
 
 def client_main(gate, cmd, args):
     if cmd > 1:
-        print("sending cmd type 0x%04x" % cmd)
+        print(("sending cmd type 0x%04x" % cmd))
         gate._send_cmd(cmd, args)
         resp = gate._recv_resp()
-        print("response recvd: %s" % ''.join(get_bytes_strs(resp[16:])))
+        print(("response recvd: %s" % ''.join(get_bytes_strs(resp[16:]))))
 
 def auto_int(x):
    return int(x, 0)

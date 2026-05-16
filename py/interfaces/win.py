@@ -34,12 +34,12 @@ class WinInterface(object):
         devIntData = SP_DEVICE_INTERFACE_DATA(sizeof(SP_DEVICE_INTERFACE_DATA))
         devInfoData = SP_DEVINFO_DATA(sizeof(SP_DEVINFO_DATA))
         devIntDetail = SP_DEVICE_INTERFACE_DETAILS()
-        devIntDetail._should_be_eight = 8L
+        devIntDetail._should_be_eight = 8
 
         idx = 0
 
         while SetupDiEnumDeviceInterfaces(hInfoSet, None, byref(GUID_DEVINTERFACE_TGWINK),  idx, pointer(devIntData)):
-            print "[.] found tgwink device interface #%d" % idx
+            print("[.] found tgwink device interface #%d" % idx)
 
             if not SetupDiGetDeviceInterfaceDetail(hInfoSet, pointer(devIntData), pointer(devIntDetail), sizeof(devIntDetail), None, None):
                 raise WinError()
@@ -50,7 +50,7 @@ class WinInterface(object):
             raise Exception("no devices exporting tgwink interface found!")
 
         if idx > 1:
-            print "[!] multiple tgwink interfaces found, using last."
+            print("[!] multiple tgwink interfaces found, using last.")
 
         self.device_path = devIntDetail.DevicePath
 

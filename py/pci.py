@@ -49,21 +49,21 @@ class PCI_PCIe_cap(object):
         val = 1 if val > 0 else 0
         if ns != val:
             if verbose:
-                print "[+] %s no snoop bit" % ("setting" if val == 1 else "clearing")
+                print("[+] %s no snoop bit" % ("setting" if val == 1 else "clearing"))
             tmp &= (~0x10 | val << 4)
             self.cfg.write(self.offset + 8, tmp)
         elif verbose > 1:
-            print "[-] not touching no snoop bit"
+            print("[-] not touching no snoop bit")
 
     def set_no_snoop(self, val = 0, verbose = 1):
         r = self.cfg.read(self.offset + 8)
         tgt = (r & ~0x800) | (0x800 if val > 0 else 0)
         if r != tgt:
             if verbose:
-                print "[+] %s relaxed ordering" % ("enabling" if val > 0 else "disabling")
+                print("[+] %s relaxed ordering" % ("enabling" if val > 0 else "disabling"))
             self.cfg.write(self.offset + 8, tgt)
         elif verbose > 1:
-            print "[-] not touching relaxed ordering bit"
+            print("[-] not touching relaxed ordering bit")
 
 
 class PCI_MSIX_cap(object):
@@ -138,22 +138,22 @@ class Config(object):
         try:
             self.enumerate_capabilities()
         except:
-            print "[!] failed to enumerate device capabilities"
+            print("[!] failed to enumerate device capabilities")
 
     def enumerate_capabilities(self, verbose=1):
-        print "[+] enumerating device capabilities"
+        print("[+] enumerating device capabilities")
         cap_ptr = self.read(0x34)
         while cap_ptr != 0:
             cap_hdr = self.read(cap_ptr)
             t = cap_hdr & 0xff
             if t in cap_types:
                 if verbose:
-                    print " * capability at %02x: %s (%02x)" % (cap_ptr, cap_types[t][0], t)
+                    print(" * capability at %02x: %s (%02x)" % (cap_ptr, cap_types[t][0], t))
                 if cap_types[t][1] != None:
                     self.caps[cap_types[t][2]] = cap_types[t][1](self, cap_ptr)
             else:
                 if verbose:
-                    print " * capability at %02x: Unknown (%02x)" % (cap_ptr, t)
+                    print(" * capability at %02x: Unknown (%02x)" % (cap_ptr, t))
             cap_ptr = (cap_hdr >> 8) & 0xff
 
         ext_cap_ptr = 0x100
@@ -163,10 +163,10 @@ class Config(object):
             cap_ver = (ext_cap >> 16) & 0xf
             if cap_id in ext_cap_types:
                 if verbose:
-                    print " * extended capability at %03x: %s (%04x), version %01x" % (ext_cap_ptr, ext_cap_types[cap_id][0], cap_id, cap_ver)
+                    print(" * extended capability at %03x: %s (%04x), version %01x" % (ext_cap_ptr, ext_cap_types[cap_id][0], cap_id, cap_ver))
             else:
                 if verbose:
-                    print " * extended capability at %03x: Unknown (%04x), version %01x" % (ext_cap_ptr, cap_id, cap_ver)
+                    print(" * extended capability at %03x: Unknown (%04x), version %01x" % (ext_cap_ptr, cap_id, cap_ver))
             ext_cap_ptr = ext_cap >> 20
 
 def check_config(dev):
@@ -186,6 +186,6 @@ def check_config(dev):
             line += "!"
 
         if len(line) == 80:
-            print line
+            print(line)
             line = ""
 

@@ -25,7 +25,7 @@ def handle_rr(self, i):
 
     if pi != ci:
         if self.verbose:
-            print "[+] rr %d: pi is %x, ci was %x," % (i, pi, ci),
+            print("[+] rr %d: pi is %x, ci was %x," % (i, pi, ci), end=' ')
 
         if pi < ci:
             count = self.rr_rings_len - ci 
@@ -34,7 +34,7 @@ def handle_rr(self, i):
             count = pi - ci
         
         if self.verbose:
-            print "%d bds received" % count
+            print("%d bds received" % count)
 
         rbds = cast(self.rr_rings_vaddr[i], POINTER(tg.rbd))
         while count > 0:
@@ -66,7 +66,7 @@ def handle_interrupt(self):
 
     dev = self.dev
     if self.verbose:
-        print "[+] handling interrupt"
+        print("[+] handling interrupt")
     
     _ = dev.hpmb.box[tg.mb_interrupt].low
     tag = 0
@@ -74,12 +74,12 @@ def handle_interrupt(self):
     while self.status_block.updated:
         tag = self.status_block.status_tag
         if self.verbose:
-            print "[+] status tag %x" % tag
+            print("[+] status tag %x" % tag)
         tag = tag << 24
 
         self.status_block.updated = 0
         if self.verbose:
-            print "[+] status block updated! link: %d, attention: %d" % (self.status_block.link_status, self.status_block.attention)
+            print("[+] status block updated! link: %d, attention: %d" % (self.status_block.link_status, self.status_block.attention))
 
         if dev.emac.status.link_state_changed:
             self._link_detect()
@@ -93,7 +93,7 @@ def handle_interrupt(self):
         self._free_sent_bds()
 
     if self.verbose:
-        print "[+] interrupt handling concluded"
+        print("[+] interrupt handling concluded")
     self.dev.hpmb.box[tg.mb_interrupt].low = tag
     _ = self.dev.hpmb.box[tg.mb_interrupt].low
 
@@ -103,7 +103,7 @@ def replenish_rx_bds(self):
     count = 0
     if new_ci != old_ci:
         if self.verbose:
-            print "[+] rbdp ci now %x, was %x" % (new_ci, old_ci)
+            print("[+] rbdp ci now %x, was %x" % (new_ci, old_ci))
         rbds = cast(self.rx_ring_vaddr, POINTER(tg.rbd))
         while new_ci != old_ci:
             count += 1
@@ -121,21 +121,21 @@ def replenish_rx_bds(self):
             self._std_rbd_pi -= self.rx_ring_len
 
         if self.verbose:
-            print "[+] moving std rbd pi to %x" % self._std_rbd_pi
+            print("[+] moving std rbd pi to %x" % self._std_rbd_pi)
         self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
 
 def free_sent_bds(self):
     tx_ci = self.status_block.sbdci
     if tx_ci != self._tx_ci:
         if self.verbose:
-            print "[+] sbd ci: %x" % tx_ci
+            print("[+] sbd ci: %x" % tx_ci)
 
         if tx_ci < self._tx_ci:
             if self.verbose:
                 if self._tx_ci + 1 == self.tx_ring_len:
-                    print "[.] freeing tx buffer %02x" % self._tx_ci
+                    print("[.] freeing tx buffer %02x" % self._tx_ci)
                 else:
-                    print "[.] freeing tx buffers %02x-%02x" % (self._tx_ci, self.tx_ring_len - 1)
+                    print("[.] freeing tx buffers %02x-%02x" % (self._tx_ci, self.tx_ring_len - 1))
             while self._tx_ci < self.tx_ring_len:
                 self.mm.free(self._tx_buffers[self._tx_ci])
                 self._tx_ci += 1
@@ -143,37 +143,37 @@ def free_sent_bds(self):
             self._tx_ci = 0
         if self.verbose:
             if tx_ci == self._tx_ci + 1:
-                print "[.] freeing tx buffer %02x" % self._tx_ci
+                print("[.] freeing tx buffer %02x" % self._tx_ci)
             elif tx_ci > self._tx_ci:
-                print "[.] freeing tx buffers %02x-%02x" % (self._tx_ci, tx_ci - 1)
+                print("[.] freeing tx buffers %02x-%02x" % (self._tx_ci, tx_ci - 1))
         while tx_ci > self._tx_ci:
             self.mm.free(self._tx_buffers[self._tx_ci])
             self._tx_ci += 1
 
 def dump_bd(self, ci, rbd):
-    print "consuming bd 0x%x" % ci
-    print " addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low)
-    print "  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index]))
-    print " length:    %04x" % rbd.length
-    print " index:     %04x" % rbd.index
-    print " type:      %04x" % rbd.type
-    print " flags:    ",
+    print("consuming bd 0x%x" % ci)
+    print(" addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low))
+    print("  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index])))
+    print(" length:    %04x" % rbd.length)
+    print(" index:     %04x" % rbd.index)
+    print(" type:      %04x" % rbd.type)
+    print(" flags:    ", end=' ')
     for j in ["is_ipv6", "is_tcp", "l4_checksum_correct", "ip_checksum_correct", "reserved", "has_error", "has_vlan_tag", "reserved2", "reserved3", "rss_hash_valid", "packet_end", "reserved4", "reserved5"]:
         if getattr(rbd.flags, j):
-            print j,
-    print
+            print(j, end=' ')
+    print()
 
     if rbd.flags.rss_hash_type != 0:
-        print " rss hash type: %x" % rbd.flags.rss_hash_type
+        print(" rss hash type: %x" % rbd.flags.rss_hash_type)
 
-    print " ip cksum:  %04x" % rbd.ip_cksum
-    print " l4 cksum: %04x" % rbd.l4_cksum
-    print " err flags:",
+    print(" ip cksum:  %04x" % rbd.ip_cksum)
+    print(" l4 cksum: %04x" % rbd.l4_cksum)
+    print(" err flags:", end=' ')
     for j in ["reserved1", "reserved2", "reserved3", "reserved4", "reserved5", "reserved6", "reserved7", "giant_packet", "trunc_no_res", "len_less_64", "mac_abort", "dribble_nibble", "phy_decode_error", "link_lost", "collision", "bad_crc"]:
         if getattr(rbd.error_flags, j):
-            print j,
-    print
-    print " vlan_tag:  %04x" % rbd.vlan_tag
-    print " rss_hash:  %08x" % rbd.rss_hash
-    print " opaque:    %08x" % rbd.opaque
+            print(j, end=' ')
+    print()
+    print(" vlan_tag:  %04x" % rbd.vlan_tag)
+    print(" rss_hash:  %08x" % rbd.rss_hash)
+    print(" opaque:    %08x" % rbd.opaque)
 

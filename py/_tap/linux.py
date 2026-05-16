@@ -41,7 +41,7 @@ class TapLinuxInterface(object):
         fd = os.open("/dev/net/tun", os.O_RDWR)
         ifr = struct.pack('16sH', "", IFF_TAP | IFF_NO_PI)
         self.tap_name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
-        print "[+] tap device name: \"%s\"" % self.tap_name
+        print("[+] tap device name: \"%s\"" % self.tap_name)
         self.tfd = fd
         self.confd = sys.stdin.fileno()
         try:
@@ -50,7 +50,7 @@ class TapLinuxInterface(object):
             self._wait_for_something = self.__wait_with_eventfd
             self._get_serial = self.__get_serial_from_eventfd
         except:
-            print "[-] no interrupt eventfd exposed by device interface, polling instead."
+            print("[-] no interrupt eventfd exposed by device interface, polling instead.")
             self._wait_for_something = self.__wait_by_polling
             self._get_serial = self.__get_serial_from_counter
         return self

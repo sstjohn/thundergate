@@ -49,19 +49,19 @@ class DeviceMagic(Magics):
             pass 
         elif len(parts) == 1:
             ofs = int(parts[0], 0)
-            print "%04x: %08x" % (ofs, self.dev.reg[ofs >> 2])
+            print("%04x: %08x" % (ofs, self.dev.reg[ofs >> 2]))
         else:
             start = int(parts[0], 0)
             end = int(parts[1], 0)
             i = 0
             for ofs in range(start, end, 4):
                 if i % 0x20 == 0:
-                    print "\n%04x: " % ofs,
+                    print("\n%04x: " % ofs, end=' ')
                 elif i % 0x10 == 0:
-                    print "   ",
+                    print("   ", end=' ')
                 elif i % 8 == 0:
-                    print " ",
-                print "%08x" % self.dev.reg[ofs >> 2],
+                    print(" ", end=' ')
+                print("%08x" % self.dev.reg[ofs >> 2], end=' ')
                 i += 4
 
     @line_magic
@@ -86,15 +86,15 @@ class DeviceMagic(Magics):
         if 0 == res:
             newhash = hashfile("fw/app.c")
             if oldhash != newhash:
-                print "[+] building new firmware"
+                print("[+] building new firmware")
                 res = os.system("make -C fw")
                 if 0 == res:
-                    print "[+] firmware compilation successful"
+                    print("[+] firmware compilation successful")
                     self.dev.nvram.init(wr=1)
                     self.dev.nvram.install_thundergate()
                     self.dev.reset()
                 else:
-                    print "[-] firmware compilation failed!"
+                    print("[-] firmware compilation failed!")
 
 def _register_device_magic(dev):
     ip = get_ipython()
@@ -141,8 +141,8 @@ class DebugMagic(Magics):
         @line_magic
         def bp(self, arg):
             if None is arg or '' == arg:
-                print "hardware breakpoint at %08x" % self.cpu.breakpoint.address,
-                print "%s" % ("disabled" if self.cpu.breakpoint.disabled else "enabled")
+                print("hardware breakpoint at %08x" % self.cpu.breakpoint.address, end=' ')
+                print("%s" % ("disabled" if self.cpu.breakpoint.disabled else "enabled"))
             elif arg == '-':
                 self.cpu.clear_breakpoint()
             else:
@@ -186,10 +186,10 @@ class DebugMagic(Magics):
                 self.cpu.mode.single_step = 1
 
             if verbose:
-                print "\"%s\" became true after %08x:" % (str(arg), lpc)
+                print("\"%s\" became true after %08x:" % (str(arg), lpc))
                 self.u(lpc)
 
-                print "\npc now %08x: " % self.cpu.pc
+                print("\npc now %08x: " % self.cpu.pc)
                 self.u(None)
 
         @cell_magic
@@ -199,7 +199,7 @@ class DebugMagic(Magics):
 
             while True:
                 self.su(line, verbose=0)
-                exec cell
+                exec(cell)
                 self.cpu.mode.single_step = 1
    
         @line_magic
@@ -211,22 +211,22 @@ class DebugMagic(Magics):
             try:
                 self._dwarf = self._elf.get_dwarf_info()
             except:
-                print "%s does not contain DWARF info" % line
+                print("%s does not contain DWARF info" % line)
 
         @line_magic
         def elf(self, line):
             try: return self._elf
-            except: print "no elf file loaded"
+            except: print("no elf file loaded")
 
         @line_magic
         def dwarf(self, line):
             try: return self._dwarf
-            except: print "no dwarf loaded"
+            except: print("no dwarf loaded")
 
         def _build_funcache(self):
             try: dw = self._dwarf
             except: 
-                print "no dwarf loaded"
+                print("no dwarf loaded")
                 return None
             fc = []
             for c in dw.iter_CUs():
@@ -252,7 +252,7 @@ class DebugMagic(Magics):
 
             for f in fc:
                 lpc, hpc, n = f
-                print "%s: %x - %x" % (n, lpc, hpc)
+                print("%s: %x - %x" % (n, lpc, hpc))
 
         @line_magic
         def func_at(self, line):
@@ -276,7 +276,7 @@ class DebugMagic(Magics):
         def sloc_at(self, line):
             try: dw = self._dwarf
             except:
-                print "no dwarf loaded"
+                print("no dwarf loaded")
                 return
 
             pc = int(line, 0)
@@ -308,15 +308,15 @@ class DebugMagic(Magics):
                     if eff & 0xffff8000 == 0xc0000000:
                         eff &= 0xffff
                         b, n, _, _ = reutils.whats_at(eff)
-                        print "%08x: lw %08x from reg %04x (%s.%s)" % (pc, val, eff, b, n)
+                        print("%08x: lw %08x from reg %04x (%s.%s)" % (pc, val, eff, b, n))
                     else:
-                        print "%08x: lw %08x from %08x" % (pc, val, eff)
+                        print("%08x: lw %08x from %08x" % (pc, val, eff))
                 elif i.mnemonic == 'sw':
                     eff = i.operands[1].eff
                     val = i.operands[0].eff
                     if eff & 0xffff8000 == 0xc0000000:
                         eff &= 0xffff
                         b, n, _, _ = reutils.whats_at(eff)
-                        print "%08x: sw %08x to reg %04x (%s.%s)" % (pc, val, eff, b, n)
+                        print("%08x: sw %08x to reg %04x (%s.%s)" % (pc, val, eff, b, n))
                     else:
-                        print "%08x: sw %08x to %08x" % (pc, val, eff)
+                        print("%08x: sw %08x to %08x" % (pc, val, eff))

@@ -64,7 +64,7 @@ class TapDriver(TDInt):
         self.stats = TapStatistics()
 
     def __enter__(self):
-        print "[+] driver initialization begins"
+        print("[+] driver initialization begins")
         super(TapDriver, self).__enter__()
         self._device_setup()
         return self
@@ -72,7 +72,7 @@ class TapDriver(TDInt):
     def __exit__(self, t, v, traceback):
         self.dev.close()
         super(TapDriver, self).__exit__()
-        print "[+] driver terminated"
+        print("[+] driver terminated")
 
     _device_setup = device_setup
     _init_tx_rings = init_tx_rings                
@@ -104,7 +104,7 @@ class TapDriver(TDInt):
         i = self._tx_pi
         self._tx_buffers[i] = buf
         if self.verbose:
-            print "[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i)
+            print("[+] sending buffer at %x len 0x%x using sbd #%d" % (buf, buf_sz, i))
         paddr = self.mm.get_paddr(buf)
         txb = ctypes.cast(self.tx_ring_vaddr, ctypes.POINTER(tg.sbd))
         txb[i].addr_hi = paddr >> 32
@@ -123,7 +123,7 @@ class TapDriver(TDInt):
         _ = self.dev.hpmb.box[tg.mb_sbd_host_producer].low
         self._tx_pi = i
         if self.verbose:
-            print "[+] host sbd pi now %x" % i
+            print("[+] host sbd pi now %x" % i)
         self.stats.pkt_out(buf_sz)
     
     def _handle_tap(self):
@@ -137,24 +137,24 @@ class TapDriver(TDInt):
         elif k == '' or k == ' ' or k == None:
             pass
         else:
-            print "keypress '%s' unhandled. press 'h' for help." % k
+            print("keypress '%s' unhandled. press 'h' for help." % k)
 
     def _help(self, handlers):
-        print 
+        print() 
         for k in handlers:
-            print "%s - %s" % (k, handlers[k][0])
-        print
+            print("%s - %s" % (k, handlers[k][0]))
+        print()
 
     def toggle_verbosity(self):
         self.verbose = not self.verbose
-        print "[+] verbosity %s" % ("enabled" if self.verbose else "disabled")
+        print("[+] verbosity %s" % ("enabled" if self.verbose else "disabled"))
 
     def _stop(self):
         self._running = False
         
     def run(self):
         self.dev.unmask_interrupts()
-        print "[+] waiting for interrupts..."
+        print("[+] waiting for interrupts...")
         self._running = True
         
         k_handlers = {'q': ("quit", functools.partial(TapDriver._stop, self)),

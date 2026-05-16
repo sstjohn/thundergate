@@ -42,7 +42,7 @@ class VfioInterface(object):
         self._intx_avail = False
         self._msi_avail = False
         self._msix_avail = False
-        print "[+] enumerating vfio device irqs"
+        print("[+] enumerating vfio device irqs")
         for i in range(self.device_info.num_irqs - 1):
             irq = c.vfio_irq_info()
             irq.argsz = c.sizeof(c.vfio_irq_info)
@@ -61,7 +61,7 @@ class VfioInterface(object):
                     self._intx_avail = True    
                 else:
                     d = str(i)
-                print "[*] irq %s: count %x, flags %x" % (d, irq.count, irq.flags)
+                print("[*] irq %s: count %x, flags %x" % (d, irq.count, irq.flags))
                 
 
     def reattach(self):
@@ -69,7 +69,7 @@ class VfioInterface(object):
         self._dev_open()
 
     def __enter__(self):
-        print "[+] opening vfio container"
+        print("[+] opening vfio container")
         container = os.open("/dev/vfio/vfio", os.O_RDWR)
 
         if ioctl(container, c.VFIO_GET_API_VERSION) != c.VFIO_API_VERSION:
@@ -84,7 +84,7 @@ class VfioInterface(object):
         self._dev_open()
 
     def _dev_open(self):
-        print "[+] opening vfio group"
+        print("[+] opening vfio group")
         group = os.open("/dev/vfio/%d" % self.groupno, os.O_RDWR)
 
         group_status = c.vfio_group_status()
@@ -105,7 +105,7 @@ class VfioInterface(object):
 
         self.iommu_info = iommu_info
 
-        print "[+] opening vfio device"
+        print("[+] opening vfio device")
         device = c.ioctl(group, c.VFIO_GROUP_GET_DEVICE_FD, self.bdf)
         self.device = device
 
@@ -120,7 +120,7 @@ class VfioInterface(object):
         self.setup_irqs()
         
     def show_regions(self):
-        print "[+] enumerating vfio device regions"
+        print("[+] enumerating vfio device regions")
         self.regions = []
         for i in range(self.device_info.num_regions - 1):
             r = c.vfio_region_info()
@@ -163,7 +163,7 @@ class VfioInterface(object):
                 t = "rom bar"
             else:
                 t += " (type 0x%x)" % i
-            print "[*] %s [%s]: size %04x, ofs %x" % (t, flags, r.size, r.offset)
+            print("[*] %s [%s]: size %04x, ofs %x" % (t, flags, r.size, r.offset))
 
         
     def setup_irqs(self):
@@ -172,13 +172,13 @@ class VfioInterface(object):
         c.resize(irq_set, c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint))
         irq_set.argsz = c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint)
         if self._msix_avail:
-                print "[+] enabling msi-x"
+                print("[+] enabling msi-x")
                 irq_set.index = c.VFIO_PCI_MSIX_IRQ_INDEX
         elif self._msi_avail:
-                print "[+] enabling msi"
+                print("[+] enabling msi")
                 irq_set.index = c.VFIO_PCI_MSI_IRQ_INDEX
         else:
-                print "[+] enabling intx"
+                print("[+] enabling intx")
                 irq_set.index = c.VFIO_PCI_INTX_IRQ_INDEX
         irq_set.start = 0
         irq_set.count = 1

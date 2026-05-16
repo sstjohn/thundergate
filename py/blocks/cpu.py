@@ -41,12 +41,12 @@ try:
     from capstone import *
     from capstone.mips import *
     if cs_version()[0] < 3:
-        print "[-] capstone outdated - disassembly unavailable"
+        print("[-] capstone outdated - disassembly unavailable")
         _no_capstone = True
     else:
         _no_capstone = False
 except:
-    print "[-] capstone not present - disassembly unavailable"
+    print("[-] capstone not present - disassembly unavailable")
     _no_capstone = True
 
 from time import sleep
@@ -151,7 +151,7 @@ class cpu(rflip.cpu):
                 raise Exception("cpu not halted")
 
             i = struct.pack(">I", self.ir)
-            r = self.md.disasm(i, 4).next()
+            r = next(self.md.disasm(i, 4))
             if r.operands > 0:
                  for j in r.operands:
                      eff = 0
@@ -192,16 +192,16 @@ class cpu(rflip.cpu):
                     tmp = '--> '
                 if i.address == bp:
                     tmp = '*' + tmp[1:]
-                print "%s0x%08x:  %08x  %s  %s" % (tmp, i.address, struct.unpack(">I", i.bytes)[0], i.mnemonic, i.op_str)
+                print("%s0x%08x:  %08x  %s  %s" % (tmp, i.address, struct.unpack(">I", i.bytes)[0], i.mnemonic, i.op_str))
                 if verbose and len(i.operands) > 0:
                      c = -1
                      for j in i.operands:
                          c += 1
                          if j.type == MIPS_OP_REG:
                              val = getattr(self, "r%d" % (j.reg - 1))
-                             print(" " * 19 + "operand %u: REG %s = %08x" % (c, i.reg_name(j.reg), val))
+                             print((" " * 19 + "operand %u: REG %s = %08x" % (c, i.reg_name(j.reg), val)))
                          if j.type == MIPS_OP_IMM:
-                             print(" " * 19 + "operand %u: IMM = %s" % (c, to_x(j.imm)))
+                             print((" " * 19 + "operand %u: IMM = %s" % (c, to_x(j.imm))))
                          if j.type == MIPS_OP_MEM:
                              addr = 0
                              val = 0
@@ -215,15 +215,15 @@ class cpu(rflip.cpu):
                                  addr += disp
                              if addr != 0:
                                  eff = struct.unpack(">I", self.tr_read(addr, 1))[0]
-                             print(" " * 19 + "operand %u: MEM @%08x = %08x" % (c, addr, eff))
+                             print((" " * 19 + "operand %u: MEM @%08x = %08x" % (c, addr, eff)))
                              if j.mem.base != 0:
                                  val = getattr(self, "r%d" % (j.reg - 1))
-                                 print(" " * 21 + "operand %u base: REG %s = %08x"
-                                     % (c, i.reg_name(j.mem.base), val))
+                                 print((" " * 21 + "operand %u base: REG %s = %08x"
+                                     % (c, i.reg_name(j.mem.base), val)))
                                  addr = val
                              if j.mem.disp != 0:
-                                 print(" " * 21 + "operand %u disp: IMM %x"
-                                     % (c, int(j.mem.disp)))
+                                 print((" " * 21 + "operand %u disp: IMM %x"
+                                     % (c, int(j.mem.disp))))
                                  addr += j.mem.disp
 
     def set_hw_breakpoint(self, addr, enable = True, reset = False):
@@ -240,7 +240,7 @@ class cpu(rflip.cpu):
         self.status.word = 0xffffffff
         self.mode.reset = 1
 
-        print "[+] resetting rxcpu...",
+        print("[+] resetting rxcpu...", end=' ')
         cnt = 0
         while self.mode.reset:
             cnt += 1
@@ -249,11 +249,11 @@ class cpu(rflip.cpu):
 
             usleep(10)
 
-        print "completed after %d us" % (cnt * 10)
+        print("completed after %d us" % (cnt * 10))
 
     def halt(self):
         if not self.mode.halt:
-            print "[+] halting rx cpu",
+            print("[+] halting rx cpu", end=' ')
             self.mode.halt = 1
             cnt = 0
             while not self.status.halted:
@@ -262,11 +262,11 @@ class cpu(rflip.cpu):
                     raise Exception("timed out halting rx cpu")
                 usleep(10)
 
-            print "halted after %d us" % (cnt * 10)
+            print("halted after %d us" % (cnt * 10))
 
     def resume(self):
         if self.mode.halt:
-            print "[+] resuming rx cpu from %08x" % self.pc,
+            print("[+] resuming rx cpu from %08x" % self.pc, end=' ')
             self.mode.halt = 0
 
             cnt = 0
@@ -276,14 +276,14 @@ class cpu(rflip.cpu):
                     raise Exception("timed out resuming rx cpu")
                 usleep(10)
 
-            print "resumed after %d us" % (cnt * 10)
+            print("resumed after %d us" % (cnt * 10))
 
     def clear_events(self):
         if self.status.word & ~0x400:
-            print "[+] clearing rx cpu events (was %08x, now" % self.status.word,
+            print("[+] clearing rx cpu events (was %08x, now" % self.status.word, end=' ')
             self.status.word = 0xffffffff
             self.status.word = 0
-            print "%08x)" % self.status.word
+            print("%08x)" % self.status.word)
 
             
     def go(self, addr = None):
@@ -297,7 +297,7 @@ class cpu(rflip.cpu):
 
     def tg3db(self, en=1):
         from magic import DebugMagic
-        print "[+] loading %s debug magics" % self.block_name
+        print("[+] loading %s debug magics" % self.block_name)
         ip = get_ipython()
         magics = DebugMagic(ip, self)
         ip.register_magics(magics)

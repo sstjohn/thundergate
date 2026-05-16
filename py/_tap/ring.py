@@ -50,18 +50,18 @@ def init_tx_rings(self):
     #dev.mem.txrcb[0].nic_addr = 0x4000
     dev.mem.txrcb[0].flags.disabled = 0
 
-    print "[+] send ring 0 of size %d allocated at %x" % (self.tx_ring_len, self.tx_ring_vaddr)
+    print("[+] send ring 0 of size %d allocated at %x" % (self.tx_ring_len, self.tx_ring_vaddr))
 
     for i in range(len(dev.mem.txrcb) - 1):
         dev.mem.txrcb[i + 1].flags.disabled = 1
-        print "[+] send ring %d disabled" % (i + 1)
+        print("[+] send ring %d disabled" % (i + 1))
 
 def init_rx_rings(self):
     dev = self.dev
     mm = self.mm
 
     dev.rdi.mini_rcb.disable_ring = 1
-    print "[+] mini receive producer ring disabled"
+    print("[+] mini receive producer ring disabled")
 
     self.rx_ring_vaddr, self.rx_ring_len = _init_xx_ring(self, tg.rbd)
     self.rx_ring_paddr = mm.get_paddr(self.rx_ring_vaddr)
@@ -73,10 +73,10 @@ def init_rx_rings(self):
     dev.rdi.std_rcb.nic_addr = 0x6000
     dev.rdi.std_rcb.disable_ring = 0
 
-    print "[+] standard receive producer ring of size %d allocated at %x" % (self.rx_ring_len, self.rx_ring_vaddr)
+    print("[+] standard receive producer ring of size %d allocated at %x" % (self.rx_ring_len, self.rx_ring_vaddr))
 
     dev.rdi.jumbo_rcb.disable_ring = 1
-    print "[+] jumbo receive producer ring disabled"
+    print("[+] jumbo receive producer ring disabled")
 
 def init_rr_rings(self):
     dev = self.dev
@@ -85,13 +85,13 @@ def init_rr_rings(self):
     ring_vaddr, self.rr_rings_len = _init_xx_ring(self, tg.rbd)
     self.rr_rings_vaddr = [ring_vaddr]
     
-    print "[+] receive return ring 0 of size %d allocated at %x" % (self.rr_rings_len, ring_vaddr)
+    print("[+] receive return ring 0 of size %d allocated at %x" % (self.rr_rings_len, ring_vaddr))
 
     for i in range(1, len(dev.mem.rxrcb)):
         ring_vaddr, tmp = _init_xx_ring(self, tg.rbd)
         assert tmp == self.rr_rings_len
         self.rr_rings_vaddr += [ring_vaddr]
-        print "[+] receive return ring %d of size %d allocated at %x" % (i, tmp, ring_vaddr)
+        print("[+] receive return ring %d of size %d allocated at %x" % (i, tmp, ring_vaddr))
 
     self.rr_rings_ci = [0] * len(dev.mem.rxrcb)
     self.rr_rings_paddr = []
@@ -126,7 +126,7 @@ def populate_rx_ring(self, count = None):
         r[i].length = 0x800
         r[i].flags.disabled = 0
 
-    print "[+] produced %d rx buffers" % self.rx_ring_len
+    print("[+] produced %d rx buffers" % self.rx_ring_len)
     self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = count
     self._std_rbd_pi = count
     self._std_rbd_ci = 0

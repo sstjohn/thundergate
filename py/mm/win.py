@@ -32,7 +32,7 @@ class WinMemMgr(_MemMgr):
 
         #self.page_sz = si.dwPageSize
 
-        print "[.] windows system page size is %d" % self.page_sz
+        print("[.] windows system page size is %d" % self.page_sz)
         add_process_privilege(SE_LOCK_MEMORY_NAME)
         self.locked_pages = {}
         self.hdev = hdev
