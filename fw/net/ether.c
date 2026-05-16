@@ -22,7 +22,6 @@
  */
 
 #include "fw.h"
-#include "frame.h"
 #include "net/net.h"
 #include "net/inet.h"
 
@@ -49,9 +48,9 @@ void net_init(void)
 
 void net_rx(const u8 *frame, u32 len)
 {
-    const struct frame *f = (const struct frame *)frame;
+    const struct eth_hdr *f = (const struct eth_hdr *)frame;
 
-    if (len < sizeof(struct frame))
+    if (len < sizeof(struct eth_hdr))
         return;
 
     /* The core is big-endian, so f->type is already in network order. */

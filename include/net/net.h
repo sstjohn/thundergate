@@ -57,6 +57,12 @@ void net_tx(const u8 *frame, u32 len);
 void arp_input(const u8 *frame, u32 len);
 void ip_input(const u8 *frame, u32 len);
 
+/* ARP cache: arp_lookup() returns a cached MAC (or 0), arp_request()
+ * broadcasts a query, arp_cache_put() records an address pair. */
+const u8 *arp_lookup(const u8 *ip);
+void arp_request(const u8 *ip);
+void arp_cache_put(const u8 *ip, const u8 *mac);
+
 /* Upper-layer ingress, dispatched by ip_input(); `ip` points at the IPv4
  * header, `payload`/`plen` at the transport segment within it. */
 void icmp_input(const u8 *ip, const u8 *payload, u32 plen);

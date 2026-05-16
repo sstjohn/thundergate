@@ -41,6 +41,12 @@
 #define ETH_ALEN    6   /* MAC address length */
 #define IP_ALEN     4   /* IPv4 address length */
 
+struct eth_hdr {
+    u8  dest[ETH_ALEN];
+    u8  src[ETH_ALEN];
+    u16 type;             /* EtherType -- network order (== host order here) */
+} __attribute__((packed));
+
 /* --- ARP (RFC 826) -------------------------------------------------------- */
 #define ARP_HTYPE_ETHER  1
 #define ARP_PTYPE_IP     ETH_P_IP
