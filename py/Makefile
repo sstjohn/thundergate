@@ -2,21 +2,18 @@
 
 include ../Make.common
 
-CLIB_HEADERS=unistd.h sys/mman.h sys/types.h sys/stat.h fcntl.h stdlib.h malloc.h string.h sys/socket.h $(PROJ_ROOT)/misc/vfio.h sys/ioctl.h sys/eventfd.h errno.h linux/if.h
+# tglib.py - ctypes bindings for the Tigon3 register and structure headers,
+# generated from include/*.h with ctypesgen (Python 3).
+#
+# The old clib.py / clib.xml (built by the long-dead h2xml/xml2py) are gone;
+# the libc and VFIO ABI is now the hand-written cabi.py. tunlib.py (built by
+# tunlibgen) is likewise gone; the TAP driver uses fcntl.ioctl directly.
 
-all: tglib.py clib.py tunlib.py
+all: tglib.py
 
 tglib.py: $(PROJ_ROOT)/include/*.h
-	ctypesgen.py -I$(PROJ_ROOT)/include -o tglib.py --no-macros $(shell ls $(PROJ_ROOT)/include/*.h) 
-
-clib.py: clib.xml
-	xml2py clib.xml -l libc.so.6 -o clib.py > /dev/null
-
-clib.xml: Makefile
-	h2xml -q -c $(CLIB_HEADERS) -o clib.xml
-
-tunlib.py: tunlibgen
-	./tunlibgen > tunlib.py
+	ctypesgen -I $(PROJ_ROOT)/include --no-macro-warnings -o tglib.py $(PROJ_ROOT)/include/*.h
 
 clean:
-	rm -f tglib.py tglib.xml clib.py clib.xml tunlib.py *.pyc
+	rm -f tglib.py *.pyc
+	rm -rf __pycache__
