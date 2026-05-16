@@ -556,7 +556,7 @@ class CDPServer(object):
         except:
             return
         if line_no is None:
-    	    lines = current_breakpoints.keys()
+            lines = current_breakpoints.keys()
         else:
             lines = [line_no]
         for line in lines:

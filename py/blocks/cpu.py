@@ -133,7 +133,7 @@ class cpu(rflip.cpu):
         except:
             raise Exception("not halted at known breakpoint")
         self.ir = original_instruction
-	self.status.invalid_instruction = 1
+        self.status.invalid_instruction = 1
 
     def clear_breakpoint(self, addr):
         original_insn = self._breakpoints[addr]

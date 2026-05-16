@@ -43,28 +43,28 @@ class nvram(rflip.nvram):
         if lh: self.load_eeprom_header()
 
     def _dump_sw_arb(self):
-	print "[.] sw_arb:",
-	tmp = "r"
-	if self.sw_arb.req3: tmp += "3"
-	if self.sw_arb.req2: tmp += "2"
-	if self.sw_arb.req1: tmp += "1"
-	if self.sw_arb.req0: tmp += "0"
-	tmp += " w"
-	if self.sw_arb.arb_won3: tmp += "3"
-	if self.sw_arb.arb_won2: tmp += "2"
-	if self.sw_arb.arb_won1: tmp += "1"
-	if self.sw_arb.arb_won0: tmp += "0"
-	tmp += " c"
-	if self.sw_arb.req_clr3: tmp += "3"
-	if self.sw_arb.req_clr2: tmp += "2"
-	if self.sw_arb.req_clr1: tmp += "1"
-	if self.sw_arb.req_clr0: tmp += "0"
-	tmp += " s"
-	if self.sw_arb.req_set3: tmp += "3"
-	if self.sw_arb.req_set2: tmp += "2"
-	if self.sw_arb.req_set1: tmp += "1"
-	if self.sw_arb.req_set0: tmp += "0"
-	print tmp
+        print "[.] sw_arb:",
+        tmp = "r"
+        if self.sw_arb.req3: tmp += "3"
+        if self.sw_arb.req2: tmp += "2"
+        if self.sw_arb.req1: tmp += "1"
+        if self.sw_arb.req0: tmp += "0"
+        tmp += " w"
+        if self.sw_arb.arb_won3: tmp += "3"
+        if self.sw_arb.arb_won2: tmp += "2"
+        if self.sw_arb.arb_won1: tmp += "1"
+        if self.sw_arb.arb_won0: tmp += "0"
+        tmp += " c"
+        if self.sw_arb.req_clr3: tmp += "3"
+        if self.sw_arb.req_clr2: tmp += "2"
+        if self.sw_arb.req_clr1: tmp += "1"
+        if self.sw_arb.req_clr0: tmp += "0"
+        tmp += " s"
+        if self.sw_arb.req_set3: tmp += "3"
+        if self.sw_arb.req_set2: tmp += "2"
+        if self.sw_arb.req_set1: tmp += "1"
+        if self.sw_arb.req_set0: tmp += "0"
+        print tmp
 
     def reset(self):
         self.acquire_lock()
@@ -97,8 +97,8 @@ class nvram(rflip.nvram):
         while not self.sw_arb.arb_won1:
             cntr += 1
             if cntr > 1000:
-		print "\n[!] nvram arbitration timed out"
-		self._dump_sw_arb()
+                print "\n[!] nvram arbitration timed out"
+                self._dump_sw_arb()
                 raise Exception("timed out waiting for nvram arbitration")
             usleep(100)
         if cntr == 0:
@@ -111,9 +111,9 @@ class nvram(rflip.nvram):
     def relinquish_lock(self):
         if not self._locked:
             return
-	if self.sw_arb.req1:
-		print "[-] clearing nvram arbitration request 1"
-		self.sw_arb.req_clr1 = 1
+        if self.sw_arb.req1:
+                print "[-] clearing nvram arbitration request 1"
+                self.sw_arb.req_clr1 = 1
         self._locked = 0
 
     def access_enable(self):
@@ -180,17 +180,17 @@ class nvram(rflip.nvram):
 
     @property
     def eeprom_len(self): 
-	sz = 0
+        sz = 0
         if self.read_dword(0) == tg.TG3_MAGIC:
             sz = ((self.read_dword(0xf0) & 0xffff) >> 8) * 1024
-	if sz == 0:
-	    if self._dev.pci.did == 0x1682:
-             	sz = 64 * 1024
-	    elif self._dev.pci.did == 0x16b4:
-		sz = 256 * 1024
-	    else:
-		raise Exception("nvram of unknown length")
-	return sz
+        if sz == 0:
+            if self._dev.pci.did == 0x1682:
+                sz = 64 * 1024
+            elif self._dev.pci.did == 0x16b4:
+                sz = 256 * 1024
+            else:
+                raise Exception("nvram of unknown length")
+        return sz
  
 
     def load_eeprom_header(self):
@@ -256,7 +256,7 @@ class nvram(rflip.nvram):
 
     def write_block(self, offset, data, updater = None):
         assert len(data) >= 4 
-	assert 0 == (len(data) % 4)
+        assert 0 == (len(data) % 4)
         
         if updater is not None:
             updater(0)
@@ -329,18 +329,18 @@ class nvram(rflip.nvram):
         for d in directory:
                 index, nv_type, nv_ofs, sram_ofs, nv_len, nv_xa, nv_xb = d
                 print "nvram image #%d. " % index,
-		print "attrs: type %02x, " % nv_type,
-		print "nv_ofs %x, " % nv_ofs,
-		print "sram_ofs: %x, " % sram_ofs,
-		print "len %x, " % nv_len,
+                print "attrs: type %02x, " % nv_type,
+                print "nv_ofs %x, " % nv_ofs,
+                print "sram_ofs: %x, " % sram_ofs,
+                print "len %x, " % nv_len,
                 if nv_xa and nv_xb:
                     print "xab"
                 elif nv_xa:
                     print "xa"
-		elif nv_xb:
-		    print "xb"
-		else:
-		    print "nx"
+                elif nv_xb:
+                    print "xb"
+                else:
+                    print "nx"
 
     def get_dir_image(self, index, updater = None):
         dentry = self.eeprom_hdr.directory[index]

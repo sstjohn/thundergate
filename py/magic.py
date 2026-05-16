@@ -70,9 +70,9 @@ class DeviceMagic(Magics):
 
     @line_magic
     def ti(self, arg):
-	self.dev.nvram.init(wr=1)
-	self.dev.nvram.install_thundergate()
-	self.dev.reset()
+        self.dev.nvram.init(wr=1)
+        self.dev.nvram.install_thundergate()
+        self.dev.reset()
     
     @line_magic
     def gui(self, arg):
@@ -170,7 +170,7 @@ class DebugMagic(Magics):
             self.cpu._dev.grc.fastboot_pc.addr = 0
             self.cpu._dev.mem.write_dword(0xb50, 0)
             self.cpu._dev.grc.misc_config.grc_reset = 1
-	    self.cpu._dev.init()
+            self.cpu._dev.init()
             self.cpu.mode.halt = 1
             self.u(None)
 

@@ -171,15 +171,15 @@ class VfioInterface(object):
         irq_set = c.vfio_irq_set()
         c.resize(irq_set, c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint))
         irq_set.argsz = c.sizeof(c.vfio_irq_set) + c.sizeof(c.c_uint)
-	if self._msix_avail:
-		print "[+] enabling msi-x"
-		irq_set.index = c.VFIO_PCI_MSIX_IRQ_INDEX
-	elif self._msi_avail:
-		print "[+] enabling msi"
-		irq_set.index = c.VFIO_PCI_MSI_IRQ_INDEX
-	else:
-		print "[+] enabling intx"
-		irq_set.index = c.VFIO_PCI_INTX_IRQ_INDEX
+        if self._msix_avail:
+                print "[+] enabling msi-x"
+                irq_set.index = c.VFIO_PCI_MSIX_IRQ_INDEX
+        elif self._msi_avail:
+                print "[+] enabling msi"
+                irq_set.index = c.VFIO_PCI_MSI_IRQ_INDEX
+        else:
+                print "[+] enabling intx"
+                irq_set.index = c.VFIO_PCI_INTX_IRQ_INDEX
         irq_set.start = 0
         irq_set.count = 1
         irq_set.flags = c.VFIO_IRQ_SET_DATA_EVENTFD | c.VFIO_IRQ_SET_ACTION_TRIGGER

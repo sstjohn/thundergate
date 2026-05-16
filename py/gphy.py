@@ -18,7 +18,7 @@
 
 class GPhy(object):
     def __init__(self, bus, port):
-	self.msleep = bus.msleep
+        self.msleep = bus.msleep
         self._smi_bus = bus
         self._smi_port = port
 

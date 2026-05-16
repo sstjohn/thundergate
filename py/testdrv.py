@@ -77,8 +77,8 @@ class TestDriver(object):
 
         print "[+] resetting device"
         dev.mem.write_dword(0xe00, 0)
-	self.clear_txmbufs()
-	self.clear_txbds()
+        self.clear_txmbufs()
+        self.clear_txbds()
         dev.reset()
 
         if dev.mem.gencomm.dword[0xac] >> 16 != 0x88b5:
@@ -170,15 +170,15 @@ class TestDriver(object):
 
         final = reutils.state_diff(dev, inter2)
     def pxeidiff(self):
-	dev = self.dev
-	cpu = dev.rxcpu
+        dev = self.dev
+        cpu = dev.rxcpu
 
-	dev.nvram.init(wr=1)
-	if dev.nvram.getpxe():
-		was_enabled = True
-		dev.nvram.setpxe(1)
-	else:
-		was_enabled = False
+        dev.nvram.init(wr=1)
+        if dev.nvram.getpxe():
+                was_enabled = True
+                dev.nvram.setpxe(1)
+        else:
+                was_enabled = False
 
         dev.reset(quick=True)
         cpu.mode.halt = 1
@@ -192,12 +192,12 @@ class TestDriver(object):
         self.norom_insns = nr_is
 
         dev.reset()
-	usleep(1000)
-	dev.reset(cold = False)
-	usleep(1000)
+        usleep(1000)
+        dev.reset(cold = False)
+        usleep(1000)
 
-	dev.nvram.init(wr=1)
-	dev.nvram.setpxe()
+        dev.nvram.init(wr=1)
+        dev.nvram.setpxe()
         dev.reset(quick=True)
         cpu.mode.halt = 1
 
@@ -252,26 +252,26 @@ class TestDriver(object):
         return words
 
     def pxediff(self):
-	dev = self.dev
-	cpu = dev.rxcpu
+        dev = self.dev
+        cpu = dev.rxcpu
 
-	dev.nvram.init(wr=1)
-	if dev.nvram.getpxe():
-		was_enabled = True
-		dev.nvram.setpxe(1)
-	else:
-		was_enabled = False
+        dev.nvram.init(wr=1)
+        if dev.nvram.getpxe():
+                was_enabled = True
+                dev.nvram.setpxe(1)
+        else:
+                was_enabled = False
 
-	dev.reset()
-	sleep(5)
-	
-	initial = reutils.state_save(dev)
+        dev.reset()
+        sleep(5)
+        
+        initial = reutils.state_save(dev)
 
-	dev.reset()
-	usleep(1000)
+        dev.reset()
+        usleep(1000)
 
-	dev.nvram.init(wr=1)
-	dev.nvram.setpxe()
+        dev.nvram.init(wr=1)
+        dev.nvram.setpxe()
         dev.reset()
 
         print "[+] press any key to continue..."
@@ -280,57 +280,57 @@ class TestDriver(object):
         dev.init()
 
         self.read_oprom()
-	wpxe = reutils.state_diff(dev, initial)
+        wpxe = reutils.state_diff(dev, initial)
 
         dev.reset(quick=True)
         cpu.mode.halt = 1
         wpxei = reutils.state_diff(dev, wpxe)
 
-	if not was_enabled:
+        if not was_enabled:
                 dev.reset()
-		dev.nvram.init(wr=1)
-		dev.nvram.setpxe(1)
-		dev.reset()
+                dev.nvram.init(wr=1)
+                dev.nvram.setpxe(1)
+                dev.reset()
 
     def asfdiff(self):
-	dev = self.dev
-	cpu = dev.rxcpu
+        dev = self.dev
+        cpu = dev.rxcpu
 
-	dev.nvram.init(wr=1)
-	if dev.nvram.getasf():
-		was_enabled = True
-		dev.nvram.setasf(1)
-	else:
-		was_enabled = False
+        dev.nvram.init(wr=1)
+        if dev.nvram.getasf():
+                was_enabled = True
+                dev.nvram.setasf(1)
+        else:
+                was_enabled = False
 
-	self.clear_txmbufs()
-	self.clear_txbds()
-	dev.reset()
-	sleep(5)
-	
-	cpu.halt()
-	initial = reutils.state_save(dev)
+        self.clear_txmbufs()
+        self.clear_txbds()
+        dev.reset()
+        sleep(5)
+        
+        cpu.halt()
+        initial = reutils.state_save(dev)
 
-	dev.reset()
-	usleep(1000)
-	dev.reset(cold = False)
-	usleep(1000)
+        dev.reset()
+        usleep(1000)
+        dev.reset(cold = False)
+        usleep(1000)
 
-	dev.nvram.init(wr=1)
-	dev.nvram.setasf()
-	self.clear_txmbufs()
-	self.clear_txbds()
-	
-	dev.reset()
-	sleep(5)
-	
-	cpu.halt()
-	wasf = reutils.state_diff(dev, initial)
+        dev.nvram.init(wr=1)
+        dev.nvram.setasf()
+        self.clear_txmbufs()
+        self.clear_txbds()
+        
+        dev.reset()
+        sleep(5)
+        
+        cpu.halt()
+        wasf = reutils.state_diff(dev, initial)
 
-	if not was_enabled:
-		dev.nvram.init(wr=1)
-		dev.nvram.setasf(1)
-		dev.reset()
+        if not was_enabled:
+                dev.nvram.init(wr=1)
+                dev.nvram.setasf(1)
+                dev.reset()
 
     def clear_txmbufs(self):
         for i in range(0x8000, 0x10000, 4):
@@ -461,7 +461,7 @@ class TestDriver(object):
         usleep(10)
         state = reutils.state_diff(dev, state)
 
-	    #dev.sdc.block_enable()
+            #dev.sdc.block_enable()
         #dev.sdi.block_enable()
         #dev.sbds.block_enable()
         #usleep(10)

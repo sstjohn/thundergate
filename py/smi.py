@@ -18,7 +18,7 @@
 
 class Smi(object):
     def __init__(self, dev):
-	self.msleep = dev.msleep
+        self.msleep = dev.msleep
         self.emac = dev.emac
 
     def read_reg(self, port, addr):

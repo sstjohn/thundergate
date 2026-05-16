@@ -41,8 +41,8 @@ class GenericModel(object):
     def __init__(self, name = None, parent = None, root = None):
         self.parent = parent
         self.name = name
-	if not root is None:
-	    self.droot = root
+        if not root is None:
+            self.droot = root
         self.children = []
 
 class MemoryModel(GenericModel):
