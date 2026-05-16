@@ -25,7 +25,6 @@
  * frame.
  */
 
-#include "fw.h"
 #include "net/net.h"
 #include "net/inet.h"
 #include "net/checksum.h"
@@ -126,7 +125,7 @@ void ip_output(const u8 *dst_ip, u8 proto, u32 plen)
     ip->checksum = 0;
     ip_cpy(net_if.ip, ip->src);
     ip_cpy(dst_ip, ip->dst);
-    ip->checksum = net_cksum((const u8 *)ip, IP_HDR_LEN);
+    net_put16((u8 *)&ip->checksum, net_cksum((const u8 *)ip, IP_HDR_LEN));
 
     mac_cpy(dst_mac, eth->dest);
     mac_cpy(net_if.mac, eth->src);

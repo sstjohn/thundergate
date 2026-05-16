@@ -17,6 +17,7 @@ trace/*
 fw/*.elf
 fw/*.img
 fw/fixed.sym
+fw/net/test/nettest
 efi/*.efi
 efi/*.so
 efi/*.o

@@ -21,7 +21,6 @@
  * core is bounced back to its sender with the ports swapped.
  */
 
-#include "fw.h"
 #include "net/net.h"
 #include "net/inet.h"
 #include "net/checksum.h"
@@ -55,6 +54,7 @@ void udp_input(const u8 *iphdr, const u8 *payload, u32 plen)
     struct udp_hdr *rep;
     u8 *seg;
     u32 ulen, dlen, i;
+    u16 ck;
 
     if (plen < sizeof(struct udp_hdr))
         return;
@@ -81,9 +81,10 @@ void udp_input(const u8 *iphdr, const u8 *payload, u32 plen)
     for (i = 0; i < dlen; i++)
         seg[sizeof(struct udp_hdr) + i] = payload[sizeof(struct udp_hdr) + i];
 
-    rep->checksum = udp_checksum(net_if.ip, ip->src, seg, ulen);
-    if (rep->checksum == 0)
-        rep->checksum = 0xffff;              /* a 0 checksum transmits as ~0 */
+    ck = udp_checksum(net_if.ip, ip->src, seg, ulen);
+    if (ck == 0)
+        ck = 0xffff;                         /* a 0 checksum transmits as ~0 */
+    net_put16((u8 *)&rep->checksum, ck);
 
     ip_output(ip->src, IP_PROTO_UDP, ulen);
 }

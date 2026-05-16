@@ -37,4 +37,9 @@ u16 net_cksum_fold(u32 sum);
 u16 net_cksum(const u8 *data, u32 len);
 u16 net_cksum_seed(const u8 *data, u32 len, u32 seed);
 
+/* Store a 16-bit value big-endian. A checksum field must land in network
+ * byte order whatever the host endianness -- net_cksum() reads big-endian
+ * -- so the stack writes checksums through this, not a plain assignment. */
+void net_put16(u8 *p, u16 v);
+
 #endif

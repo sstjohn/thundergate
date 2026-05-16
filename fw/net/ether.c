@@ -17,34 +17,19 @@
  */
 
 /*
- * The Ethernet (L2) layer of the on-core stack: ingress EtherType
- * dispatch, and frame transmit through the MAC transmit FTQ.
+ * The Ethernet (L2) ingress dispatch and the stack's shared state.
+ *
+ * The hardware-touching transmit path and initialisation live in
+ * coretx.c; keeping them out of this file leaves ether.c -- and the
+ * arp/ip/icmp/udp protocol code -- free of any firmware/register
+ * dependency, so it builds and is tested on the host (see fw/net/test/).
  */
 
-#include "fw.h"
 #include "net/net.h"
 #include "net/inet.h"
 
 struct net_iface net_if;
 u8 net_txbuf[NET_TX_MAX];
-
-/* Scratch transmit mbuf. Shared with tx_asf(): the firmware event loop is
- * single-threaded, so the control protocol and the stack never transmit
- * at the same time. */
-#define NET_TX_MBUF 0xad
-
-void net_init(void)
-{
-    int i;
-
-    for (i = 0; i < 6; i++)
-        net_if.mac[i] = state.my_mac[i];
-    for (i = 0; i < 4; i++) {
-        net_if.ip[i] = config.ip_addr[i];
-        net_if.netmask[i] = config.netmask[i];
-        net_if.gateway[i] = config.gateway[i];
-    }
-}
 
 void net_rx(const u8 *frame, u32 len)
 {
@@ -60,69 +45,4 @@ void net_rx(const u8 *frame, u32 len)
         ip_input(frame, len);
     /* Any other EtherType is ignored here; the 0x88b5 control protocol is
        handled directly by rx() and never reaches net_rx(). */
-}
-
-/*
- * Transmit a complete Ethernet frame.
- *
- * The frame is copied into a chain of up to three transmit mbufs and
- * handed to the MAC transmit FTQ. The layout mirrors tx_asf(): the first
- * mbuf holds a 40-byte transmit descriptor followed by 80 frame bytes,
- * each further mbuf holds 120. (Unlike tx_asf, the buffer passed here is
- * the whole frame, so the 80/200-byte mbuf-count thresholds are exact.)
- */
-void net_tx(const u8 *frame, u32 len)
-{
-    u32 buf = NET_TX_MBUF;
-    struct mbuf *mb = (struct mbuf *)(0x8000 + (buf << 7));
-    u32 sub = (buf << 16) | buf;
-    const u8 *p = frame;
-    u32 i;
-
-    if (len > NET_TX_MAX)
-        len = NET_TX_MAX;
-
-    /* First mbuf: 40-byte transmit descriptor, then frame bytes 40..119. */
-    mb->hdr.c = (len > 80) ? 1 : 0;
-    mb->hdr.f = 1;
-    mb->hdr.length = 80;
-    mb->next_frame_ptr = 0;
-    mb->hdr.next_mbuf = buf + 1;
-
-    mb->data.frame.status_ctrl = 0;
-    mb->data.frame.len = (len < 64) ? 64 : len;   /* minimum Ethernet frame */
-    mb->data.frame.qids = 0xc;
-    mb->data.frame.mbuf = (len <= 80) ? 1 : ((len <= 200) ? 2 : 3);
-
-    i = sizeof(struct mbuf_frame_desc);           /* 40 */
-    for (; i < 120 && len > 0; i++, len--)
-        mb->data.byte[i] = *p++;
-    while (i < 104)                               /* pad a short frame to 64 */
-        mb->data.byte[i++] = 0;
-
-    /* Second mbuf, if the frame did not fit (carries up to 120 bytes). */
-    if (len > 0) {
-        mb++;
-        mb->hdr.c = (len > 120) ? 1 : 0;
-        mb->hdr.f = 0;
-        mb->hdr.length = (len > 120) ? 120 : len;
-        mb->hdr.next_mbuf = (len > 120) ? (buf + 2) : 0;
-        for (i = 0; i < 120 && len > 0; i++, len--)
-            mb->data.byte[i] = *p++;
-        sub++;
-    }
-
-    /* Third mbuf. */
-    if (len > 0) {
-        mb++;
-        mb->hdr.c = 0;
-        mb->hdr.f = 0;
-        mb->hdr.length = len;
-        mb->hdr.next_mbuf = 0;
-        for (i = 0; len > 0; i++, len--)
-            mb->data.byte[i] = *p++;
-        sub++;
-    }
-
-    ftq.mac_tx.q.word = sub;
 }

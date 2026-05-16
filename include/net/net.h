@@ -53,6 +53,10 @@ void net_init(void);
 void net_rx(const u8 *frame, u32 len);
 void net_tx(const u8 *frame, u32 len);
 
+/* mac_cpy() is the firmware's 6-byte copy helper (defined in fw/util.c);
+ * declared here so the protocol modules need not include all of fw.h. */
+void mac_cpy(const u8 *src, u8 *dst);
+
 /* Per-protocol ingress handlers; `frame` points at the Ethernet header. */
 void arp_input(const u8 *frame, u32 len);
 void ip_input(const u8 *frame, u32 len);

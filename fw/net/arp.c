@@ -21,7 +21,6 @@
  * of address pairs so the IPv4 layer can resolve next-hop MACs.
  */
 
-#include "fw.h"
 #include "net/net.h"
 #include "net/inet.h"
 

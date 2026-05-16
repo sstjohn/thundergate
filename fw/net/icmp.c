@@ -20,7 +20,6 @@
  * ICMP (RFC 792): answer echo requests so the core responds to ping.
  */
 
-#include "fw.h"
 #include "net/net.h"
 #include "net/inet.h"
 #include "net/checksum.h"
@@ -51,7 +50,7 @@ void icmp_input(const u8 *iphdr, const u8 *payload, u32 plen)
     rep = (struct icmp_hdr *)seg;
     rep->type = ICMP_TYPE_ECHO_REPLY;
     rep->checksum = 0;
-    rep->checksum = net_cksum(seg, plen);
+    net_put16((u8 *)&rep->checksum, net_cksum(seg, plen));
 
     ip_output(ip->src, IP_PROTO_ICMP, plen);
 }

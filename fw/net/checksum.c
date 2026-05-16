@@ -55,3 +55,9 @@ u16 net_cksum_seed(const u8 *data, u32 len, u32 seed)
 {
     return net_cksum_fold(net_cksum_partial(data, len, seed));
 }
+
+void net_put16(u8 *p, u16 v)
+{
+    p[0] = (u8)(v >> 8);
+    p[1] = (u8)(v & 0xff);
+}
