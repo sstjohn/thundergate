@@ -39,7 +39,7 @@ u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
     tx_pi = (tx_pi + 1) % 0x200;
 
     tcp_seg_ctrl.pre_dma_cmd_xchng.skip = 0;
-    sdc.pre_dma_command_exchange.skip = 0;
+    sdc.pre_dma_command_exchange.skip_flag = 0;
     lpmb.box[0x30].hi = tx_pi;
     while (tcp_seg_ctrl.pre_dma_cmd_xchng.pass_bit);
 
@@ -55,7 +55,7 @@ u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
     while (tcp_seg_ctrl.pre_dma_cmd_xchng.ready); 
     tcp_seg_ctrl.pre_dma_cmd_xchng.skip = 1;
     
-    while (sdc.pre_dma_command_exchange.pass);
+    while (sdc.pre_dma_command_exchange.pass_flag);
 
     u32 mb = sdc.pre_dma_command_exchange.head_txmbuf_ptr;
     mac_cpy(state.dest_mac, (u8 *)&(txmbuf0[mb].data.byte[0x28]));
@@ -63,7 +63,7 @@ u32 tx_std_enq(u32 addr_hi, u32 addr_low, u32 len)
     *((u16 *)&txmbuf0[mb].data.byte[0x34]) = config.ctrl_etype;
     *((u16 *)&txmbuf0[mb].data.byte[0x36]) = TX_STD_ENQ_ACK;
     
-    sdc.pre_dma_command_exchange.skip = 1;
+    sdc.pre_dma_command_exchange.skip_flag = 1;
 
     return 0;
 }
