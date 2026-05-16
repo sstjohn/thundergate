@@ -56,8 +56,10 @@ if sys_name == "Linux":
     from interfaces.uio import UioInterface
 elif sys_name == "Windows" or sys_name == "cli":
     from interfaces.win import WinInterface
+elif sys_name == "Darwin":
+    from interfaces.macos import MacOSInterface
 else:
-    raise NotImplementedError("this version of thundergate only runs on linux and windows")
+    raise NotImplementedError("this version of thundergate runs on Linux, macOS and Windows")
 
 import reutils
 
@@ -168,6 +170,8 @@ def main(args):
             dev_interface = WinInterface()
         except:
             dev_interface = None
+    elif sys_name == 'Darwin':
+        dev_interface = MacOSInterface()
     if not args.backup:
         if not os.path.exists("eeprom.bak"):
             logger.warn("no backup image found")
