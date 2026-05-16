@@ -8,7 +8,7 @@ Class=System
 ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
 Provider=%ManufacturerName%
 CatalogFile=tgwink.cat
-DriverVer=12/07/2015,1.0.0.0
+DriverVer=05/16/2026,2.0.0.0
 
 [DestinationDirs]
 DefaultDestDir = 12
@@ -69,12 +69,20 @@ tgwink_Device_CoInstaller_CopyFiles = 11
 WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
 
 [tgwink_Device.NT.HW]
-AddReg = MSI_Interrupts
+AddReg = MSI_Interrupts, DmaRemapping
 
 [MSI_Interrupts]
 HKR,Interrupt Management,,0x00000010
 HKR,Interrupt Management\MessageSignaledInterruptProperties,,0x00000010
 HKR,Interrupt Management\MessageSignaledInterruptProperties,MSISupported,0x00010001,1
+
+; Windows 11 Kernel DMA Protection gates bus-mastering devices on
+; Thunderbolt/PCIe while the machine is locked unless their driver
+; declares itself compatible with DMA remapping (the IOMMU). tgwink's
+; DMA is confined to the buffers it maps, so declare it compatible --
+; otherwise the device is cut off whenever the screen locks.
+[DmaRemapping]
+HKR,,DmaRemappingCompatible,0x00010001,1
 
 [tgwink_Device.NT.Wdf]
 KmdfService =  tgwink, tgwink_wdfsect

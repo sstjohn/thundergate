@@ -2,9 +2,14 @@ ARCH            = $(shell uname -m | sed s,i[3456789]86,ia32,)
 
 include ../Make.common
 
+# efi/ is an x86 (Intel/PC) option ROM -- it has no Apple Silicon target.
+# It requires the gnu-efi submodule to be built first:
+#     make -C ext/gnu-efi
+# and the project virtualenv (efirom.py imports eficompressor):
+#     .venv/bin/pip install ext/python-eficompressor
 EFI_OBJS        = main.o splash.o werk.o
 TARGET          = dmarf.efi dmarf.rom
-EFIROM		= $(PROJ_ROOT)/py/efirom.py
+EFIROM		= $(PROJ_ROOT)/.venv/bin/python3 $(PROJ_ROOT)/py/efirom.py
 TGINC		= -I$(PROJ_ROOT)/include
 EFIINC          = $(PROJ_ROOT)/ext/gnu-efi/inc
 EFIINCS         = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol
@@ -25,10 +30,7 @@ LDFLAGS         = -nostdlib --warn-common --no-undefined --fatal-warnings \
 all: $(TARGET)
 
 clean:
-	-rm *.o
-	-rm *.so
-	-rm *.efi
-	-rm *.rom
+	-rm -f *.o *.so *.efi *.rom
 
 dmarf.so: $(EFI_OBJS) dmarf.h
 	ld $(LDFLAGS) $(EFI_CRT_OBJ) $(EFI_OBJS) $(LIB_EFI) $(LIB_GNUEFI) $(LIB_GCC) -T $(EFI_LDS) -o $@

@@ -1,140 +1,113 @@
-﻿# Thundergate on Windows #
+# ThunderGate on Windows
 
-These instructions assume a Windows 10 x64 host.
+These instructions target Windows 11 x64 with Python 3.13 or newer.
 
-## Dependencies ##
+## Dependencies
 
-1. Install Python 2.7 x64. Make sure to select the option to add the Python
-   binary to your system PATH.
+1. Install **Python 3.13+ (64-bit)** and add it to `PATH`.
 
-2. Install Visual Studio 2015, the Windows Driver Kit for Windows 10, and
-   Python Tools for Visual Studio.
+2. Install **Visual Studio 2022** with the *Desktop development with C++*
+   workload, the **Windows Driver Kit (WDK)** matching your Windows SDK,
+   and (optionally) the *Python development* workload.
 
-3. Install Microsoft Visual C++ for Python 2.7.
-
-4. Install required Python packages from an administrative command prompt:
-
-    ~~~
-C:\>pip install bidict ipython pyreadline
-    ~~~
-
-5. Clone Thundergate source repository:
-
-    ~~~
-C:\>git clone http://github.com/sstjohn/thundergate.git
-C:\>cd thundergate
-C:\thundergate>git submodule init
-C:\thundergate>git submodule update
-    ~~~
-
-6. Optionally, install CMake, and then Python packages required for firmware
-   debugging. From an administrative VS2015 x64 Native Tools Command Crompt
-   (found under Start -> All Apps -> Visual Studio 2015, right click, select 
-   More -> Run as Administrator):
-
-    ~~~
-C:\thundergate>pip install pyelftools capstone
-    ~~~
-
-7. Optionally, install the included Python EFI image compression package, which
-   is required for firmware development. Again from an administrative VS2015
-   x64 Native Tools Command Prompt:
-
-    ~~~
-c:\thundergate>pip install .\python-eficompressor
-    ~~~
-
-8. Optionally, install MSYS2, and then follow the instructions in [firmware.md](firmware.md)
-   to install a binutils/gcc toolchain targeting the Tigon3's MIPS processor.
-
-9. Optionally, install the TAP-Windows6 package from OpenVPN. This package is
-   required in order to use the Thundergate TAP adapter functionality.
-
-## Build ##
-
-To build from the IDE, open the file win\tgwin.sln in Visual Studio 2015, and
-select "Build Solution" from the Build menu.
-
-To build from a VS2015 x64 Native Tools Command Prompt:
+3. Clone the repository and its submodules:
 
    ~~~
-c:\thundergate>msbuild win\tgwin.sln
+   C:\>git clone https://github.com/sstjohn/thundergate.git
+   C:\>cd thundergate
+   C:\thundergate>git submodule update --init --recursive
    ~~~
 
-## Install ##
-
-A driver is required for operation on Windows 10, as PCI resources aren't
-conveniently laid out for userspace consumption under /sys as they are in
-Linux. Be advised this driver necessarily replaces the Broadcom-developed
-driver for the device, precluding its normal use as a network adapter.
-
-As a result of Windows 10's driver signing requirements, you will need to
-enable "Test Mode" to install the Thundergate driver. From an administrative
-command prompt, run:
+4. Create the virtualenv and install the Python dependencies:
 
    ~~~
-c:\>bcdedit -set testsigning on
-The operation completed successfully.
+   C:\thundergate>py -m venv .venv
+   C:\thundergate>.venv\Scripts\pip install -r requirements.txt
+   C:\thundergate>.venv\Scripts\pip install ext\python-eficompressor
    ~~~
 
-After rebooting, the words "Test Mode" should appear in the lower left corner
-of your desktop.
+5. *Optional, for firmware development:* install MSYS2 and build the
+   Tigon3 MIPS cross-toolchain following [firmware.md](firmware.md).
 
-Next, you will need to install your test signing certificate, generated during
-the build, into the Windows Trusted Root Certificate store. From an
-administrative VS2015 x64 Native Tools Command Prompt:
+6. *Optional, for the TAP adapter:* install the TAP-Windows6 package
+   from OpenVPN.
 
-   ~~~
-c:\>certmgr.exe -add thundergate\win\x64\debug\tgwink.cer -s -r localMachine root
-CertMgr Succeeded
-   ~~~
+## Build
 
-Finally, install the driver itself:
+From the IDE: open `win\tgwin.sln` in Visual Studio 2022 and *Build
+Solution*. From a *x64 Native Tools Command Prompt*:
 
-   ~~~
-c:\>devcon update thundergate\win\x64\debug\tgwink\tgwink.inf "pci\ven_14e4&dev_1682"
-Updating drivers for pci\ven_14e4&dev_1682 from c:\thundergate\win\x64\debug\tgwink\tgwink.inf.
-Drivers installed successfully.
-   ~~~
+~~~
+C:\thundergate>msbuild win\tgwin.sln
+~~~
 
-Possibly subsequent to a reboot, your Broadcom NetLink device will have
-disappeared from the 'Network Adapters' subtree in Device Manager, and a new
-device named 'tgwink Device' will have appeared under 'System Devices.' This
-indicates only that the driver was successfully installed; the device itself
-remains unmodified by this procedure. Check to ensure that the 'tgwink Device'
-is present in the Device Manager and that its device properties do not report
-an error code. 
+## Install the driver
 
-## Use ##
+Windows cannot expose PCI resources to userspace the way Linux sysfs
+does, so the `tgwink` kernel driver is required. It replaces the
+Broadcom network driver for the device, so the NIC stops working as an
+ordinary network adapter while `tgwink` is bound.
 
-   ~~~
-c:\thundergate>python py\main.py --help
+### Driver signing
 
- #######                                            #####
-    #    #    # #    # #    # #####  ###### #####  #     #   ##   ##### ######
-    #    #    # #    # ##   # #    # #      #    # #        #  #    #   #
-    #    ###### #    # # #  # #    # #####  #    # #  #### #    #   #   #####
-    #    #    # #    # #  # # #    # #      #####  #     # ######   #   #
-    #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
-    #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
+Windows 11 x64 enforces driver signing. There are two paths:
 
-                                 Version 0.9.5
-                    Copyright (c) 2015-2016 Saul St John
-                             http://thundergate.io
+- **Development (test signing).** Enable test mode, then trust the
+  certificate the build produced:
 
-usage: main.py [-h] [-p] [--ptvsdpass PTVSDPASS] [--ptvsdwait] [-t] [-s] [-b]
-               [-d] [-i]
+  ~~~
+  C:\>bcdedit -set testsigning on
+  ~~~
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -p, --ptvsd           enable ptvsd server
-  --ptvsdpass PTVSDPASS
-                        ptvsd server password
-  --ptvsdwait           wait for ptvsd attachment at startup
-  -t, --tests           run tests
-  -s, --shell           ipython cli
-  -b, --backup          create eeprom backup
-  -d, --driver          load userspace tap driver
-  -i, --install         install thundergate firmware
+  Reboot ("Test Mode" appears at the lower-right of the desktop), then,
+  from an administrative prompt, add the test certificate to both the
+  Trusted Root and Trusted Publishers stores:
 
-   ~~~
+  ~~~
+  C:\>certutil -addstore -f root  win\x64\Debug\tgwink.cer
+  C:\>certutil -addstore -f trustedpublisher win\x64\Debug\tgwink.cer
+  ~~~
+
+- **Production (attestation signing).** For a driver that installs
+  without test mode, the driver package must be signed through the
+  Microsoft Hardware Developer portal: submit the `.cab` for
+  **attestation signing** (this needs an Azure-linked partner account
+  and an EV code-signing certificate). Attestation signing returns a
+  Microsoft-signed package that Windows 11 accepts normally. ThunderGate
+  is a research tool, so test signing is the expected path.
+
+### DMA remapping (Kernel DMA Protection)
+
+On Windows 11, Kernel DMA Protection blocks bus-mastering Thunderbolt /
+PCIe devices while the machine is locked. `tgwink.inf` now declares
+`DmaRemappingCompatible`, so the device keeps working with the IOMMU
+enabled and is not cut off when the screen locks. No extra step is
+needed; this note is here so the behaviour is not mistaken for a fault.
+
+### Installing
+
+From an administrative prompt:
+
+~~~
+C:\>pnputil /add-driver win\x64\Debug\tgwink\tgwink.inf /install
+~~~
+
+(`devcon update ... "pci\ven_14e4&dev_1682"` also works if you have
+`devcon` from the WDK.)
+
+After installation the Broadcom adapter disappears from *Network
+Adapters* in Device Manager and a *tgwink Device* appears under *System
+Devices*. Confirm it is present with no error code — the device itself
+is unmodified by this; only the bound driver changed.
+
+## Use
+
+~~~
+C:\thundergate>.venv\Scripts\python py\main.py --help
+  -b, --backup    create eeprom backup
+  -i, --install   install thundergate firmware
+  -d, --driver    load userspace tap driver
+  -s, --shell     ipython cli
+~~~
+
+Always capture an EEPROM backup before flashing (`-b`, then `-i`).

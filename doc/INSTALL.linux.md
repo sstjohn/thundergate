@@ -1,91 +1,105 @@
-﻿# Thundergate on Linux #
+# ThunderGate on Linux
 
-These instructions assume a Debian 8 host.
+These instructions target a current Linux distribution (Debian 12+,
+Ubuntu 24.04+, or similar) with Python 3.13 or newer.
 
-## Build ##
+## Build
 
-1. Install external dependencies:
+1. Install the build dependencies (Debian/Ubuntu names):
 
-    ~~~
-$ sudo apt-get install build-essential curl texinfo flex git ca-certificates  \
-            gnu-efi python python-dev python-ctypeslib libgmp-dev libmpfr-dev \
-	    libmpc-dev python-pip ipython
-$ sudo pip install capstone bidict pyelftools
-    ~~~
+   ~~~
+   $ sudo apt-get install build-essential git texinfo flex bison \
+         python3 python3-venv python3-dev \
+         libgmp-dev libmpfr-dev libmpc-dev \
+         bolt
+   ~~~
 
-2. Clone repository:
+2. Clone the repository and its submodules:
 
-    ~~~
-$ git clone http://github.com/sstjohn/thundergate.git
-$ cd thundergate
-$ git submodule init
-$ git submodule update
-    ~~~
+   ~~~
+   $ git clone https://github.com/sstjohn/thundergate.git
+   $ cd thundergate
+   $ git submodule update --init --recursive
+   ~~~
 
-3. Install distributed dependencies:
+3. Create the Python virtualenv and install the dependencies:
 
-    ~~~
-$ pip install ext/python-eficompressor
-    ~~~
+   ~~~
+   $ python3 -m venv .venv
+   $ .venv/bin/pip install -r requirements.txt
+   $ .venv/bin/pip install ext/python-eficompressor
+   ~~~
 
-4. Build Tigon3 cross-tools following the instructions from [firmware.md](firmware.md).
+4. Build the Tigon3 MIPS cross-toolchain (see [firmware.md](firmware.md)):
 
-5. Compile ThunderGate:
+   ~~~
+   $ misc/build-toolchain.sh
+   ~~~
 
-    ~~~
-$ cd thundergate
-$ make
-    ~~~
+5. Build the firmware and verify it:
 
-## Install ##
+   ~~~
+   $ misc/verify-fw.sh
+   ~~~
 
-For maximal userspace tap driver performance, the network interface device
-should be bound to the ```vfio-pci``` kernel module. This appears to be the
-only standard interface for receiving MSI/MSIX interrupts in userspace on
-Linux; users without an IOMMU are out of luck. Absent that, the driver operates
-by polling on the status block for updates, at the cost of responsiveness and
-energy efficiency.
+## Thunderbolt authorization
 
-First, determine the BDF of your Tigon3 device. This information can be
-obtained from, e.g., ```lspci```:
+Many Tigon3 adapters on Apple hardware are Thunderbolt devices. Modern
+Linux gates Thunderbolt devices behind a security level managed by
+`boltctl`; an unauthorized device will not appear on the PCI bus.
 
-~~~
-$ sudo lspci -d14e4: | grep Ethernet
-0a:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57762 Gigabit Ethernet PCIe
-~~~
-
-As is commonly the case on Apple hardware, the BDF for the Thunderbolt NIC in
-this example is '0a:00.0'. Next, unbind the device from the default kernel
-module (likely tg3), and rebind it to vfio-pci as such:
+List devices and authorize the NIC:
 
 ~~~
+$ boltctl list
+$ boltctl authorize <uuid>      # authorize for this session
+$ boltctl enroll <uuid>         # optional: authorize permanently
+~~~
+
+If `boltctl list` shows nothing and the adapter is plugged in, the
+Thunderbolt security level may be `secure` or `dponly`; `boltctl` is
+still the tool to authorize it.
+
+## Binding to vfio-pci
+
+For the userspace TAP driver, bind the NIC to `vfio-pci` — that is the
+standard way to receive MSI/MSI-X interrupts in userspace on Linux, and
+it requires an IOMMU. Without it the driver falls back to polling the
+status block, at a cost in responsiveness and power.
+
+Find the device's BDF:
+
+~~~
+$ lspci -d 14e4: | grep Ethernet
+0a:00.0 Ethernet controller: Broadcom ... NetXtreme BCM57762 Gigabit Ethernet PCIe
+~~~
+
+Bind it to `vfio-pci` using `driver_override`:
+
+~~~
+$ BDF=0000:0a:00.0
 $ sudo modprobe vfio-pci
+$ echo vfio-pci | sudo tee /sys/bus/pci/devices/$BDF/driver_override
 $ echo $BDF | sudo tee /sys/bus/pci/devices/$BDF/driver/unbind
-$ echo $BDF | sudo tee /sys/bus/pci/drivers/vfio-pci/bind
+$ echo $BDF | sudo tee /sys/bus/pci/drivers_probe
 ~~~
 
-On recent kernels, it may be more convenient to avail oneself of the 
-```driver_override``` file; see 
-[Documentation/ABI/testing/sysfs-bus-pci](https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-bus-pci)
-for details.
+The flash path (`-b`, `-i`) also works against the default `tg3` driver
+through sysfs, but `-d` (the TAP driver) needs `vfio-pci`.
 
-## Use ##
+## Use
 
-<pre>
-$ py/main.py -h
-usage: main.py [-h] [--device DEVICE] [-p] [--ptvsdpass PTVSDPASS]
-               [--ptvsdwait] [-t] [-s] [-b] [-d] [-i]
+~~~
+$ .venv/bin/python3 py/main.py --help
+  -b, --backup    create eeprom backup
+  -i, --install   install thundergate firmware
+  -d, --driver    load userspace tap driver
+  -s, --shell     ipython cli
+~~~
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --device DEVICE       BDF of tg3 PCI device
-  -p, --ptvsd           enable ptvsd server
-  --ptvsdpass PTVSDPASS
-                        ptvsd server password
-  --ptvsdwait           wait for ptvsd attachment at startup
-  -t, --tests           run tests
-  -s, --shell           ipython cli
-  -b, --backup          create eeprom backup
-  -d, --driver          load userspace tap driver
-  -i, --install         install thundergate firmware
-</pre>
+Always capture an EEPROM backup before flashing:
+
+~~~
+$ .venv/bin/python3 py/main.py -b
+$ .venv/bin/python3 py/main.py -i
+~~~
