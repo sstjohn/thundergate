@@ -21,6 +21,7 @@
 #include <DriverKit/IOLib.h>
 #include <DriverKit/IOUserClient.h>
 #include <DriverKit/IOMemoryDescriptor.h>
+#include <DriverKit/OSAction.h>
 
 #include "TGUserClient.h"
 #include "TGPCIDevice.h"
@@ -31,6 +32,7 @@
 struct TGUserClient_IVars
 {
     TGPCIDevice * owner;
+    OSAction    * intCompletion;    /* pending kTGWaitInterrupt, if any */
 };
 
 bool
@@ -64,12 +66,21 @@ IMPL(TGUserClient, Start)
         return kIOReturnNoDevice;
     }
     ivars->owner->retain();
+    ivars->owner->RegisterClient(this);
     return kIOReturnSuccess;
 }
 
 kern_return_t
 IMPL(TGUserClient, Stop)
 {
+    if (ivars->owner != nullptr)
+        ivars->owner->UnregisterClient();
+
+    /* Fail any wait that was still outstanding. */
+    if (ivars->intCompletion != nullptr) {
+        AsyncCompletion(ivars->intCompletion, kIOReturnAborted, nullptr, 0);
+        OSSafeReleaseNULL(ivars->intCompletion);
+    }
     OSSafeReleaseNULL(ivars->owner);
     return Stop(provider, SUPERDISPATCH);
 }
@@ -78,7 +89,7 @@ IMPL(TGUserClient, Stop)
  * ExternalMethod handles the dispatch inline: it is itself a dispatched
  * override, so `ivars` (hence `owner`) is in scope here -- no separate
  * static handler table is needed. Scalar argument counts are validated
- * by hand.
+ * by hand. Selectors are defined in tg_dext.h.
  */
 kern_return_t
 IMPL(TGUserClient, ExternalMethod)
@@ -119,6 +130,43 @@ IMPL(TGUserClient, ExternalMethod)
         return kIOReturnSuccess;
     }
 
+    case kTGAllocDMA: {
+        if (arguments->scalarInputCount < 1)
+            return kIOReturnBadArgument;
+        uint64_t handle = 0, iova = 0;
+        kern_return_t ret = ivars->owner->AllocDMA(
+            arguments->scalarInput[0], &handle, &iova);
+        if (ret != kIOReturnSuccess)
+            return ret;
+        arguments->scalarOutput[0] = handle;
+        arguments->scalarOutput[1] = iova;
+        arguments->scalarOutputCount = 2;
+        return kIOReturnSuccess;
+    }
+
+    case kTGFreeDMA: {
+        if (arguments->scalarInputCount < 1)
+            return kIOReturnBadArgument;
+        arguments->scalarOutputCount = 0;
+        return ivars->owner->FreeDMA(arguments->scalarInput[0]);
+    }
+
+    case kTGWaitInterrupt: {
+        /*
+         * Async method: the caller (IOConnectCallAsyncScalarMethod)
+         * supplies a completion. Stash it; NotifyInterrupt() fires it
+         * when the device next interrupts. One wait outstanding at a
+         * time.
+         */
+        if (arguments->completion == nullptr)
+            return kIOReturnBadArgument;
+        if (ivars->intCompletion != nullptr)
+            return kIOReturnBusy;
+        ivars->intCompletion = arguments->completion;
+        ivars->intCompletion->retain();
+        return kIOReturnSuccess;
+    }
+
     default:
         return super::ExternalMethod(selector, arguments, dispatch,
                                      target, reference);
@@ -126,15 +174,35 @@ IMPL(TGUserClient, ExternalMethod)
 }
 
 /*
- * Hands BAR 0 to the user-space IOConnectMapMemory() call. memoryType
- * kTGMemoryBar0 -> the BAR 0 IOMemoryDescriptor TGPCIDevice holds.
+ * Hands a region to the user-space IOConnectMapMemory() call:
+ *   kTGMemoryBar0            -> PCI BAR 0
+ *   kTGMemoryDMA + <handle>  -> the DMA buffer with that handle
  */
 kern_return_t
 IMPL(TGUserClient, CopyClientMemoryForType)
 {
-    if (type != kTGMemoryBar0)
-        return super::CopyClientMemoryForType(type, options, memory);
     if (ivars->owner == nullptr)
         return kIOReturnNotReady;
-    return ivars->owner->CopyBAR0Memory(memory);
+
+    if (type == kTGMemoryBar0)
+        return ivars->owner->CopyBAR0Memory(memory);
+
+    if (type >= kTGMemoryDMA && type < kTGMemoryDMA + kTGMaxDMABuffers)
+        return ivars->owner->CopyDMAMemory(type - kTGMemoryDMA, memory);
+
+    return super::CopyClientMemoryForType(type, options, memory);
+}
+
+/*
+ * Invoked by TGPCIDevice on each device interrupt. Completes the pending
+ * asynchronous kTGWaitInterrupt call, which wakes the TAP driver's wait
+ * loop in py/interfaces/macos.py.
+ */
+void
+IMPL(TGUserClient, NotifyInterrupt)
+{
+    if (ivars->intCompletion != nullptr) {
+        AsyncCompletion(ivars->intCompletion, kIOReturnSuccess, nullptr, 0);
+        OSSafeReleaseNULL(ivars->intCompletion);
+    }
 }

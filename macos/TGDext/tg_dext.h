@@ -21,6 +21,10 @@
  *
  * The dext (this directory) and py/interfaces/macos.py must agree on
  * these selectors and memory-type values; the Python side mirrors them.
+ *
+ * Selectors 0-2 (config space + BAR0) are the flash path (Phase 4a).
+ * Selectors 3-5 (DMA buffers + interrupts) back the TAP driver and the
+ * py/mm/macos.py memory manager (Phase 4b).
  */
 
 #ifndef TG_DEXT_H
@@ -28,15 +32,26 @@
 
 /* IOUserClient external-method selectors. */
 enum {
-    kTGConfigRead  = 0,   /* scalar in: (offset);        scalar out: (value) */
-    kTGConfigWrite = 1,   /* scalar in: (offset, value); scalar out: ()      */
-    kTGGetBar0Info = 2,   /* scalar in: ();              scalar out: (size)  */
-    kTGMethodCount = 3,
+    kTGConfigRead    = 0,  /* scalar in: (offset);        out: (value)         */
+    kTGConfigWrite   = 1,  /* scalar in: (offset, value); out: ()              */
+    kTGGetBar0Info   = 2,  /* scalar in: ();              out: (size)          */
+    kTGAllocDMA      = 3,  /* scalar in: (size);          out: (handle, iova)  */
+    kTGFreeDMA       = 4,  /* scalar in: (handle);        out: ()              */
+    kTGWaitInterrupt = 5,  /* async: completion fires on the next interrupt    */
+    kTGMethodCount   = 6,
 };
 
-/* IOConnectMapMemory memory types. */
+/*
+ * IOConnectMapMemory memory types.
+ *   kTGMemoryBar0            -- PCI BAR 0
+ *   kTGMemoryDMA + <handle>  -- the DMA buffer with that kTGAllocDMA handle
+ */
 enum {
-    kTGMemoryBar0 = 0,    /* maps PCI BAR 0 into the caller */
+    kTGMemoryBar0 = 0,
+    kTGMemoryDMA  = 0x100,
 };
+
+/* Maximum number of concurrently-allocated DMA buffers. */
+#define kTGMaxDMABuffers  16
 
 #endif /* TG_DEXT_H */

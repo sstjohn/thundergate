@@ -16,14 +16,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
 #include <os/log.h>
 
 #include <DriverKit/IOLib.h>
 #include <DriverKit/IOUserClient.h>
 #include <DriverKit/IOMemoryDescriptor.h>
+#include <DriverKit/IOBufferMemoryDescriptor.h>
+#include <DriverKit/IODMACommand.h>
+#include <DriverKit/IODispatchQueue.h>
+#include <DriverKit/IOInterruptDispatchSource.h>
+#include <DriverKit/OSAction.h>
 #include <PCIDriverKit/PCIDriverKit.h>
 
 #include "TGPCIDevice.h"
+#include "TGUserClient.h"
+#include "tg_dext.h"
 
 #define TGLog(fmt, ...)  os_log(OS_LOG_DEFAULT, "TGDext: " fmt, ##__VA_ARGS__)
 
@@ -32,12 +40,28 @@
 #define kPCICommandMemorySpace  0x0002
 #define kPCICommandBusMaster    0x0004
 
+struct TGDMASlot
+{
+    IOBufferMemoryDescriptor * buffer;
+    IODMACommand             * dma;
+    uint64_t                   iova;
+    uint64_t                   size;
+};
+
 struct TGPCIDevice_IVars
 {
-    IOPCIDevice        * pci;
-    IOMemoryDescriptor * bar0;
-    uint64_t             bar0Size;
-    uint8_t              bar0Index;
+    IOPCIDevice               * pci;
+    IOMemoryDescriptor        * bar0;
+    uint64_t                    bar0Size;
+    uint8_t                     bar0Index;
+
+    /* MSI interrupt -> the registered user client. */
+    IOInterruptDispatchSource * intSource;
+    OSAction                  * intAction;
+    IOUserClient              * client;
+    uint64_t                    intCount;
+
+    TGDMASlot                   dmaSlots[kTGMaxDMABuffers];
 };
 
 bool
@@ -57,12 +81,17 @@ TGPCIDevice::free()
     super::free();
 }
 
+/* ====================================================================== */
+/* lifecycle                                                              */
+/* ====================================================================== */
+
 kern_return_t
 IMPL(TGPCIDevice, Start)
 {
-    kern_return_t ret;
-    uint8_t       barType = 0;
-    uint16_t      command = 0;
+    kern_return_t     ret;
+    uint8_t           barType = 0;
+    uint16_t          command = 0;
+    IODispatchQueue * queue   = nullptr;
 
     ret = Start(provider, SUPERDISPATCH);
     if (ret != kIOReturnSuccess)
@@ -96,12 +125,37 @@ IMPL(TGPCIDevice, Start)
         TGLog("Start: GetBARInfo(0) failed 0x%x", ret);
         goto fail;
     }
-
     ret = ivars->pci->_CopyDeviceMemoryWithIndex(ivars->bar0Index,
                                                  &ivars->bar0, this);
     if (ret != kIOReturnSuccess) {
         TGLog("Start: copying BAR0 memory failed 0x%x", ret);
         goto fail;
+    }
+
+    /*
+     * Route the device's (MSI) interrupt through a dispatch source.
+     * interruptIndex 0 is the device's first message-signalled
+     * interrupt; PCIDriverKit allocates it.
+     */
+    ret = CopyDispatchQueue("Default", &queue);
+    if (ret == kIOReturnSuccess && queue != nullptr) {
+        ret = IOInterruptDispatchSource::Create(ivars->pci, 0, queue,
+                                                &ivars->intSource);
+        OSSafeReleaseNULL(queue);
+        if (ret == kIOReturnSuccess) {
+            ret = CreateActionInterruptOccurred(0, &ivars->intAction);
+            if (ret == kIOReturnSuccess) {
+                ivars->intSource->SetHandler(ivars->intAction);
+                ivars->intSource->SetEnable(true);
+            }
+        }
+    }
+    if (ret != kIOReturnSuccess) {
+        /* The flash path does not need interrupts -- warn, don't fail. */
+        TGLog("Start: interrupt setup failed 0x%x (flashing still works)",
+              ret);
+        OSSafeReleaseNULL(ivars->intAction);
+        OSSafeReleaseNULL(ivars->intSource);
     }
 
     TGLog("Start: ok -- BAR0 is %llu bytes", ivars->bar0Size);
@@ -118,6 +172,16 @@ fail:
 kern_return_t
 IMPL(TGPCIDevice, Stop)
 {
+    if (ivars->intSource != nullptr) {
+        ivars->intSource->SetEnable(false);
+        OSSafeReleaseNULL(ivars->intSource);
+    }
+    OSSafeReleaseNULL(ivars->intAction);
+    OSSafeReleaseNULL(ivars->client);
+
+    for (int i = 0; i < kTGMaxDMABuffers; i++)
+        FreeDMA((uint64_t)i);
+
     OSSafeReleaseNULL(ivars->bar0);
     if (ivars->pci != nullptr) {
         ivars->pci->Close(this, 0);
@@ -148,6 +212,10 @@ IMPL(TGPCIDevice, NewUserClient)
     }
     return kIOReturnSuccess;
 }
+
+/* ====================================================================== */
+/* config space + BAR 0 (Phase 4a)                                        */
+/* ====================================================================== */
 
 kern_return_t
 IMPL(TGPCIDevice, ConfigRead32)
@@ -180,4 +248,131 @@ IMPL(TGPCIDevice, CopyBAR0Memory)
     ivars->bar0->retain();          /* balanced by the caller's release */
     *memory = ivars->bar0;
     return kIOReturnSuccess;
+}
+
+/* ====================================================================== */
+/* DMA buffers (Phase 4b)                                                  */
+/* ====================================================================== */
+
+kern_return_t
+IMPL(TGPCIDevice, AllocDMA)
+{
+    kern_return_t            ret;
+    int                      slot = -1;
+    IOBufferMemoryDescriptor * buf = nullptr;
+    IODMACommand             * dma = nullptr;
+    IODMACommandSpecification  spec;
+    IOAddressSegment           seg;
+    uint64_t                   dmaFlags = 0;
+    uint32_t                   segCount = 1;
+
+    for (int i = 0; i < kTGMaxDMABuffers; i++) {
+        if (ivars->dmaSlots[i].buffer == nullptr) { slot = i; break; }
+    }
+    if (slot < 0)
+        return kIOReturnNoResources;
+
+    /* A DMA-capable, page-aligned buffer. */
+    ret = IOBufferMemoryDescriptor::Create(kIOMemoryDirectionInOut, size,
+                                           4096, &buf);
+    if (ret != kIOReturnSuccess || buf == nullptr)
+        return (ret != kIOReturnSuccess) ? ret : kIOReturnNoMemory;
+
+    /* Map it for the device and obtain a single contiguous IOVA. */
+    memset(&spec, 0, sizeof(spec));
+    spec.maxAddressBits = 64;
+    ret = IODMACommand::Create(ivars->pci, 0, &spec, &dma);
+    if (ret != kIOReturnSuccess) {
+        OSSafeReleaseNULL(buf);
+        return ret;
+    }
+
+    memset(&seg, 0, sizeof(seg));
+    ret = dma->PrepareForDMA(0, buf, 0, size, &dmaFlags, &segCount, &seg);
+    if (ret != kIOReturnSuccess || segCount != 1) {
+        TGLog("AllocDMA: PrepareForDMA failed 0x%x segs=%u", ret, segCount);
+        OSSafeReleaseNULL(dma);
+        OSSafeReleaseNULL(buf);
+        return (ret != kIOReturnSuccess) ? ret : kIOReturnNotAligned;
+    }
+
+    ivars->dmaSlots[slot].buffer = buf;
+    ivars->dmaSlots[slot].dma    = dma;
+    ivars->dmaSlots[slot].iova   = seg.address;
+    ivars->dmaSlots[slot].size   = size;
+
+    *handle = (uint64_t)slot;
+    *iova   = seg.address;
+    return kIOReturnSuccess;
+}
+
+kern_return_t
+IMPL(TGPCIDevice, FreeDMA)
+{
+    if (handle >= kTGMaxDMABuffers)
+        return kIOReturnBadArgument;
+
+    TGDMASlot * s = &ivars->dmaSlots[handle];
+    if (s->buffer == nullptr)
+        return kIOReturnSuccess;        /* already free -- idempotent */
+
+    if (s->dma != nullptr) {
+        s->dma->CompleteForDMA(0, s->buffer, 0, s->size);
+        OSSafeReleaseNULL(s->dma);
+    }
+    OSSafeReleaseNULL(s->buffer);
+    s->iova = 0;
+    s->size = 0;
+    return kIOReturnSuccess;
+}
+
+kern_return_t
+IMPL(TGPCIDevice, CopyDMAMemory)
+{
+    if (handle >= kTGMaxDMABuffers)
+        return kIOReturnBadArgument;
+
+    IOBufferMemoryDescriptor * buf = ivars->dmaSlots[handle].buffer;
+    if (buf == nullptr)
+        return kIOReturnNotFound;
+
+    buf->retain();                      /* balanced by the caller's release */
+    *memory = buf;
+    return kIOReturnSuccess;
+}
+
+/* ====================================================================== */
+/* interrupts (Phase 4b)                                                   */
+/* ====================================================================== */
+
+kern_return_t
+IMPL(TGPCIDevice, RegisterClient)
+{
+    OSSafeReleaseNULL(ivars->client);
+    ivars->client = client;
+    if (ivars->client != nullptr)
+        ivars->client->retain();
+    return kIOReturnSuccess;
+}
+
+kern_return_t
+IMPL(TGPCIDevice, UnregisterClient)
+{
+    OSSafeReleaseNULL(ivars->client);
+    return kIOReturnSuccess;
+}
+
+void
+IMPL(TGPCIDevice, InterruptOccurred)
+{
+    (void)action;
+    (void)count;
+    (void)time;
+
+    ivars->intCount++;
+    if (ivars->client != nullptr) {
+        TGUserClient * uc = OSDynamicCast(TGUserClient, ivars->client);
+        if (uc != nullptr)
+            uc->NotifyInterrupt();
+    }
 }

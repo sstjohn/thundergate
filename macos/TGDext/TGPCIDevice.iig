@@ -20,7 +20,8 @@
  * TGPCIDevice -- the ThunderGate dext's matching IOService.
  *
  * It matches the Tigon3 PCI device (Info.plist IOKitPersonalities),
- * opens it, keeps a descriptor for BAR 0, and vends a TGUserClient.
+ * opens it, keeps a descriptor for BAR 0, owns the DMA buffers and the
+ * MSI interrupt source, and vends a TGUserClient.
  *
  * BUILD NOTE: .iig files are processed by Xcode's `iig` tool -- this
  * dext must be built from an Xcode DriverKit target (see
@@ -35,6 +36,7 @@
 #include <Availability.h>
 #include <DriverKit/IOService.iig>
 #include <DriverKit/IOMemoryDescriptor.iig>
+#include <DriverKit/IOInterruptDispatchSource.iig>
 
 class TGPCIDevice: public IOService
 {
@@ -52,10 +54,28 @@ public:
      * Helpers invoked by TGUserClient. Both objects live in this dext,
      * so these are local (in-process) calls, not cross-process IPC.
      */
+
+    /* --- config space + BAR 0 (Phase 4a) ------------------------------ */
     virtual kern_return_t ConfigRead32(uint64_t offset, uint32_t * value);
     virtual kern_return_t ConfigWrite32(uint64_t offset, uint32_t value);
     virtual kern_return_t GetBAR0Size(uint64_t * size);
     virtual kern_return_t CopyBAR0Memory(IOMemoryDescriptor ** memory);
+
+    /* --- DMA buffers + interrupts (Phase 4b) -------------------------- */
+    virtual kern_return_t AllocDMA(uint64_t size, uint64_t * handle,
+                                   uint64_t * iova);
+    virtual kern_return_t FreeDMA(uint64_t handle);
+    virtual kern_return_t CopyDMAMemory(uint64_t handle,
+                                        IOMemoryDescriptor ** memory);
+
+    /* The user client registers itself so interrupts can be delivered. */
+    virtual kern_return_t RegisterClient(IOUserClient * client);
+    virtual kern_return_t UnregisterClient(void);
+
+    /* Bound to the MSI IOInterruptDispatchSource. */
+    virtual void InterruptOccurred(OSAction * action, uint64_t count,
+                                   uint64_t time)
+        TYPE(IOInterruptDispatchSource::InterruptOccurred);
 };
 
 #endif /* TGPCIDevice_h */

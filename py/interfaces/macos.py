@@ -16,37 +16,40 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-# MacOSInterface - the user-space half of the macOS device interface.
+# MacOSInterface -- the user-space half of the macOS device interface.
 #
 # It talks to the ThunderGate PCIDriverKit dext (macos/TGDext), which
-# matches the Tigon3 PCI device, maps its BAR0, and exposes config-space
-# access through an IOUserClient. This class opens a connection to that
-# dext over IOKit.framework and satisfies the same contract device.py
-# expects of the vfio/sysfs/win interfaces: an integer `bar0` address
-# plus cfg_read / cfg_write.
+# matches the Tigon3 PCI device, maps its BAR0, allocates DMA buffers,
+# and delivers interrupts. This class opens a connection to that dext
+# over IOKit.framework and satisfies the contract device.py expects of
+# the vfio/sysfs/win interfaces: an integer `bar0` address, cfg_read /
+# cfg_write, and an `mm` DMA memory manager.
 #
 # The dext<->client ABI -- method selectors and memory types -- is
 # defined in macos/TGDext/tg_dext.h; the constants here mirror it.
-#
-# DMA buffers and interrupt delivery (the `mm` attribute, needed by the
-# TAP driver) are Phase 4b; for the flash path `mm` is None, as it is for
-# tests/mock.py.
 
 import ctypes
 import ctypes.util
 
+from mm.macos import MacOSMemMgr
+
 # --- dext ABI (mirror of macos/TGDext/tg_dext.h) -------------------------
 
-kTGConfigRead  = 0      # scalar in: (offset);        scalar out: (value)
-kTGConfigWrite = 1      # scalar in: (offset, value); scalar out: ()
-kTGGetBar0Info = 2      # scalar in: ();              scalar out: (size)
+kTGConfigRead    = 0    # scalar in: (offset);        scalar out: (value)
+kTGConfigWrite   = 1    # scalar in: (offset, value); scalar out: ()
+kTGGetBar0Info   = 2    # scalar in: ();              scalar out: (size)
+kTGAllocDMA      = 3    # scalar in: (size);          scalar out: (handle, iova)
+kTGFreeDMA       = 4    # scalar in: (handle);        scalar out: ()
+kTGWaitInterrupt = 5    # async: completes on the next device interrupt
 
-kTGMemoryBar0  = 0      # IOConnectMapMemory memory type for BAR 0
+kTGMemoryBar0    = 0            # IOConnectMapMemory type: PCI BAR 0
+kTGMemoryDMA     = 0x100        # IOConnectMapMemory type: DMA buffer base
+kTGMaxDMABuffers = 16
 
 # The IOService class the dext publishes (its Info.plist IOUserClass).
 TG_DEXT_CLASS = "TGPCIDevice"
 
-# --- IOKit.framework bindings -------------------------------------------
+# --- IOKit.framework / Mach bindings ------------------------------------
 
 _iokit_path = ctypes.util.find_library("IOKit") \
     or "/System/Library/Frameworks/IOKit.framework/IOKit"
@@ -60,6 +63,11 @@ IOOptionBits  = ctypes.c_uint32
 kIOReturnSuccess   = 0
 kIOMainPortDefault = 0           # MACH_PORT_NULL -- the default IOKit port
 kIOMapAnywhere     = 0x00000001
+
+MACH_PORT_RIGHT_RECEIVE = 1
+MACH_RCV_MSG            = 0x00000002
+MACH_RCV_TIMEOUT        = 0x00000100
+MACH_RCV_TIMED_OUT      = 0x10004003
 
 _iokit.IOServiceMatching.restype = ctypes.c_void_p
 _iokit.IOServiceMatching.argtypes = [ctypes.c_char_p]
@@ -84,6 +92,13 @@ _iokit.IOConnectCallScalarMethod.argtypes = [
     ctypes.POINTER(ctypes.c_uint64), ctypes.c_uint32,
     ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint32)]
 
+_iokit.IOConnectCallAsyncScalarMethod.restype = kern_return_t
+_iokit.IOConnectCallAsyncScalarMethod.argtypes = [
+    mach_port_t, ctypes.c_uint32, mach_port_t,
+    ctypes.POINTER(ctypes.c_uint64), ctypes.c_uint32,
+    ctypes.POINTER(ctypes.c_uint64), ctypes.c_uint32,
+    ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint32)]
+
 _iokit.IOConnectMapMemory64.restype = kern_return_t
 _iokit.IOConnectMapMemory64.argtypes = [
     mach_port_t, ctypes.c_uint32, mach_port_t,
@@ -93,6 +108,15 @@ _iokit.IOConnectMapMemory64.argtypes = [
 _iokit.IOConnectUnmapMemory64.restype = kern_return_t
 _iokit.IOConnectUnmapMemory64.argtypes = [
     mach_port_t, ctypes.c_uint32, mach_port_t, ctypes.c_uint64]
+
+_libc.mach_port_allocate.restype = kern_return_t
+_libc.mach_port_allocate.argtypes = [mach_port_t, ctypes.c_int,
+                                     ctypes.POINTER(mach_port_t)]
+
+_libc.mach_msg.restype = kern_return_t
+_libc.mach_msg.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_uint32,
+                           ctypes.c_uint32, mach_port_t, ctypes.c_uint32,
+                           mach_port_t]
 
 
 def _mach_task_self():
@@ -106,6 +130,9 @@ def _kr(kr):
 
 class MacOSInterface(object):
     def __init__(self):
+        self._service = 0
+        self._int_port = 0
+        self._int_armed = False
         matching = _iokit.IOServiceMatching(TG_DEXT_CLASS.encode())
         if not matching:
             raise Exception("IOServiceMatching(%s) failed" % TG_DEXT_CLASS)
@@ -119,7 +146,6 @@ class MacOSInterface(object):
 
     def __enter__(self):
         self._attach()
-        self.mm = None          # DMA memory manager -- Phase 4b
         return self
 
     def __exit__(self, t, v, traceback):
@@ -136,6 +162,7 @@ class MacOSInterface(object):
         if kr != kIOReturnSuccess:
             raise Exception("IOServiceOpen failed (%s)" % _kr(kr))
         self._conn = conn.value
+        self._int_armed = False     # a fresh connection: dext not armed
 
         # BAR0 size from the dext's query method...
         self.bar0_sz = self._call_scalar(kTGGetBar0Info, [], 1)[0]
@@ -154,7 +181,13 @@ class MacOSInterface(object):
         if not self.bar0_sz:
             self.bar0_sz = size.value
 
+        self.mm = MacOSMemMgr(self)
+
     def _detach(self):
+        mm = getattr(self, "mm", None)
+        if mm is not None:
+            mm.release()
+            self.mm = None
         if hasattr(self, "bar0"):
             _iokit.IOConnectUnmapMemory64(self._conn, kTGMemoryBar0,
                                           _mach_task_self(), self.bar0)
@@ -166,6 +199,8 @@ class MacOSInterface(object):
     def reattach(self):
         self._detach()
         self._attach()
+
+    # --- external-method plumbing ---------------------------------------
 
     def _call_scalar(self, selector, inputs, n_out):
         n_in = len(inputs)
@@ -180,6 +215,8 @@ class MacOSInterface(object):
             raise Exception("dext method %d failed (%s)" % (selector, _kr(kr)))
         return [out_arr[i] for i in range(out_cnt.value)] if n_out else []
 
+    # --- config space (Phase 4a) ----------------------------------------
+
     def cfg_read(self, offset):
         assert 0 <= offset < 0x1000
         return self._call_scalar(kTGConfigRead, [offset], 1)[0] & 0xffffffff
@@ -187,3 +224,67 @@ class MacOSInterface(object):
     def cfg_write(self, offset, val):
         assert 0 <= offset < 0x1000
         self._call_scalar(kTGConfigWrite, [offset, val & 0xffffffff], 0)
+
+    # --- DMA buffers (Phase 4b) -----------------------------------------
+    # Called by mm/macos.py:MacOSMemMgr.
+
+    def _dma_alloc(self, size):
+        handle, iova = self._call_scalar(kTGAllocDMA, [size], 2)
+        return handle, iova
+
+    def _dma_free(self, handle):
+        self._call_scalar(kTGFreeDMA, [handle], 0)
+
+    def _dma_map(self, handle):
+        addr = ctypes.c_uint64(0)
+        size = ctypes.c_uint64(0)
+        kr = _iokit.IOConnectMapMemory64(
+            self._conn, kTGMemoryDMA + handle, _mach_task_self(),
+            ctypes.byref(addr), ctypes.byref(size), kIOMapAnywhere)
+        if kr != kIOReturnSuccess:
+            raise Exception("mapping DMA buffer %d failed (%s)"
+                            % (handle, _kr(kr)))
+        return addr.value
+
+    def _dma_unmap(self, handle, vaddr):
+        _iokit.IOConnectUnmapMemory64(self._conn, kTGMemoryDMA + handle,
+                                      _mach_task_self(), vaddr)
+
+    # --- interrupts (Phase 4b) ------------------------------------------
+
+    def wait_interrupt(self, timeout_ms=1000):
+        '''Block until the device interrupts, or the timeout elapses.
+
+        Returns True on an interrupt, False on timeout. The dext delivers
+        the async completion of kTGWaitInterrupt as a Mach message; this
+        receives it directly. The TAP driver (asyncio) runs this in an
+        executor thread -- bridging it to a selector loop is finalised in
+        Phase 6c against real hardware.'''
+        if self._int_port == 0:
+            port = mach_port_t(0)
+            kr = _libc.mach_port_allocate(_mach_task_self(),
+                                          MACH_PORT_RIGHT_RECEIVE,
+                                          ctypes.byref(port))
+            if kr != kIOReturnSuccess:
+                raise Exception("mach_port_allocate failed (%s)" % _kr(kr))
+            self._int_port = port.value
+
+        if not self._int_armed:
+            ref = (ctypes.c_uint64 * 8)()
+            kr = _iokit.IOConnectCallAsyncScalarMethod(
+                self._conn, kTGWaitInterrupt, self._int_port,
+                ref, 1, None, 0, None, None)
+            if kr != kIOReturnSuccess:
+                raise Exception("arming interrupt wait failed (%s)" % _kr(kr))
+            self._int_armed = True
+
+        buf = (ctypes.c_uint8 * 1024)()
+        kr = _libc.mach_msg(buf, MACH_RCV_MSG | MACH_RCV_TIMEOUT, 0,
+                            ctypes.sizeof(buf), self._int_port,
+                            timeout_ms, 0)
+        if (kr & 0xffffffff) == MACH_RCV_TIMED_OUT:
+            return False
+        if kr != kIOReturnSuccess:
+            raise Exception("mach_msg receive failed (%s)" % _kr(kr))
+        self._int_armed = False     # the completion was consumed
+        return True

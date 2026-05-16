@@ -19,9 +19,10 @@
 /*
  * TGUserClient -- the IOUserClient TGPCIDevice vends to user space.
  *
- * ExternalMethod dispatches the config-space selectors defined in
- * tg_dext.h; CopyClientMemoryForType hands BAR 0 to IOConnectMapMemory.
- * py/interfaces/macos.py is the user-space peer.
+ * ExternalMethod dispatches the selectors defined in tg_dext.h (config
+ * space, DMA-buffer allocation, and the async interrupt wait);
+ * CopyClientMemoryForType hands BAR 0 and the DMA buffers to
+ * IOConnectMapMemory. py/interfaces/macos.py is the user-space peer.
  */
 
 #ifndef TGUserClient_h
@@ -51,6 +52,9 @@ public:
                 uint64_t type,
                 uint64_t * options,
                 IOMemoryDescriptor ** memory) override;
+
+    /* Called by TGPCIDevice (same dext) when a device interrupt fires. */
+    virtual void NotifyInterrupt(void);
 };
 
 #endif /* TGUserClient_h */
