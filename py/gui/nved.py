@@ -58,7 +58,7 @@ class NvDirectoryListCtrl(wx.dataview.DataViewListCtrl):
         hexify = lambda x: "%x" % x
 
         for i in directory:
-            self.AppendItem(map(hexify, i))
+            self.AppendItem([hexify(x) for x in i[:5]])
 
 
 class NvramEditor(wx.Panel):
@@ -75,15 +75,15 @@ class NvramEditor(wx.Panel):
         image_sl_buttons.Add(nvsave, 0, wx.ALIGN_LEFT)
         image_sl_buttons.Add(nvload, 0, wx.ALIGN_RIGHT)
         outer.Add(
-                item = image_sl_buttons, 
+                image_sl_buttons,
                 proportion = 0, 
                 flag = wx.ALIGN_TOP | wx.ALIGN_CENTER | wx.BOTTOM, 
                 border=5)
         self.nvdir = NvDirectoryListCtrl(self, dev)
         outer.Add(
-                item = self.nvdir, 
-                proportion = 1, 
-                flag = wx.ALIGN_CENTER | wx.EXPAND)
+                self.nvdir,
+                proportion = 1,
+                flag = wx.EXPAND)
         esave = wx.Button(self, label = "save entry")
         self.Bind(wx.EVT_BUTTON, self.OnISave, esave)
         eload = wx.Button(self, label = "load entry")
@@ -110,39 +110,40 @@ class NvramEditor(wx.Panel):
 
     def _do_save(self, idx):
         entire = (idx == -1)
-        
+
         ftype = "bin" if entire else "img"
         saveFileDialog = wx.FileDialog(
-                self, "Save %s file" % ftype.ucase(), 
+                self, "Save %s file" % ftype.upper(),
                 "", "",
-                "%s files (*.%s)|*.%s" % (ftype.ucase(), ftype, ftype), 
+                "%s files (*.%s)|*.%s" % (ftype.upper(), ftype, ftype),
                 wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
         if saveFileDialog.ShowModal() == wx.ID_CANCEL:
             return
-        
+
         path = saveFileDialog.GetPath()
 
-        progress_title = "reading %s" % ("nvram" if entire else "image")
-        progress = NvFwProgress(
-                self, 
-                total, 
-                title = progress_title)
-        
+        # Resolve the size -- and, for a single image, its directory index --
+        # before building the progress dialog, which needs the total. (The
+        # original code read `total` before assigning it, and indexed a
+        # non-existent nvram.directory attribute.)
         self.dev.nvram.acquire_lock()
         if entire:
-            total = self.dev.nvram.eeprom_len
-            tgt = _nvsave
-            args = (self.dev, path, progress.updateProgress)
+            entry_index, total = None, self.dev.nvram.eeprom_len
         else:
-            total = self.dev.nvram.directory[idx].nv_len
-            tgt = _isave
-            args = (self.dev, idx, path, progress.updateProgress)
+            entry = self.dev.nvram.get_directory()[idx]
+            entry_index, total = entry[0], entry[4]
         self.dev.nvram.relinquish_lock()
 
-        t = threading.Thread(
-                target=tgt, 
-                args=args)
+        progress_title = "reading %s" % ("nvram" if entire else "image")
+        progress = NvFwProgress(self, total, title=progress_title)
+
+        if entire:
+            tgt, args = _nvsave, (self.dev, path, progress.updateProgress)
+        else:
+            tgt, args = _isave, (self.dev, entry_index, path, progress.updateProgress)
+
+        t = threading.Thread(target=tgt, args=args)
         t.start()
         progress.ShowModal()
         t.join()

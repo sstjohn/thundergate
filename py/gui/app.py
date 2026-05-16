@@ -17,23 +17,23 @@
 '''
 
 import wx
-import wx.py
+import wx.adv
+import wx.py.shell
 import threading
 import functools
 from .tree import GenTree
 from .nved import NvramEditor
 from datamodel import model_registers, model_memory
 
-class ThunderSplash(wx.SplashScreen):
+class ThunderSplash(wx.adv.SplashScreen):
     def __init__(self, parent):
         img = wx.Image("misc/thunderlogo.png", wx.BITMAP_TYPE_PNG)
         bitmap = img.ConvertToBitmap()
         super(ThunderSplash, self).__init__(
                 bitmap = bitmap,
                 milliseconds = 0,
-                splashStyle = wx.SPLASH_CENTER_ON_SCREEN | wx.SPLASH_NO_TIMEOUT,
+                splashStyle = wx.adv.SPLASH_CENTER_ON_SCREEN | wx.adv.SPLASH_NO_TIMEOUT,
                 parent = parent)
-        self.GetSplashWindow().SetBitmap(bitmap)
 
 class App(wx.App):
     def __init__(self, dev, nosplash = False, daemon = False):
@@ -63,7 +63,7 @@ class App(wx.App):
     def PrepareMain(self):
         self.main_frame = wx.Frame(self.toplevel, -1, 'thundergate')
         self.nb = wx.Notebook(self.main_frame)
-        page = wx.NotebookPage(self.nb)
+        page = wx.Panel(self.nb)
         wx.py.shell.Shell(page, locals = {"dev": self.dev})
         self.nb.AddPage(page, text = "console")
         self.bgthreads = []
