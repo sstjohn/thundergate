@@ -52,6 +52,15 @@ struct gate_config {
 	u16 cloak_vid;
 	u16 cloak_did;
 	u16 cloak_cc;
+
+	/* on-core TCP/IP stack addressing (network byte order) */
+	u8 ip_addr[4];
+	u8 netmask[4];
+	u8 gateway[4];
 };
+
+#define DEFAULT_IP_ADDR	{ 192, 168, 1, 222 }
+#define DEFAULT_NETMASK	{ 255, 255, 255, 0 }
+#define DEFAULT_GATEWAY	{ 192, 168, 1, 1 }
 	
 #endif
