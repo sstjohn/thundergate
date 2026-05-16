@@ -1,5 +1,5 @@
 import sys
-import trollius as asyncio
+import asyncio
 
 from .platform_fun import platform_setup
 
@@ -18,7 +18,7 @@ DRIVER_PROPERTIES = {
 }
 
 class Driver(object):
-    __slots__ = DRIVER_PROPERTIES.keys()
+    __slots__ = list(DRIVER_PROPERTIES.keys())
     def __init__(self):
         for prop in DRIVER_PROPERTIES:
             setattr(self, prop, DRIVER_PROPERTIES[prop])
@@ -27,8 +27,8 @@ def run(dev=None):
     driver = Driver()
     platform_setup(driver)
     if dev is not None:
-        asyncio.ensure_future(arrive_device(driver, dev))
-    asyncio.ensure_future(keypress_dispatch(driver))
+        driver.loop.create_task(arrive_device(driver, dev))
+    driver.loop.create_task(keypress_dispatch(driver))
     driver.running = True
     #driver.loop.set_debug(True)
     driver.loop.run_forever()

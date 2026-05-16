@@ -91,11 +91,15 @@ MAP_FAILED = ctypes.c_void_p(-1).value
 SEEK_SET = 0
 _SC_PAGESIZE = 30
 
-# --- net device ioctls (linux/sockios.h, linux/if.h) -------------------------
+# --- net device ioctls (linux/sockios.h, linux/if.h, linux/if_tun.h) ---------
 SIOCGIFFLAGS = 0x8913
 SIOCSIFFLAGS = 0x8914
 IFF_UP = 0x1
-TUNSETIFF = 0x400454CA  # linux/if_tun.h
+IFNAMSIZ = 16
+TUNSETIFF = 0x400454CA
+IFF_TUN = 0x0001
+IFF_TAP = 0x0002
+IFF_NO_PI = 0x1000
 
 # --- VFIO ABI (linux/vfio.h) -------------------------------------------------
 VFIO_API_VERSION = 0

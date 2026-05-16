@@ -2,8 +2,7 @@ from ctypes import cast, POINTER, sizeof
 import logging
 logger = logging.getLogger(__name__)
 
-import trollius as asyncio
-from trollius import coroutine, From
+import asyncio
 
 import tglib as tg
 
@@ -34,8 +33,7 @@ def prepare_block(block, registerflags, silent=False):
                 logger.debug("configuring %s.%s", bname, register)
             setattr(block, register, flags)
 
-@coroutine
-def _pci_setup(driver):
+async def _pci_setup(driver):
     dma_wmm = 6
     try:
         if driver.device.config.caps['pcie'].max_payload_size > 0:
@@ -54,13 +52,11 @@ def _pci_setup(driver):
     }
     prepare_block(driver.device.pci, regflags)
 
-@coroutine
-def _msi_setup(driver):
+async def _msi_setup(driver):
     regflags = {'mode': {'msix_multi_vector_mode': 0}}
     prepare_block(driver.device.msi, regflags)
 
-@coroutine
-def _hc_setup(driver):
+async def _hc_setup(driver):
     mm = driver.device.interface.mm
     driver.device.hc.block_disable()
 
@@ -84,8 +80,7 @@ def _hc_setup(driver):
 
     logger.debug("status block initialized at %x", status_block_va)
 
-@coroutine
-def _grc_setup(driver):
+async def _grc_setup(driver):
     regflags = {
         'misc_local_control': {
             'interrupt_on_attention': 1,
@@ -100,8 +95,7 @@ def _grc_setup(driver):
     }
     prepare_block(driver.device.grc, regflags)
 
-@coroutine
-def _bufman_setup(driver):
+async def _bufman_setup(driver):
     regflags = {
         'dma_mbuf_low_watermark': {'count': 0x2a},
         'mbuf_high_watermark': {'count': 0xa0},
@@ -109,16 +103,14 @@ def _bufman_setup(driver):
     }
     prepare_block(driver.device.bufman, regflags)
 
-@coroutine
-def _emac_setup(driver):
+async def _emac_setup(driver):
     regflags = {
         'mode': {'port_mode': 2},
         'low_watermark_max_receive_frame': { 'count': 1},
     }
     prepare_block(driver.device.emac, regflags)
 
-@coroutine
-def _rbdi_setup(driver):
+async def _rbdi_setup(driver):
     regflags = {
         'std_ring_replenish_threshold': {'count': 0x19},
     }
@@ -134,8 +126,7 @@ def __init_xx_ring(mm, bdtype):
     va = mm.alloc(ring_len * sizeof(bdtype))
     return (va, ring_len)
 
-@coroutine
-def _rx_ring_setup(driver):
+async def _rx_ring_setup(driver):
     mm = driver.device.interface.mm
 
     rx_ring_va, rx_ring_size = __init_xx_ring(mm, tg.rbd)
@@ -157,8 +148,7 @@ def _rx_ring_setup(driver):
     }
     prepare_block(driver.device.rdi, regflags)
 
-@coroutine
-def arrive_device(driver, dev):
+async def arrive_device(driver, dev):
     logger.info("device arrival initiated")
     
     driver.device = dev
@@ -166,7 +156,7 @@ def arrive_device(driver, dev):
     dev.init()
     dev.nvram.acquire_lock()
     dev.reset()
-    yield From(msleep(0.5))
+    await (msleep(0.5))
 
     setup_steps = [
         _pci_setup,
@@ -184,7 +174,7 @@ def arrive_device(driver, dev):
         tasks += [asyncio.ensure_future(step(driver))]
 
     try:
-        asyncio.wait(tasks)
+        await asyncio.wait(tasks)
     except Exception:
         print("there was an exception!")
     logger.info("device arrival concluded")

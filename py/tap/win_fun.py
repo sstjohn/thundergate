@@ -1,7 +1,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import trollius as asyncio
+import asyncio
 
 from winlib import (
     INPUT_RECORD, DWORD, ReadConsoleInput, pointer, WinError,

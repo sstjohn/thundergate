@@ -7,19 +7,20 @@ import struct
 import sys
 import termios
 
-import trollius as asyncio
+import asyncio
 
-from tunlib import IFF_TAP, IFF_NO_PI, TUNSETIFF
+from cabi import IFF_TAP, IFF_NO_PI, IFF_UP, TUNSETIFF, SIOCGIFFLAGS, SIOCSIFFLAGS
 
 logger = logging.getLogger(__name__)
 
 def platform_setup(driver):
-    driver.loop = asyncio.get_event_loop()
+    driver.loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(driver.loop)
     driver.kbd_h = sys.stdin.fileno()
 
 def create_tap(driver):
     fd = os.open("/dev/net/tun", os.O_RDWR)
-    ifr = struct.pack('16sH', '', IFF_TAP | IFF_NO_PI)
+    ifr = struct.pack('16sH', b'', IFF_TAP | IFF_NO_PI)
     name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
     logger.info("tap device name: %s", name)
     driver.tap_h, driver.tap_name = fd, name
@@ -42,7 +43,7 @@ def _register_fd_callback(handle, driver, callback):
     driver.loop.add_reader(handle, callback, driver)
 
 def register_interrupt_callback(driver, callback):
-    if not hasattr(driver.device.interface.eventfd):
+    if not hasattr(driver.device.interface, 'eventfd'):
         raise NotImplementedError
     _register_fd_callback(driver.device.interface.eventfd, driver, callback)
 
@@ -60,6 +61,6 @@ def update_tapdev_status(driver):
         else:
             flags &= ~IFF_UP
 
-        ifr = struct.flags('16sH', driver.tap_name, flags)
+        ifr = struct.pack('16sH', driver.tap_name, flags)
         fcntl.ioctl(s, SIOCSIFFLAGS, ifr)
 
