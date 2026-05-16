@@ -205,7 +205,7 @@ class nvram(rflip.nvram):
         self.eeprom_hdr = cast(self._eeprom_hdr_buf, POINTER(tg.nvram_header))[0]
 
     def clear_eeprom(self):
-        self.write_block(0, '\x00' * self.eeprom_len)
+        self.write_block(0, b'\x00' * self.eeprom_len)
 
     def write_dword(self, offset, data, first=1, last=1):
         if self.write1.enable_command != 0x6:
@@ -287,7 +287,7 @@ class nvram(rflip.nvram):
             sys.stdout.flush()
 
 
-        ret = ""
+        ret = b""
         for i in range(0, length, 4):
             if 0 == (i % 0x400):
                 if updater is not None:
@@ -422,7 +422,7 @@ class nvram(rflip.nvram):
         self._set_dir_entry(index, 0, 0, 0, 0, False, False)
 
     def load_efi_drv(self, fname, compress=0):
-        data = ''
+        data = b''
         with open(fname, "rb") as f:
             data = f.read()
 
@@ -442,7 +442,7 @@ class nvram(rflip.nvram):
         try: self.setasf()
         except: pass
         
-        data = ''
+        data = b''
         with open(cpufw, "rb") as f:
             data = f.read()
         print("[+] installing thundergate bootcode")
@@ -463,7 +463,7 @@ class nvram(rflip.nvram):
             f.write(self.read_block(0, self.eeprom_len, updater))
 
     def write_eeprom(self, fname, updater=None):
-        data = ''
+        data = b''
         with open(fname, "rb") as f:
             data = f.read()
 
@@ -491,7 +491,7 @@ class nvram(rflip.nvram):
         mfg_len = sizeof(self.eeprom_hdr.mfg)
 
         data = self._eeprom_hdr_buf[mfg_start:mfg_start + mfg_len - 4]
-        rdata = ''.join([data[i:i+4][::-1] for i in range(0, len(data), 4)])
+        rdata = b''.join([data[i:i+4][::-1] for i in range(0, len(data), 4)])
         
         crc = struct.unpack("I", struct.pack("!i", crc32(rdata)))[0]
         self.eeprom_hdr.mfg.crc = crc
@@ -536,13 +536,13 @@ class nvram(rflip.nvram):
         self._flush_mfg_feat_cfg()
 
     def install_null_bc(self):
-        nullcode = "\x0a\x00\x20\x02\x00\x00\x00\x00"
-        nullcode += "\x0a\x00\x20\x00\x00\x00\x00\x00"
+        nullcode = b"\x0a\x00\x20\x02\x00\x00\x00\x00"
+        nullcode += b"\x0a\x00\x20\x00\x00\x00\x00\x00"
         self.install_bc(nullcode)
 
     def install_bc(self, image):
         if 0 != (len(image) % 4):
-            image += ('\x00' * (4 - (len(image) % 4)))
+            image += (b'\x00' * (4 - (len(image) % 4)))
         image += struct.pack("i", crc32(image))
         iwords = len(image) >> 2
         nvstart = self.eeprom_hdr.bs.bc_nvram_start

@@ -55,10 +55,10 @@ usleep = lambda x: sleep(x / 1000000.0)
 def to_x(v):
     if not v: return '0'
     r = struct.pack(">q", v)
-    while r[0] in (chr(0), 0):
+    while r[0] == 0:
         r = r[1:]
 
-    return " ".join(["%02x" % ord(c) for c in r])
+    return " ".join(["%02x" % c for c in r])
     
 
 class cpu(rflip.cpu):
@@ -104,7 +104,7 @@ class cpu(rflip.cpu):
             raise Exception("image too big")
         
         if (len(blob) % 4) != 0:
-            blob += '\x00' * (4 - len(blob) % 4)
+            blob += b'\x00' * (4 - len(blob) % 4)
             assert len(blob) % 4 == 0
             #raise Exception("bad image length")
 
