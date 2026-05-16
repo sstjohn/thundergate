@@ -20,7 +20,7 @@ import os
 from ctypes import *
 from ctypes.wintypes import *
 import struct
-from mm import _MemMgr
+from .mm import _MemMgr
 from winlib import *
 
 class WinMemMgr(_MemMgr):

@@ -41,3 +41,6 @@ env/
 # mips-elf cross-toolchain (misc/build-toolchain.sh)
 /.toolchain-build/
 /toolchain/
+
+# Python virtualenv
+/.venv/

@@ -33,7 +33,7 @@ from trollius import From, Return, coroutine
 import logging
 logger = logging.getLogger(__name__)
 
-from stats import TapStatistics
+from .stats import TapStatistics
 
 default_verbosity = 0
 
@@ -44,12 +44,12 @@ if sys_name == "Linux":
     
     import cabi as c
     from tunlib import *
-    from linux import TapLinuxInterface
+    from .linux import TapLinuxInterface
     TDInt = TapLinuxInterface
 
 elif sys_name == "Windows" or sys_name == "cli":
     from winlib import *
-    from win import TapWinInterface
+    from .win import TapWinInterface
     TDInt = TapWinInterface
 
     loop = asyncio.ProactorEventLoop()
@@ -62,9 +62,9 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
 
-from dev_fns import _device_setup, _enable_rx, _enable_tx
-from link import _link_detect
-from interrupt import _handle_interrupt
+from .dev_fns import _device_setup, _enable_rx, _enable_tx
+from .link import _link_detect
+from .interrupt import _handle_interrupt
 
 def async_msleep(self, t):
     yield From(asyncio.sleep(t / 1000.0))

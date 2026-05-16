@@ -23,7 +23,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import tglib as tg
-from ring import init_rr_rings, init_rx_rings, init_tx_rings
+from .ring import init_rr_rings, init_rx_rings, init_tx_rings
 
 msleep = lambda t: asyncio.sleep(t / 1000.0)
 

@@ -1,10 +1,10 @@
 import sys
 import trollius as asyncio
 
-from platform_fun import platform_setup
+from .platform_fun import platform_setup
 
-from device_mgmt import arrive_device
-from kbd_mgmt import keypress_dispatch
+from .device_mgmt import arrive_device
+from .kbd_mgmt import keypress_dispatch
 
 DRIVER_PROPERTIES = {
     "running": False,

@@ -6,7 +6,7 @@ import sys
 import trollius as asyncio
 from trollius import coroutine, From
 
-from platform_fun import wait_for_keypress
+from .platform_fun import wait_for_keypress
 
 @coroutine
 def gui_handler(driver):

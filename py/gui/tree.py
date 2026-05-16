@@ -18,7 +18,7 @@
 
 import wx
 import wx.dataview
-from dvm import GenDVM
+from .dvm import GenDVM
 
 class GenTree(wx.dataview.DataViewCtrl):
     def __init__(self, parent, model):

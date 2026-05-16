@@ -1,7 +1,7 @@
 import threading
 
 def _run(dev, daemon = False):
-    from app import App
+    from .app import App
     import wx
     _run.app = App(dev, daemon = daemon)
     _run.app.MainLoop()

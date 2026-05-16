@@ -25,7 +25,7 @@ import reutils
 import platform
 import functools
 import sys
-from stats import TapStatistics
+from .stats import TapStatistics
 
 default_verbosity = 0
 
@@ -36,11 +36,11 @@ if sys_name == "Linux":
     
     import cabi as c
     from tunlib import *
-    from linux import TapLinuxInterface
+    from .linux import TapLinuxInterface
     TDInt = TapLinuxInterface
 elif sys_name == "Windows" or sys_name == "cli":
     from winlib import *
-    from win import TapWinInterface
+    from .win import TapWinInterface
     TDInt = TapWinInterface
 else:
     raise NotImplementedError("tap driver only available on linux and windows")
@@ -50,10 +50,10 @@ usleep = lambda x: sleep(x / 1000000.0)
 
 from ctypes import cast, pointer, POINTER, sizeof
 
-from dev_fns import device_setup
-from ring import init_tx_rings, init_rx_rings, init_rr_rings, populate_rx_ring
-from link import link_detect
-from interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
+from .dev_fns import device_setup
+from .ring import init_tx_rings, init_rx_rings, init_rr_rings, populate_rx_ring
+from .link import link_detect
+from .interrupt import handle_interrupt, handle_rr, replenish_rx_bds, free_sent_bds, dump_bd
 
 class TapDriver(TDInt):
     def __init__(self, dev):

@@ -20,8 +20,8 @@ import wx
 import wx.py
 import threading
 import functools
-from tree import GenTree
-from nved import NvramEditor
+from .tree import GenTree
+from .nved import NvramEditor
 from datamodel import model_registers, model_memory
 
 class ThunderSplash(wx.SplashScreen):
