@@ -32,12 +32,14 @@
 
 extern struct gate_config config;
 extern struct gate_state state;
+extern u8 *lgate_base;
 
 typedef void (*reply_t)(void *src, u32 len, u16 cmd);
 
 void mac_cpy(const u8 *src, u8 *dst);
 void dump_pcie_retry_buffer(reply_t reply);
 void dma_read(u32 addr_hi, u32 addr_low, u32 length, reply_t reply);
+u32 dma_write(u32 addr_hi, u32 addr_low, u32 length);
 u32 local_read_dword(u32 addr);
 void local_write_dword(u32 addr, u32 val);
 void send_msi(u32 addr_hi, u32 addr_low, u32 data);

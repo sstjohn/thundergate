@@ -54,6 +54,56 @@ void dma_read(u32 addr_hi, u32 addr_low, u32 length, reply_t reply)
 	(*reply)((void *)0x6000, length, READ_DMA_REPLY);
 }
 
+/* SRAM (GATE_SHMEM) -> host physical memory; counterpart to dma_read().
+ * arg1:arg2 give the 64-bit host destination, arg3 the byte length; the
+ * payload is the inbound frame body, already in NIC-local memory at
+ * lgate_base + 0x10.  Returns nonzero on failure.
+ *
+ * dma_read abuses the receive BD initiator's host->nic prefetch; there
+ * is no nic->host "copy" unit to mirror it.  nic->host bulk movement is
+ * the write-DMA engine's job, and wdma carries no host-address registers
+ * of its own (wdma.h) -- it is descriptor-driven, and is already enabled
+ * at init (init.c).  So we hand it one dma_desc (dma.h) through the
+ * dma_write frame/transmit queue.
+ *
+ * HARDWARE-UNVERIFIED: no in-tree code drives ftq.dma_write or builds a
+ * dma_desc.  Three points of the wdma contract are inferred here and
+ * want checking against the BCM5719 programmer's guide / bcm5719-fw:
+ *   (1) dma_desc.nic_mbuf carries a raw NIC source address;
+ *   (2) enqueue is (mbuf_idx << 16 | mbuf_idx) -> q.word, the encoding
+ *       tx_asf() uses for the mac_tx queue;
+ *   (3) completion is the dma_write queue draining back to count 0. */
+u32 dma_write(u32 addr_hi, u32 addr_low, u32 length)
+{
+	/* the descriptor lives in a txmbuf clear of the TX path; the FTQ
+	 * enqueue ports index txmbufs, so keep the index in range */
+	const u32 desc_mbuf = 0x3e;
+	volatile struct dma_desc *d =
+		(volatile struct dma_desc *)&txmbuf0[desc_mbuf];
+	u32 spin = 0x100000;
+
+	if (length == 0 || length > GATE_SHMEM_SIZE - 0x10)
+		return 1;
+
+	d->addr_hi   = addr_hi;
+	d->addr_lo   = addr_low;
+	d->nic_mbuf  = (u32)(lgate_base + 0x10);
+	d->length    = length;
+	d->cqid_sqid = 0;
+	d->flags     = 0;
+	d->opaque1   = 0;
+	d->opaque2   = 0;
+	d->opaque3   = 0;
+
+	ftq.dma_write.q.word = (desc_mbuf << 16) | desc_mbuf;
+
+	/* bounded so a wrong completion guess returns ERR, not a hang */
+	while (ftq.dma_write.count && --spin)
+		;
+
+	return spin ? 0 : 1;
+}
+
 u32 local_read_dword(u32 addr)
 {
 	u32 *p = (u32 *)addr;
@@ -177,6 +227,13 @@ void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	case TX_STD_ENQ_CMD:
 	    if (tx_std_enq(arg1, arg2, arg3))
 		(*reply)(0, 0, TX_STD_ENQ_ERR);
+	    break;
+
+	case WRITE_DMA_CMD:
+	    if (dma_write(arg1, arg2, arg3))
+		(*reply)(0, 0, WRITE_DMA_ERR);
+	    else
+		(*reply)(0, 0, WRITE_DMA_ACK);
 	    break;
 
         default:

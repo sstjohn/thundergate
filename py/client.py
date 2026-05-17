@@ -33,6 +33,11 @@ except:
 try: from clib import SIOCGIFHWADDR
 except: SIOCGIFHWADDR = 35111
 
+# ThunderGate wire protocol command ids -- keep in sync with include/proto.h
+PING_CMD = 0x01
+READ_DMA_CMD = 0x04
+WRITE_DMA_CMD = 0x0f
+
 if _inception_support:
     def initialize(opts, module):
         if not opts.filename:
@@ -71,7 +76,7 @@ class ThunderGateInterface:
 
     def _find_gate(self):
         print("sending ping...")
-        self._send_cmd(1)
+        self._send_cmd(PING_CMD)
         resp = self._recv_resp()
         self._tg_mac = resp[6:12]
         print(("found thundergate at %s" % ":".join(get_bytes_strs((self._tg_mac)))))
@@ -114,15 +119,20 @@ class ThunderGateInterface:
             except: pass
 
         if cmd_t != None:
-            cmd_t |= 0x8000
+            ack = cmd_t | 0x8000        # CMD_REPLY
+            err = cmd_t | 0x9000        # ERR_REPLY
 
         while True:
             resp = self._socket.recv(1518)
             if resp[12:14] == b'\x88\xb5':
                 if tg_mac != None and resp[6:12] != tg_mac:
                     continue
-                if cmd_t != None and unpack(">H", resp[14:16])[0] != cmd_t:
-                    continue
+                if cmd_t != None:
+                    rc = unpack(">H", resp[14:16])[0]
+                    if rc == err or rc == 0xffff:
+                        raise Exception("thundergate command 0x%02x failed (reply 0x%04x)" % (cmd_t, rc))
+                    if rc != ack:
+                        continue
                 break
 
         return resp
@@ -136,7 +146,7 @@ class ThunderGateInterface:
             addr_lo = a & 0xffffffff
             cnt = 0x400 if a + 0x400 < end else end - a 
             args = [addr_hi, addr_lo, cnt]
-            self._send_cmd(0xe, args)
+            self._send_cmd(READ_DMA_CMD, args)
             r = self._recv_resp()
             for i in range(16, len(r), 4):
                 if a + (i - 16) >= end:
@@ -148,6 +158,35 @@ class ThunderGateInterface:
         for r in req:
             yield (r[0], self.read(r[0], r[1]))
     
+    def write(self, addr, data):
+        numb = len(data)
+        end = addr + numb
+        for ofs in range(0, numb, 0x400):
+            a = addr + ofs
+            addr_hi = a >> 32
+            addr_lo = a & 0xffffffff
+            cnt = 0x400 if a + 0x400 < end else end - a
+            chunk = data[ofs:ofs + cnt]
+            # mirror read()'s per-dword byte reversal (MIPS BE vs host LE);
+            # pad the tail so whole dwords swap -- firmware writes only cnt
+            # bytes. Sub-dword-aligned tails are wrong until the wdma swap
+            # bits replace this client-side workaround.
+            if len(chunk) % 4:
+                chunk += b'\x00' * (4 - len(chunk) % 4)
+            swapped = b''
+            for i in range(0, len(chunk), 4):
+                swapped += chunk[i+3:i+4] + chunk[i+2:i+3] + chunk[i+1:i+2] + chunk[i:i+1]
+            payload = pack(">H", WRITE_DMA_CMD)
+            payload += pack(">I", addr_hi) + pack(">I", addr_lo) + pack(">I", cnt)
+            payload += swapped
+            self._send_pkt(payload)
+            self._last_cmd = WRITE_DMA_CMD
+            self._recv_resp()
+
+    def writev(self, req):
+        for addr, data in req:
+            self.write(addr, data)
+
     def close(self):
         pass
 
