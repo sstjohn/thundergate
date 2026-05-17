@@ -25,19 +25,23 @@ The user-space half lives in `py/interfaces/macos.py`, which opens an
 
 ## Building
 
-The dext is **not** built by any Makefile in this repo. `.iig` files are
-processed by Xcode's `iig` tool, which generates the `TGPCIDevice.h` and
-`TGUserClient.h` headers that the `.cpp` files `#include`; the DriverKit
-and PCIDriverKit SDK headers ship only with Xcode.
+To **build-validate** the dext — run `iig`, compile, and link the driver
+executable — use `TGDext/build.sh` (requires Xcode with the DriverKit
+SDK). A clean run reports `build: OK -- Mach-O 64-bit executable arm64`.
+
+`.iig` files are processed by Xcode's `iig` tool, which generates the
+`TGPCIDevice.h` / `TGUserClient.h` headers that the `.cpp` files
+`#include`; the DriverKit and PCIDriverKit SDKs ship only with Xcode.
 
 > **Note for editors / language servers:** opening `TGDext/*.cpp` with a
 > plain C++ language server will report missing headers
 > (`PCIDriverKit/PCIDriverKit.h`, `TGPCIDevice.h`) and unknown
-> `IMPL` / `super` identifiers. That is expected — those are provided by
-> the DriverKit SDK and by the `iig`-generated headers, neither of which
-> exists outside an Xcode DriverKit build. The dext compiles inside an
-> Xcode DriverKit target.
+> `IMPL` / `super` identifiers. That is expected — those come from the
+> DriverKit SDK and the `iig`-generated headers; `build.sh` supplies
+> both. The dext compiles cleanly there.
 
-Step-by-step instructions — creating the Xcode project, signing, SIP and
+`build.sh` does not produce a *signed, installable* `.dext` — that needs
+an Xcode DriverKit target (to embed the dext in the `tgctl` app) and code
+signing. Step-by-step instructions — Xcode project, signing, SIP and
 developer-mode setup, installing, and running — are in
 [`../doc/INSTALL.macos.md`](../doc/INSTALL.macos.md).

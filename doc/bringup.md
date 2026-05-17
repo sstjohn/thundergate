@@ -32,19 +32,20 @@ All of the following pass on the build host today:
 - **Python** — all 81 files compile; the `py/tests/` suite (11 tests)
   passes; an import sweep of every module is clean apart from
   platform-gated and optional-dependency modules (see §4).
+- **The dext** — `macos/TGDext/build.sh` runs Xcode's `iig` and the
+  DriverKit + PCIDriverKit SDKs and links the driver executable
+  (`Mach-O 64-bit arm64`). The C++ and every DriverKit API call site
+  compile and link clean; the build settled four real signature defects.
 
 ## 3. What is NOT verifiable without hardware or Xcode
 
 Treat these as the risk list for bring-up:
 
-- **The dext C++ (`macos/TGDext/`).** It builds only in an Xcode
-  DriverKit target — the `.iig` files need Xcode's `iig` tool and the
-  PCIDriverKit SDK. The DriverKit API call sites (`GetBARInfo`,
-  `_CopyDeviceMemoryWithIndex`, `IODMACommand`, `IOInterruptDispatchSource`,
-  the `IMPL` macro, `super`, `AsyncCompletion`) are written from the
-  documentation; expect to settle a few signatures against the installed
-  SDK on the first Xcode build. The architecture and control flow are
-  sound; the uncertainty is API surface, not design.
+- **The dext, installed and running.** It compiles and links (§2), but
+  has not been *signed, installed, or matched against a device*. Tonight:
+  build it in an Xcode DriverKit target (so it can be embedded in the
+  `tgctl` app and signed), then install per `doc/INSTALL.macos.md`. The
+  remaining unknowns are runtime, not compile-time.
 - **`interfaces/macos.py` `wait_interrupt()`.** The Mach-message receive
   is written but the bridge into the TAP driver's asyncio loop is
   finalized on hardware (Phase 6c).
@@ -109,9 +110,10 @@ Confirm the bootcode magic `0xb49a89ab` at gencomm offset `0xb50`.
 
 ### 5.3 macOS — the dext and the flash path
 
-Setup: follow `doc/INSTALL.macos.md` end to end — build the dext in an
-Xcode DriverKit target (settle any SDK signature mismatches; see §3),
-disable SIP, `systemextensionsctl developer on`, install via `tgctl`.
+Setup: follow `doc/INSTALL.macos.md` end to end. The dext already
+compiles and links (`macos/TGDext/build.sh`); the Xcode DriverKit target
+is needed to embed it in the `tgctl` app and sign it. Then disable SIP,
+`systemextensionsctl developer on`, and install via `tgctl`.
 
 1. `systemextensionsctl list` shows `TGDext` `[activated enabled]`.
 2. `log stream --predicate 'sender == "TGDext"'` while plugging in the
