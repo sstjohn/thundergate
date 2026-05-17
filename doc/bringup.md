@@ -116,10 +116,24 @@ is needed to embed it in the `tgctl` app and sign it. Then disable SIP,
 `systemextensionsctl developer on`, and install via `tgctl`.
 
 1. `systemextensionsctl list` shows `TGDext` `[activated enabled]`.
-2. `log stream --predicate 'sender == "TGDext"'` while plugging in the
-   NIC — expect `Start: ok -- BAR0 is N bytes`.
-3. `.venv/bin/python3 py/main.py -b` then `-i` — the flash path over the
+2. **Hand the device to the dext.** The Tigon3 is matched at boot by
+   the built-in `AppleBCM5701Ethernet` kext (probe score 2048). The dext
+   personality probes at 100000, so it wins — but only on a *re-match*:
+   IOKit does not re-evaluate a device already bound to a driver. After
+   the dext is active, **unplug and replug the Thunderbolt adapter** to
+   force re-enumeration. Confirm with
+   `ioreg -rc IOPCIDevice -n ethernet -w0` that `ethernet@0`'s child is
+   now `TGPCIDevice` (an `IOUserService`), not `BCM5701Enet`. The `en8`
+   interface disappears — expected; the NIC is the dext's now.
+3. `log stream --predicate 'sender == "TGDext"'` during the replug —
+   expect `Start: ok -- BAR0 is N bytes`.
+4. `.venv/bin/python3 py/main.py -b` then `-i` — the flash path over the
    dext, identical to Linux.
+
+If the dext does *not* win the match (still `BCM5701Enet`), the fallback
+is to stop the kext competing: boot with `AppleBCM5701Ethernet` excluded
+via a `kmutil` exclusion list (SIP is already disabled). Try the probe
+score first — it is the standard mechanism.
 
 ### 5.4 macOS — DMA + interrupts (4b)
 

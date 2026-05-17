@@ -37,6 +37,15 @@
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<!--
+			   IOProbeScore: the Tigon3 is also matched by the built-in
+			   AppleBCM5701Ethernet kext, which probes at score 2048 in
+			   the default match category. To drive the device, this dext
+			   must outscore it; 100000 wins decisively. (A re-match is
+			   still needed after install -- replug the adapter.)
+			-->
+			<key>IOProbeScore</key>
+			<integer>100000</integer>
+			<!--
 			   IOPCIMatch: space-separated (deviceID << 16 | vendorID)
 			   values, vendor 0x14e4 (Broadcom). 0x1682 is ThunderGate's
 			   historical default (see py/main.py); the rest cover common
