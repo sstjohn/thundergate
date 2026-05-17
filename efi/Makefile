@@ -19,7 +19,7 @@ include ../Make.common
 ARCHES  := x86_64 aarch64
 GNUEFI  := $(PROJ_ROOT)/ext/gnu-efi
 EFIROM  := $(PROJ_ROOT)/.venv/bin/python3 $(PROJ_ROOT)/py/efirom.py
-SRCS    := main.c splash.c werk.c
+SRCS    := main.c splash.c werk.c iort.c
 
 # --- toolchain (override any of these on the command line) ----------
 ifeq ($(shell uname -s),Darwin)

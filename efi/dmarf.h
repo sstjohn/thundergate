@@ -33,8 +33,14 @@
 #define IDENTITY_MAP_FIRST_16M 1
 #define IDENTITY_MAP_DRHD 1
 
+/* IORT (ARM SMMU) -- mirrors the DMAR knobs above. DISABLE_IORT renames
+   the table so the OS never parses it; IDENTITY_MAP_RMR (the surgical
+   RMR path) stays gated off, exactly like IDENTITY_MAP_* for DMAR. */
+#define DISABLE_IORT 1
+#define IDENTITY_MAP_RMR 1
+
 #if VERBOSE
-#define DbgPrint(x, ...) Print(x, ...)
+#define DbgPrint(x, ...) Print(x, ##__VA_ARGS__)
 #else
 #define DbgPrint(x, ...)
 #endif
@@ -43,6 +49,9 @@ extern u32 tg_dp[12];
 extern u32 tg_dp_len;
 
 void splash();
+
+void walk_iort(void *iort);
+void update_tbl_cksum(void *tbl);
 
 void EFIAPI werk(EFI_EVENT Event, VOID *Context);
 

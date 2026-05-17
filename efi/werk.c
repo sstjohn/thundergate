@@ -264,6 +264,11 @@ void walk_xsdt(struct xsdt *xsdt)
         if (strncmpa(sdt->sig, "DMAR", 4) == 0) {
 	    walk_dmar(sdt);
         }
+
+        /* ARM platforms carry an IORT (SMMU topology), never a DMAR. */
+        if (strncmpa(sdt->sig, "IORT", 4) == 0) {
+	    walk_iort(sdt);
+        }
     }
 }
 

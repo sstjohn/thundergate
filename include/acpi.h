@@ -100,6 +100,70 @@ struct __attribute__((packed)) dmar_andd {
 	char object_name[0];
 };
 
+/* ACPI I/O Remapping Table (IORT) -- the ARM analogue of DMAR. An ARM
+   UEFI platform has no DMAR (that is Intel VT-d only); the OS learns
+   the SMMU topology, and programs DMA isolation, from the IORT. */
+
+#define IORT_NODE_ITS_GROUP        0
+#define IORT_NODE_NAMED_COMPONENT  1
+#define IORT_NODE_ROOT_COMPLEX     2
+#define IORT_NODE_SMMU_V1V2        3
+#define IORT_NODE_SMMU_V3          4
+#define IORT_NODE_PMCG             5
+#define IORT_NODE_RMR              6
+
+struct __attribute__((packed)) iort_tbl_hdr {
+	char sig[4];
+	u32 length;
+	u8 rev;
+	u8 cksum;
+	char oemid[6];
+	char oemtableid[8];
+	u32 oem_rev;
+	char creator_id[4];
+	u32 creator_rev;
+	u32 node_count;
+	u32 node_offset;
+	u32 reserved;
+};
+
+struct __attribute__((packed)) iort_node {
+	u8 type;
+	u16 length;
+	u8 rev;
+	u32 identifier;
+	u32 mapping_count;
+	u32 mapping_offset;
+};
+
+struct __attribute__((packed)) iort_id_mapping {
+	u32 input_base;
+	u32 id_count;
+	u32 output_base;
+	u32 output_reference;
+	u32 flags;
+};
+
+struct __attribute__((packed)) iort_smmu {
+	struct iort_node node;
+	u64 base_address;          /* SMMUv1/v2 and SMMUv3 both begin here */
+};
+
+/* RMR node (type 6, IORT revision E): the SMMU analogue of a DMAR
+   RMRR -- forces a 1:1 (identity) SMMU mapping of physical memory. */
+struct __attribute__((packed)) iort_rmr {
+	struct iort_node node;
+	u32 flags;
+	u32 desc_count;
+	u32 desc_offset;
+};
+
+struct __attribute__((packed)) iort_rmr_desc {
+	u64 base;
+	u64 length;
+	u32 reserved;
+};
+
 struct __attribute__((packed)) acpi_sdt_hdr {
         char sig[4];
         u32 length;
