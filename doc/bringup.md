@@ -54,12 +54,13 @@ Treat these as the risk list for bring-up:
 
 ## 4. Open items surfaced by review (not bring-up blockers)
 
-- **`_aiotap/`, `_tap/`, `testdrv.py` are vestigial.** `py/main.py -d`
-  uses the `tap/` package (asyncio-ported, Linux/Windows). `_aiotap/`
-  still imports `trollius`; `_tap/` is superseded; `testdrv.py` imports
-  a `tapdrv` module that does not exist. They are not on any live path.
-  **Decision needed:** delete them, or port them too. Left as-is for now
-  — deleting code is your call.
+- **TAP drivers — resolved.** `py/main.py -d` runs the `tap/` package
+  (the live userspace TAP driver, Linux/Windows). `testdrv.py` (the
+  `-t` test driver) was *broken*, not dead — it imported a long-removed
+  `tapdrv` module — and is now repointed at `_tap/`, which exports the
+  same `TapDriver` and imports cleanly. The trollius-based `_aiotap/`
+  was the superseded twin of `_tap/`, referenced by nothing, and has
+  been removed. `tap/` and `_tap/` both remain as Linux TAP drivers.
 - **No macOS TAP path yet.** `tap/` is Linux/Windows-only; consuming the
   Phase 4b dext DMA/MSI from a macOS `tap` backend is unbuilt. The flash
   path (the core goal) does not need it.
