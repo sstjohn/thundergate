@@ -74,24 +74,39 @@ void rx()
     grc.rxcpu_event.rdiq = 0;
 }
 
+/* Configure receive rule `idx` to route frames whose EtherType (the
+   16-bit field at frame offset 12) equals `etype` to the on-core CPU.
+   Mirrors the proven control-protocol rule. */
+static void rxcpu_rule(u32 idx, u16 etype)
+{
+    emac.rx_rule[idx].control.word = 0;
+    emac.rx_rule[idx].control.offset = 12;
+    emac.rx_rule[idx].control.mask = 1;
+    emac.rx_rule[idx].control.activate_rxcpu = 1;
+    emac.rx_rule[idx].control.pclass = 1;
+    emac.rx_rule[idx].mask_value = (0xffff0000 | etype);
+}
+
 void rx_setup()
 {
     rlp.mode.reset = 1;
     emac.rx_rule[7].control.enable = 0;
-    while (rlp.mode.reset || emac.rx_rule[7].control.enable);
+    emac.rx_rule[8].control.enable = 0;
+    emac.rx_rule[9].control.enable = 0;
+    while (rlp.mode.reset
+           || emac.rx_rule[7].control.enable
+           || emac.rx_rule[8].control.enable
+           || emac.rx_rule[9].control.enable);
 
-    emac.rx_rule[7].control.word = 0;
-
-    emac.rx_rule[7].control.offset = 12;
-    emac.rx_rule[7].control.mask = 1;
-    emac.rx_rule[7].control.activate_rxcpu = 1;
-    emac.rx_rule[7].control.pclass = 1;
-
-    /* This rule routes only control-protocol frames (config.ctrl_etype,
-       i.e. 0x88b5) to the on-core CPU. The TCP/IP stack additionally needs
-       ARP and IPv4 frames delivered to rx(); broadening the receive-rule
-       set to do that is a hardware bring-up step, verified in Phase 6. */
-    emac.rx_rule[7].mask_value = (0xffff0000 | config.ctrl_etype);
+    /* Route the legacy control protocol (config.ctrl_etype, 0x88b5) and --
+       for the on-core TCP/IP stack -- ARP (0x0806) and IPv4 (0x0800) to
+       the on-core CPU; rx() dispatches all three. Each is a standalone
+       EtherType match, so a frame matching any one is delivered to the
+       core. (While these rules are active the host no longer receives
+       ARP/IPv4 on this port -- the core is the network endpoint.) */
+    rxcpu_rule(7, config.ctrl_etype);
+    rxcpu_rule(8, 0x0806);
+    rxcpu_rule(9, 0x0800);
 
     rlp.config.number_of_lists_per_distribution_group = 1;
     rlp.config.number_of_active_lists = 0x10;
@@ -100,4 +115,6 @@ void rx_setup()
     set_and_wait(rlp.mode.enable);
     set_and_wait(grc.rxcpu_event_enable.rdiq);
     set_and_wait(emac.rx_rule[7].control.enable);
+    set_and_wait(emac.rx_rule[8].control.enable);
+    set_and_wait(emac.rx_rule[9].control.enable);
 }
