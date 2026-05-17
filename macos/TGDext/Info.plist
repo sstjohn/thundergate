@@ -17,7 +17,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>2</string>
 	<key>OSBundleUsageDescription</key>
 	<string>ThunderGate access to the Tigon3 Ethernet controller.</string>
 	<key>IOKitPersonalities</key>
@@ -36,6 +36,15 @@
 			<string>lol.ssj.thundergate.TGDext</string>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
+			<!--
+			   IOPCITunnelCompatible: Tigon3 adapters attach over
+			   Thunderbolt, so the PCI device is tunnelled
+			   (IOPCITunnelled = Yes). IOKit will not match a driver to a
+			   tunnelled PCI device unless the driver declares it is
+			   tunnel-safe -- without this the dext is never considered.
+			-->
+			<key>IOPCITunnelCompatible</key>
+			<true/>
 			<!--
 			   IOProbeScore: the Tigon3 is also matched by the built-in
 			   AppleBCM5701Ethernet kext, which probes at score 2048 in
