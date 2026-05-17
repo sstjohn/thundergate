@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>tgctl</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.github.sstjohn.thundergate</string>
+	<string>lol.ssj.thundergate</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

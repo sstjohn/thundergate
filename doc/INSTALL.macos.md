@@ -45,7 +45,7 @@ source. Assemble them into an Xcode project once:
 
 1. **New app target.** Xcode → File → New → Project → macOS → **App**.
    - Product Name: `tgctl`
-   - Bundle Identifier: `com.github.sstjohn.thundergate`
+   - Bundle Identifier: `lol.ssj.thundergate`
    - Language: Swift
    - Save it anywhere (e.g. `macos/ThunderGate.xcodeproj`).
 2. **Use the provided app source.** Delete the generated `*App.swift` /
@@ -56,9 +56,12 @@ source. Assemble them into an Xcode project once:
    `com.apple.developer.system-extension.install`).
 3. **New dext target.** File → New → Target → macOS → **Driver
    Extension**.
-   - Product Name: `TGDext`
-   - Bundle Identifier: `com.github.sstjohn.thundergate.TGDext`
+   - Bundle Identifier: `lol.ssj.thundergate.TGDext`
      (it must be prefixed by the app's bundle identifier).
+   - In the dext target's Build Settings, set **`PRODUCT_NAME` to
+     `$(PRODUCT_BUNDLE_IDENTIFIER)`**. The dext executable must be named
+     by its bundle identifier, or `OSSystemExtensionRequest` fails with
+     "Extension not found in App bundle."
    - Xcode automatically embeds the dext in the `tgctl` app.
 4. **Use the provided dext source.** Delete the generated dext sources.
    Add to the `TGDext` target: `TGPCIDevice.iig`, `TGPCIDevice.cpp`,
@@ -116,14 +119,14 @@ systemextensionsctl developer on
 
 1. In Xcode, **Run** the `tgctl` scheme (⌘R), or build it and run the
    app bundle directly. On launch `tgctl` submits an activation request
-   for `com.github.sstjohn.thundergate.TGDext` and prints progress.
+   for `lol.ssj.thundergate.TGDext` and prints progress.
 2. If macOS asks for approval, allow the extension in System Settings →
    General → Login Items & Extensions, then re-run `tgctl`.
 3. Verify:
    ```sh
    systemextensionsctl list
    ```
-   `com.github.sstjohn.thundergate.TGDext` should show `[activated
+   `lol.ssj.thundergate.TGDext` should show `[activated
    enabled]`.
 
 With a matching Tigon3 NIC present, the dext matches it; check the

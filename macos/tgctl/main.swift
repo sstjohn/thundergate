@@ -33,7 +33,7 @@
 import Foundation
 import SystemExtensions
 
-let dextIdentifier = "com.github.sstjohn.thundergate.TGDext"
+let dextIdentifier = "lol.ssj.thundergate.TGDext"
 
 final class RequestDelegate: NSObject, OSSystemExtensionRequestDelegate {
 
