@@ -90,23 +90,24 @@ static void rxcpu_rule(u32 idx, u16 etype)
 void rx_setup()
 {
     rlp.mode.reset = 1;
+    emac.rx_rule[5].control.enable = 0;
+    emac.rx_rule[6].control.enable = 0;
     emac.rx_rule[7].control.enable = 0;
-    emac.rx_rule[8].control.enable = 0;
-    emac.rx_rule[9].control.enable = 0;
     while (rlp.mode.reset
-           || emac.rx_rule[7].control.enable
-           || emac.rx_rule[8].control.enable
-           || emac.rx_rule[9].control.enable);
+           || emac.rx_rule[5].control.enable
+           || emac.rx_rule[6].control.enable
+           || emac.rx_rule[7].control.enable);
 
-    /* Route the legacy control protocol (config.ctrl_etype, 0x88b5) and --
-       for the on-core TCP/IP stack -- ARP (0x0806) and IPv4 (0x0800) to
-       the on-core CPU; rx() dispatches all three. Each is a standalone
-       EtherType match, so a frame matching any one is delivered to the
-       core. (While these rules are active the host no longer receives
-       ARP/IPv4 on this port -- the core is the network endpoint.) */
+    /* The EMAC has 8 receive rules (0-7; see emac.h). Route IPv4
+       (0x0800), ARP (0x0806) and the legacy control protocol
+       (config.ctrl_etype, 0x88b5) to the on-core CPU; rx() dispatches
+       all three. Each is a standalone EtherType match, so a frame
+       matching any one is delivered to the core. (While these rules
+       are active the host no longer receives ARP/IPv4 on this port --
+       the core is the network endpoint.) */
+    rxcpu_rule(5, 0x0800);
+    rxcpu_rule(6, 0x0806);
     rxcpu_rule(7, config.ctrl_etype);
-    rxcpu_rule(8, 0x0806);
-    rxcpu_rule(9, 0x0800);
 
     rlp.config.number_of_lists_per_distribution_group = 1;
     rlp.config.number_of_active_lists = 0x10;
@@ -114,7 +115,7 @@ void rx_setup()
 
     set_and_wait(rlp.mode.enable);
     set_and_wait(grc.rxcpu_event_enable.rdiq);
+    set_and_wait(emac.rx_rule[5].control.enable);
+    set_and_wait(emac.rx_rule[6].control.enable);
     set_and_wait(emac.rx_rule[7].control.enable);
-    set_and_wait(emac.rx_rule[8].control.enable);
-    set_and_wait(emac.rx_rule[9].control.enable);
 }

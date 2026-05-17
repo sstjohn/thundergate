@@ -59,8 +59,10 @@ struct gate_config {
 	u8 gateway[4];
 };
 
-#define DEFAULT_IP_ADDR	{ 192, 168, 1, 222 }
-#define DEFAULT_NETMASK	{ 255, 255, 255, 0 }
-#define DEFAULT_GATEWAY	{ 192, 168, 1, 1 }
+/* 10.0.0.0/8 -- kept clear of common 192.168.x home/Wi-Fi subnets so
+   the host routes test traffic out the wired peer port, not Wi-Fi. */
+#define DEFAULT_IP_ADDR	{ 10, 0, 0, 222 }
+#define DEFAULT_NETMASK	{ 255, 0, 0, 0 }
+#define DEFAULT_GATEWAY	{ 10, 0, 0, 1 }
 	
 #endif

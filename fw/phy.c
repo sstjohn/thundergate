@@ -93,14 +93,18 @@ void check_link()
 		return;
 
 	if (!emac.tx_mac_status.link_up) {
+		/* Link down: reset the PHY and (re)start autonegotiation to
+		   bring the link up. The original firmware ran this only when
+		   the link was *already* up, relying on the host or bootcode
+		   to establish it -- the on-core stack must bring the link up
+		   itself. phy_nego() blocks until autoneg completes; the
+		   resulting link-up fires an EMAC event that re-enters here. */
+		phy_reset();
+		phy_auto_mdix();
+		phy_nego();
 		emac.status.link_state_changed = 1;
 		return;
 	}
-
-	phy_reset();
-	phy_auto_mdix();
-	phy_loopback_en();
-	phy_nego();
 
 	res = (phy_read(0x19) & 0x703);
 	emac.rx_mac_mode.enable_flow_control = !!(res & 2);
