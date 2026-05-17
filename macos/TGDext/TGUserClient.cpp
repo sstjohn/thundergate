@@ -91,8 +91,14 @@ IMPL(TGUserClient, Stop)
  * static handler table is needed. Scalar argument counts are validated
  * by hand. Selectors are defined in tg_dext.h.
  */
+/* ExternalMethod is declared LOCALONLY in IOUserClient.iig -- it is a
+   plain virtual override, not an iig-dispatched (IMPL) method. */
 kern_return_t
-IMPL(TGUserClient, ExternalMethod)
+TGUserClient::ExternalMethod(uint64_t selector,
+                             IOUserClientMethodArguments * arguments,
+                             const IOUserClientMethodDispatch * dispatch,
+                             OSObject * target,
+                             void * reference)
 {
     if (ivars->owner == nullptr)
         return kIOReturnNotReady;

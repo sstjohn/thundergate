@@ -222,7 +222,8 @@ IMPL(TGPCIDevice, ConfigRead32)
 {
     if (ivars->pci == nullptr)
         return kIOReturnNotReady;
-    return ivars->pci->ConfigurationRead32(offset, value);
+    ivars->pci->ConfigurationRead32(offset, value);   /* returns void */
+    return kIOReturnSuccess;
 }
 
 kern_return_t
@@ -230,7 +231,8 @@ IMPL(TGPCIDevice, ConfigWrite32)
 {
     if (ivars->pci == nullptr)
         return kIOReturnNotReady;
-    return ivars->pci->ConfigurationWrite32(offset, value);
+    ivars->pci->ConfigurationWrite32(offset, value);  /* returns void */
+    return kIOReturnSuccess;
 }
 
 kern_return_t
@@ -262,9 +264,9 @@ IMPL(TGPCIDevice, AllocDMA)
     IOBufferMemoryDescriptor * buf = nullptr;
     IODMACommand             * dma = nullptr;
     IODMACommandSpecification  spec;
-    IOAddressSegment           seg;
+    IOAddressSegment           seg[32];   /* PrepareForDMA writes up to 32 */
     uint64_t                   dmaFlags = 0;
-    uint32_t                   segCount = 1;
+    uint32_t                   segCount = 32;
 
     for (int i = 0; i < kTGMaxDMABuffers; i++) {
         if (ivars->dmaSlots[i].buffer == nullptr) { slot = i; break; }
@@ -287,8 +289,8 @@ IMPL(TGPCIDevice, AllocDMA)
         return ret;
     }
 
-    memset(&seg, 0, sizeof(seg));
-    ret = dma->PrepareForDMA(0, buf, 0, size, &dmaFlags, &segCount, &seg);
+    memset(seg, 0, sizeof(seg));
+    ret = dma->PrepareForDMA(0, buf, 0, size, &dmaFlags, &segCount, seg);
     if (ret != kIOReturnSuccess || segCount != 1) {
         TGLog("AllocDMA: PrepareForDMA failed 0x%x segs=%u", ret, segCount);
         OSSafeReleaseNULL(dma);
@@ -298,11 +300,11 @@ IMPL(TGPCIDevice, AllocDMA)
 
     ivars->dmaSlots[slot].buffer = buf;
     ivars->dmaSlots[slot].dma    = dma;
-    ivars->dmaSlots[slot].iova   = seg.address;
+    ivars->dmaSlots[slot].iova   = seg[0].address;
     ivars->dmaSlots[slot].size   = size;
 
     *handle = (uint64_t)slot;
-    *iova   = seg.address;
+    *iova   = seg[0].address;
     return kIOReturnSuccess;
 }
 
@@ -317,7 +319,7 @@ IMPL(TGPCIDevice, FreeDMA)
         return kIOReturnSuccess;        /* already free -- idempotent */
 
     if (s->dma != nullptr) {
-        s->dma->CompleteForDMA(0, s->buffer, 0, s->size);
+        s->dma->CompleteDMA(kIODMACommandCompleteDMANoOptions);
         OSSafeReleaseNULL(s->dma);
     }
     OSSafeReleaseNULL(s->buffer);
