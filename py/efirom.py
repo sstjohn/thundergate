@@ -53,7 +53,7 @@ class EFI_PCI_EXPANSION_ROM_HEADER(Structure):
     ]
 
 
-def build_efi_rom(pe_img, vid, did, compress = 0):
+def build_efi_rom(pe_img, vid, did, compress = 0, machine = 0x8664):
     if compress > 0:
         import EfiCompressor
         pe_img = EfiCompressor.UefiCompress(pe_img, len(pe_img))[:]
@@ -91,7 +91,7 @@ def build_efi_rom(pe_img, vid, did, compress = 0):
     image.rom.InitializationSize = (rom_size >> 9)
     image.rom.EfiSignature = 3825
     image.rom.EfiSubsystem = 0xb
-    image.rom.EfiMachineType = 0x8664
+    image.rom.EfiMachineType = machine
     image.rom.CompressionType = 1 if compress > 0 else 0
     image.rom.EfiImageHeaderOffset = hdr_size
     image.rom.PcirOffset = RomImage.pci.offset
@@ -119,13 +119,16 @@ if __name__ == "__main__":
        return int(x, 0)
    parser = argparse.ArgumentParser()
    parser.add_argument('infile', type=argparse.FileType('rb'))
-   parser.add_argument('outfile', type=argparse.FileType('wc'))
+   parser.add_argument('outfile', type=argparse.FileType('wb'))
    parser.add_argument("-v", "--vendor", type=auto_int, default=0)
    parser.add_argument("-d", "--device", type=auto_int, default=0)
+   parser.add_argument("-m", "--machine", type=auto_int, default=0x8664,
+                       help="PE machine type: 0x8664 = x86_64, 0xaa64 = aarch64")
    parser.add_argument("-c", "--compress", action="store_true")
    args = parser.parse_args()
    o = args.outfile
    i = args.infile.read()
-   o.write(build_efi_rom(i, args.vendor, args.device, compress=1 if args.compress else 0))
+   o.write(build_efi_rom(i, args.vendor, args.device,
+                         compress=1 if args.compress else 0, machine=args.machine))
    o.close()
    args.infile.close()

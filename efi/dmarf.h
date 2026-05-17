@@ -26,7 +26,7 @@
 #include <efipciio.h>
 #include <eficon.h>
 
-#include <wchar.h>
+#include <stddef.h>   /* wchar_t -- freestanding; <wchar.h> is hosted-only */
 #include "acpi.h"
 
 #define DISABLE_DMAR 1

@@ -95,7 +95,7 @@ u32 create_rmrr(void *a, u64 base, u64 limit)
 	r->base_addr = base;
 	r->limit_addr = limit;
 
-	r->length += create_dev_scope((uintptr_t)a + sizeof(struct dmar_rmrr));
+	r->length += create_dev_scope((void *)((uintptr_t)a + sizeof(struct dmar_rmrr)));
 	return r->length;
 }
 
@@ -115,7 +115,7 @@ void walk_rmrr(void *a)
 	offset += sizeof(struct dmar_rmrr);
 
 	while (offset < r_sz)
-		offset += walk_dev_scope((uintptr_t)a + offset);
+		offset += walk_dev_scope((void *)((uintptr_t)a + offset));
 }
 
 void walk_drhd(void *a)
@@ -145,7 +145,7 @@ void walk_drhd(void *a)
 		drhd_base = drhd->base_address;
 
 	while (offset < drhd_sz)
-		offset += walk_dev_scope((uintptr_t)a + offset);
+		offset += walk_dev_scope((void *)((uintptr_t)a + offset));
 }
 
 void update_tbl_cksum(void *a)
@@ -204,11 +204,11 @@ void walk_dmar(void *a)
 	    switch(nt) {
 	    case 0:
 		DbgPrint(L"drhd at offset %d\n", offset);
-		walk_drhd((uintptr_t)a+offset);
+		walk_drhd((void *)((uintptr_t)a+offset));
 		break;
 	    case 1:
 		DbgPrint(L"rmrr at offset %d\n", offset);
-		walk_rmrr((uintptr_t)a+offset);
+		walk_rmrr((void *)((uintptr_t)a+offset));
 		break;
 	    default:
 		DbgPrint(L"type %d at offset %d\n", nt, offset);
