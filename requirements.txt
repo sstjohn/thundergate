@@ -10,6 +10,9 @@ capstone>=4          # MIPS disassembly (py/blocks/cpu.py)
 bidict               # bidirectional maps (py/reutils.py)
 pyelftools           # ELF / DWARF parsing (py/image.py)
 
+# Interactive shell (py/main.py -s)
+ipython              # py/magic.py — IPython magics for the -s shell
+
 # GUI and debug bridge
 wxpython>=4          # py/gui/ — wxPython 4 (Phoenix)
 debugpy              # py/cdpserver.py — replaces the dead ptvsd

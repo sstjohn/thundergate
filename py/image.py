@@ -18,17 +18,18 @@
 
 from elftools.elf.elffile import ELFFile
 from elftools.dwarf.descriptions import set_global_machine_arch
-from elftools.dwarf.dwarf_expr import GenericExprVisitor
+from elftools.dwarf.dwarf_expr import DWARFExprParser
 from elftools.dwarf.locationlists import LocationEntry
-from StringIO import StringIO
-import platform
+from io import BytesIO
 import struct
 
-class ExprLiveEval(GenericExprVisitor):
+class ExprLiveEval(object):
     def __init__(self, image):
         self._image = image
         self._val = 0
-        super(ExprLiveEval, self).__init__(image.dwarf.structs)
+        # Modern pyelftools replaced the GenericExprVisitor base class
+        # with DWARFExprParser, which returns a list of decoded ops.
+        self._parser = DWARFExprParser(image.dwarf.structs)
 
     def process_expr(self, dev, expr, frame):
         self._dev = dev
@@ -44,7 +45,10 @@ class ExprLiveEval(GenericExprVisitor):
             if not selected_expr:
                 return '(undefined)'
             expr = selected_expr
-        super(ExprLiveEval, self).process_expr(expr)
+        # walk the DWARF location expression, op by op
+        raw = bytes(expr) if isinstance(expr, (list, bytearray)) else expr
+        for op in self._parser.parse_expr(raw):
+            self._after_visit(op.op, op.op_name, op.args)
         try:
             print("expr %s evaluates to %x" % (expr, self.value))
         except:
@@ -119,12 +123,9 @@ class ExprLiveEval(GenericExprVisitor):
 
 class Image(object):
     def __init__(self, fname):
-        if platform.system() == "Windows":
-            elf_data = open(fname, "r")
-        else:     
-            with open(fname, "r") as f:
-                elf_data = StringIO(f.read())
-        
+        with open(fname, "rb") as f:
+            elf_data = BytesIO(f.read())
+
         self.elf = ELFFile(elf_data)
         if self.elf.has_dwarf_info():
             self.dwarf = self.elf.get_dwarf_info()

@@ -20,7 +20,7 @@ import cabi as c
 import os
 import ctypes
 import struct
-from mm import _MemMgr
+from .mm import _MemMgr
 
 if not hasattr(c, "MAP_FAILED"):
     setattr(c, "MAP_FAILED", c.c_void_p(-1).value)

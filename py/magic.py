@@ -19,7 +19,7 @@
 from IPython.core.magic import (Magics, magics_class, line_magic,
                         cell_magic, line_cell_magic)
 from elftools.elf.elffile import ELFFile
-from StringIO import StringIO
+from io import BytesIO
 import os
 import hashlib
 
@@ -204,8 +204,8 @@ class DebugMagic(Magics):
    
         @line_magic
         def elfload(self, line):
-            with open(line, "r") as f:
-                elf_data = StringIO(f.read())
+            with open(line, "rb") as f:
+                elf_data = BytesIO(f.read())
 
             self._elf = ELFFile(elf_data)
             try:
