@@ -406,7 +406,7 @@ class nvram(rflip.nvram):
             self.write_dword(ofs + i, data)
 
     def write_dir_image(self, index, data, itype = 0, sram_ofs = 0x10000, xa = False, xb = False, nv_ofs = None):
-        data += struct.pack("i", crc32(data))
+        data += struct.pack("I", crc32(data))
 
         if nv_ofs == None:
             nv_ofs = self.eeprom_hdr.directory[index].nvram_start
@@ -449,11 +449,19 @@ class nvram(rflip.nvram):
         bcstart, bclen = self.install_bc(data)
         #bclen = len(data) + 0x204
 
-        with open(efidrv, "rb") as f:
-            data = f.read()
-        oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
-        print("[+] installing thundergate oprom")
-        start += self.write_dir_image(0, oprom, nv_ofs=bcstart+bclen)
+        try:
+            with open(efidrv, "rb") as f:
+                data = f.read()
+        except FileNotFoundError:
+            data = None
+        if data is not None:
+            oprom = build_efi_rom(data, self._dev.pci.vid, self._dev.pci.did, compress=1)
+            print("[+] installing thundergate oprom")
+            start += self.write_dir_image(0, oprom, nv_ofs=bcstart+bclen)
+        else:
+            print("[.] %s not present -- skipping the EFI option ROM "
+                  "(host-side only; the on-core firmware does not need it)"
+                  % efidrv)
 
         self._dev.reset()
         return 0
@@ -493,7 +501,7 @@ class nvram(rflip.nvram):
         data = self._eeprom_hdr_buf[mfg_start:mfg_start + mfg_len - 4]
         rdata = b''.join([data[i:i+4][::-1] for i in range(0, len(data), 4)])
         
-        crc = struct.unpack("I", struct.pack("!i", crc32(rdata)))[0]
+        crc = struct.unpack("I", struct.pack("!I", crc32(rdata)))[0]
         self.eeprom_hdr.mfg.crc = crc
 
         update_ofs = mfg_start + self.eeprom_hdr.mfg.__class__.crc.offset
@@ -543,13 +551,13 @@ class nvram(rflip.nvram):
     def install_bc(self, image):
         if 0 != (len(image) % 4):
             image += (b'\x00' * (4 - (len(image) % 4)))
-        image += struct.pack("i", crc32(image))
+        image += struct.pack("I", crc32(image))
         iwords = len(image) >> 2
         nvstart = self.eeprom_hdr.bs.bc_nvram_start
         self.write_block(nvstart, image)
         self.eeprom_hdr.bs.bc_words = iwords
         crc = crc32(pack("<IIII", *unpack(">IIII", self._eeprom_hdr_buf[0:0x10])))
-        crc = unpack("<I", pack(">i", crc))[0]
+        crc = unpack("<I", pack(">I", crc))[0]
         self.eeprom_hdr.bs.crc = crc 
         self._flush_eeprom_header(8, 0xc)
         return (nvstart, len(image))

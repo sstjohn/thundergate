@@ -72,6 +72,13 @@ MACH_RCV_TIMED_OUT      = 0x10004003
 _iokit.IOServiceMatching.restype = ctypes.c_void_p
 _iokit.IOServiceMatching.argtypes = [ctypes.c_char_p]
 
+# IOServiceNameMatching matches a registry node by its name. A dext's
+# in-kernel node is an IOUserService *named* after the dext class
+# (TGPCIDevice); IOServiceMatching matches by provider class and would
+# miss it, so the node is found by name instead.
+_iokit.IOServiceNameMatching.restype = ctypes.c_void_p
+_iokit.IOServiceNameMatching.argtypes = [ctypes.c_char_p]
+
 # IOServiceGetMatchingService consumes one reference on the matching dict.
 _iokit.IOServiceGetMatchingService.restype = mach_port_t
 _iokit.IOServiceGetMatchingService.argtypes = [mach_port_t, ctypes.c_void_p]
@@ -133,9 +140,9 @@ class MacOSInterface(object):
         self._service = 0
         self._int_port = 0
         self._int_armed = False
-        matching = _iokit.IOServiceMatching(TG_DEXT_CLASS.encode())
+        matching = _iokit.IOServiceNameMatching(TG_DEXT_CLASS.encode())
         if not matching:
-            raise Exception("IOServiceMatching(%s) failed" % TG_DEXT_CLASS)
+            raise Exception("IOServiceNameMatching(%s) failed" % TG_DEXT_CLASS)
         self._service = _iokit.IOServiceGetMatchingService(
             kIOMainPortDefault, matching)
         if not self._service:
