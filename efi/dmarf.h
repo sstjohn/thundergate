@@ -47,6 +47,7 @@
 
 extern u32 tg_dp[12];
 extern u32 tg_dp_len;
+extern u32 tg_rid;
 
 void splash();
 

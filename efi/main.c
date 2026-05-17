@@ -20,6 +20,7 @@
 
 u32 tg_dp[12] = {0};
 u32 tg_dp_len = 0;
+u32 tg_rid = 0;       /* the Tigon's PCIe Requester ID, for iort.c */
 
 static EFI_IMAGE_UNLOAD orig_unload = 0;
 
@@ -145,6 +146,9 @@ EFI_STATUS EFIAPI drv_supported(
 			goto done;
 		}
 		DbgPrint(L"found a tb gige adapter at %02x:%02x.%02x.\n", bus, dev, fun);
+
+		/* record the Requester ID so iort.c can scope an RMR to it */
+		tg_rid = (bus << 8) | (dev << 3) | fun;
 
 		s = uefi_call_wrapper(BS->HandleProtocol, 3,
 				hController,

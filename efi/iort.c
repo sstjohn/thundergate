@@ -71,32 +71,70 @@ void walk_iort_node(struct iort_node *n)
 }
 
 /*
- * Append an RMR node identity-mapping [base, limit] for every device
- * ID, anchored at the first SMMU node in the table. Returns the bytes
- * appended, or 0 if there is no SMMU node to anchor it at. The analogue
- * of werk.c's create_rmrr(); reached only when IDENTITY_MAP_RMR is set.
+ * Append an RMR node identity-mapping [base, limit] for the Tigon NIC
+ * specifically -- the SMMU analogue of werk.c's device-scoped
+ * create_rmrr(). The Tigon's PCIe Requester ID (tg_rid, captured by
+ * main.c when the driver binds) is resolved to its SMMU StreamID
+ * through the PCIe root complex node's ID mappings, and the RMR is
+ * scoped to that StreamID alone. Returns the bytes appended, or 0 if
+ * the device or its StreamID could not be resolved. Reached only when
+ * IDENTITY_MAP_RMR is set.
  */
 u32 create_rmr(void *a, u64 base, u64 limit)
 {
 	struct iort_tbl_hdr *iort = a;
-	struct iort_rmr *r = (struct iort_rmr *)((uintptr_t)a + iort->length);
+	struct iort_node *rc = 0;
+	struct iort_rmr *r;
 	struct iort_id_mapping *map;
 	struct iort_rmr_desc *desc;
 	u32 offset = iort->node_offset;
 	u32 smmu_ref = 0;
+	u32 stream_id = 0;
+	int resolved = 0;
 	u32 len;
 
+	if (tg_rid == 0)
+		return 0;
+
+	/* find the PCIe root complex node */
 	for (u32 i = 0; i < iort->node_count; i++) {
 		struct iort_node *n = (struct iort_node *)((uintptr_t)a + offset);
 		if (n->length == 0)
 			break;
-		if (n->type == IORT_NODE_SMMU_V1V2 || n->type == IORT_NODE_SMMU_V3)
-			smmu_ref = offset;
+		if (n->type == IORT_NODE_ROOT_COMPLEX) {
+			rc = n;
+			break;
+		}
 		offset += n->length;
 	}
-	if (smmu_ref == 0)
+	if (rc == 0)
 		return 0;
 
+	/* resolve the Tigon's Requester ID to its SMMU StreamID through
+	   the root complex node's ID mappings; the matching mapping also
+	   names the target SMMU node. */
+	for (u32 i = 0; i < rc->mapping_count; i++) {
+		struct iort_id_mapping *m = (struct iort_id_mapping *)
+			((uintptr_t)rc + rc->mapping_offset
+			 + i * sizeof(struct iort_id_mapping));
+		if (m->flags & 1) {                    /* single mapping */
+			stream_id = m->output_base;
+			smmu_ref = m->output_reference;
+			resolved = 1;
+			break;
+		}
+		if (tg_rid >= m->input_base
+		    && tg_rid < m->input_base + m->id_count) {
+			stream_id = m->output_base + (tg_rid - m->input_base);
+			smmu_ref = m->output_reference;
+			resolved = 1;
+			break;
+		}
+	}
+	if (!resolved)
+		return 0;
+
+	r = (struct iort_rmr *)((uintptr_t)a + iort->length);
 	len = sizeof(struct iort_rmr) + sizeof(struct iort_id_mapping)
 	    + sizeof(struct iort_rmr_desc);
 
@@ -111,10 +149,11 @@ u32 create_rmr(void *a, u64 base, u64 limit)
 	r->desc_offset = sizeof(struct iort_rmr)
 	               + sizeof(struct iort_id_mapping);
 
+	/* scope the RMR to the Tigon's StreamID alone */
 	map = (struct iort_id_mapping *)((uintptr_t)r + r->node.mapping_offset);
 	map->input_base = 0;
-	map->id_count = 0xffffffff;
-	map->output_base = 0;
+	map->id_count = 1;
+	map->output_base = stream_id;
 	map->output_reference = smmu_ref;
 	map->flags = 0;
 
