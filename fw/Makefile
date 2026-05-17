@@ -41,7 +41,7 @@ $(IMAGE): fw.elf
 	$(OBJCOPY) -j .text -j .data -j .rodata -j .bss -O binary fw.elf $(IMAGE)
 
 clean:
-	-rm -f *.o fw.elf fw.img .depend fixed.sym
+	-rm -f *.o net/*.o fw.elf fw.img .depend fixed.sym
 
 rebuild:
 	$(MAKE) clean && $(MAKE)
@@ -50,6 +50,6 @@ depend: .depend
 
 .depend: $(CSOURCE)
 	rm -f ./.depend
-	$(CC) $(CFLAGS) $(CPPFLAGS) -MM $^ -MF ./.depend;
+	for s in $(CSOURCE); do $(CC) $(CFLAGS) $(CPPFLAGS) -MM -MT $${s%.c}.o $$s >> ./.depend; done
 
 include .depend

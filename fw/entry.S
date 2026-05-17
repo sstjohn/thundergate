@@ -36,7 +36,11 @@ begin:
     addi s0,%lo(_edata)
     lui s1,%hi(_end)
     addi s1,%lo(_end)
-1:  beq s0,s1,2f
+    /* Zero .bss [_edata, _end). Loop while s0 < s1 -- the old
+       beq s0,s1 exit needs _end-_edata to be a multiple of 4, which
+       is not guaranteed once .bss size is odd. */
+1:  sltu v0,s0,s1
+    beq v0,r0,2f
     nop
     sw r0,0(s0)
     addiu s0,s0,4
