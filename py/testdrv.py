@@ -28,7 +28,7 @@ from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
 import socket
 from struct import pack, unpack
-from tapdrv import TapDriver
+from _tap import TapDriver
 
 class TestDriver(object):
     def __init__(self, dev):
