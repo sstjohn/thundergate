@@ -89,7 +89,6 @@ kern_return_t
 IMPL(TGPCIDevice, Start)
 {
     kern_return_t     ret;
-    uint8_t           barType = 0;
     uint16_t          command = 0;
     IODispatchQueue * queue   = nullptr;
 
@@ -122,23 +121,26 @@ IMPL(TGPCIDevice, Start)
        The Tigon3's register block is NOT always at BAR index 0 -- a
        stock Apple Thunderbolt-Ethernet adapter presents it at BAR 2
        (our own firmware enables BAR 0, but the stock one does not). So
-       scan the BAR indices for the first memory BAR of non-zero size,
+       scan BAR0..BAR5 for the first memory BAR of non-zero size,
        rather than assuming index 0. */
     ret = kIOReturnNotFound;
-    for (uint8_t bar = 0; bar < 6; bar++) {
+    for (uint8_t bar = 0; bar < 6; bar++) {     /* BAR0..BAR5, no expansion ROM */
         uint8_t  mIndex = 0;
         uint64_t mSize  = 0;
         uint8_t  bType  = 0;
         if (ivars->pci->GetBARInfo(bar, &mIndex, &mSize, &bType)
-                == kIOReturnSuccess && mSize != 0) {
-            ivars->bar0Index = mIndex;
-            ivars->bar0Size  = mSize;
-            barType          = bType;
-            ret = kIOReturnSuccess;
-            TGLog("Start: register BAR %u -> memory index %u, %llu bytes",
-                  bar, mIndex, mSize);
-            break;
-        }
+                != kIOReturnSuccess || mSize == 0)
+            continue;
+        /* must be an MMIO BAR: bit 0 of the BAR type is the PCI
+           I/O-space indicator (1 = I/O port, 0 = memory). */
+        if (bType & 1)
+            continue;
+        ivars->bar0Index = mIndex;
+        ivars->bar0Size  = mSize;
+        ret = kIOReturnSuccess;
+        TGLog("Start: register BAR %u -> memory index %u, %llu bytes",
+              bar, mIndex, mSize);
+        break;
     }
     if (ret != kIOReturnSuccess) {
         TGLog("Start: no usable memory BAR found");
@@ -177,7 +179,7 @@ IMPL(TGPCIDevice, Start)
         OSSafeReleaseNULL(ivars->intSource);
     }
 
-    TGLog("Start: ok -- BAR0 is %llu bytes", ivars->bar0Size);
+    TGLog("Start: ok -- register BAR is %llu bytes", ivars->bar0Size);
     RegisterService();
     return kIOReturnSuccess;
 

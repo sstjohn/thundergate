@@ -56,10 +56,14 @@
 			<integer>100000</integer>
 			<!--
 			   IOPCIMatch: space-separated (deviceID << 16 | vendorID)
-			   values (0x????14e4 = Broadcom; 0x168288b5 = a ThunderGate-cloaked Tigon, vendor 0x88b5). 0x1682 is ThunderGate's
-			   historical default (see py/main.py); the rest cover common
-			   standalone Tigon3 NICs. Add your device's ID here -- find
-			   it with `system_profiler SPPCIDataType` or lspci.
+			   values. 0x????14e4 entries are Broadcom (vendor 0x14e4);
+			   0x1682 is ThunderGate's historical default device ID (see
+			   py/main.py), the rest cover common standalone Tigon3 NICs.
+			   0x168288b5 matches a ThunderGate-cloaked Tigon: cloak
+			   rewrites the vendor ID to 0x88b5 but keeps the device ID,
+			   so this covers a cloaked device only if its device ID is
+			   0x1682. Add your device's ID here -- find it with
+			   `system_profiler SPPCIDataType` or lspci.
 			-->
 			<key>IOPCIMatch</key>
 			<string>0x168214e4 0x164414e4 0x164514e4 0x164614e4 0x164714e4 0x164814e4 0x165314e4 0x165914e4 0x167714e4 0x168414e4 0x168288b5</string>
