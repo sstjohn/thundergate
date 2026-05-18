@@ -71,6 +71,10 @@ pread = _fn('pread', ctypes.c_ssize_t,
             [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, _off_t])
 pwrite = _fn('pwrite', ctypes.c_ssize_t,
              [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, _off_t])
+# read into a raw buffer address -- the TAP backends read a frame straight
+# into a DMA buffer, so this takes a void* rather than returning bytes.
+read = _fn('read', ctypes.c_ssize_t,
+           [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t])
 # ioctl is variadic; leave argtypes unset so ctypes passes structs by reference.
 ioctl = _fn('ioctl', ctypes.c_int, None)
 

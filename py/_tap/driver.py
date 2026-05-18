@@ -35,7 +35,7 @@ if sys_name == "Linux":
     import fcntl
     
     import cabi as c
-    from tunlib import *
+    from cabi import *
     from .linux import TapLinuxInterface
     TDInt = TapLinuxInterface
 elif sys_name == "Windows" or sys_name == "cli":
@@ -93,7 +93,7 @@ class TapDriver(TDInt):
 
     def send(self, data, flags=None):
         if len(data) < 64:
-            data = data + ('\x00' * (64 - len(data)))
+            data = data + (b'\x00' * (64 - len(data)))
         b_vaddr = self.mm.alloc(len(data))
         b = ctypes.cast(b_vaddr, ctypes.POINTER(ctypes.c_char * len(data)))
         b[0] = (ctypes.c_char * len(data)).from_buffer_copy(data)

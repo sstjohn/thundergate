@@ -21,7 +21,7 @@ import select
 import os
 import cabi as c
 import fcntl
-from tunlib import *
+from cabi import *
 import tty
 import sys
 import termios
@@ -39,7 +39,7 @@ class TapLinuxInterface(object):
 
     def __enter__(self):
         fd = os.open("/dev/net/tun", os.O_RDWR)
-        ifr = struct.pack('16sH', "", IFF_TAP | IFF_NO_PI)
+        ifr = struct.pack('16sH', b"", IFF_TAP | IFF_NO_PI)
         self.tap_name = struct.unpack('16sH', fcntl.ioctl(fd, TUNSETIFF, ifr))[0]
         print("[+] tap device name: \"%s\"" % self.tap_name)
         self.tfd = fd
