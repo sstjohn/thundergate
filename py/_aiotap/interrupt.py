@@ -17,18 +17,18 @@
 '''
 
 from ctypes import cast, POINTER, c_char
-import asyncio
-
 import logging
-logger = logging.getLogger(__name__)
 
 import tglib as tg
+
+logger = logging.getLogger(__name__)
+
 
 async def _handle_interrupt(self):
     dev = self.dev
     if self.verbose:
         logger.info("handling interrupt")
-    
+
     _ = dev.hpmb.box[tg.mb_interrupt].low
     tag = 0
 
@@ -48,11 +48,10 @@ async def _handle_interrupt(self):
             if now_connected != self._connected:
                 self._set_tapdev_status(now_connected)
                 self._connected = now_connected
-            
-        #for i in range(len(dev.mem.rxrcb)):
-        #    _handle_rr(self, i)
-        
-        #_replenish_rx_bds(self)
+
+        for i in range(len(dev.mem.rxrcb)):
+            _handle_rr(self, i)
+        _replenish_rx_bds(self)
         _free_sent_bds(self)
 
     if self.verbose:
@@ -60,48 +59,47 @@ async def _handle_interrupt(self):
     self.dev.hpmb.box[tg.mb_interrupt].low = tag
     _ = self.dev.hpmb.box[tg.mb_interrupt].low
 
+
 def _handle_rr(self, i):
+    '''Drain return ring i: deliver each received frame to the host tap
+    and swap a fresh buffer into the producer-ring slot it came from.'''
     pi = getattr(self.status_block, "rr%d_pi" % i)
     ci = self.rr_rings_ci[i]
+    if pi == ci:
+        return
 
-    if pi != ci:
+    count = pi - ci if pi >= ci else self.rr_rings_len - ci + pi
+    if self.verbose:
+        logger.info("rr %d: pi %x, ci %x, %d bds received", i, pi, ci, count)
+
+    rr_bds = cast(self.rr_rings_vaddr[i], POINTER(tg.rbd))
+    rx_bds = cast(self.rx_ring_vaddr, POINTER(tg.rbd))
+    while count > 0:
+        ci += 1
+        if ci > self.rr_rings_len:
+            ci = 1
+        rbd = rr_bds[ci - 1]
         if self.verbose:
-            msg = "rr %d: pi is %x, ci was %x," % (i, pi, ci)
+            _dump_bd(self, ci, rbd)
 
-        if pi < ci:
-            count = self.rr_rings_len - ci 
-            count += pi
-        else:
-            count = pi - ci
-        
-        if self.verbose:
-            logger.info("%s %d bds received", msg, count)
+        old_buf = self.rx_buffers[rbd.index]
+        pkt = cast(old_buf, POINTER(c_char * rbd.length))[0]
 
-        rbds = cast(self.rr_rings_vaddr[i], POINTER(tg.rbd))
-        while count > 0:
-            ci += 1
-            if ci > self.rr_rings_len:
-                ci = 1
-            rbd = rbds[ci - 1]
+        new_buf = self.mm.alloc(0x800)
+        new_pbuf = self.mm.get_paddr(new_buf)
+        rx_bds[rbd.index].addr_hi = new_pbuf >> 32
+        rx_bds[rbd.index].addr_low = new_pbuf & 0xffffffff
+        self.rx_buffers[rbd.index] = new_buf
 
-            if self.verbose:
-                self._dump_bd(ci, rbd)
+        self._put_tap_packet(pkt)
+        self.stats.pkt_in(rbd.length)
+        self.mm.free(old_buf)
 
-            pkt = cast(self.rx_ring_buffers[rbd.index], POINTER(c_char * rbd.length))[0]
-            
-            new_buf = self.mm.alloc(0x800)
-            new_pbuf = self.mm.get_paddr(new_buf)
-            self.rx_ring_bds[rbd.index].addr_hi = new_pbuf >> 32
-            self.rx_ring_bds[rbd.index].addr_low = new_pbuf & 0xffffffff
-            self.rx_ring_buffers[rbd.index] = new_buf
+        count -= 1
 
-            self.put_tap_pkt(pkt)
-             
-            count -= 1
-
-        mb = getattr(tg, "mb_rbd_rr%d_consumer" % i)
-        self.dev.hpmb.box[mb].low = ci
-        self.rr_rings_ci[i] = ci
+    mb = getattr(tg, "mb_rbd_rr%d_consumer" % i)
+    self.dev.hpmb.box[mb].low = ci
+    self.rr_rings_ci[i] = ci
 
 
 def _replenish_rx_bds(self):
@@ -131,6 +129,7 @@ def _replenish_rx_bds(self):
             logger.debug("moving std rbd pi to %x", self._std_rbd_pi)
         self.dev.hpmb.box[tg.mb_rbd_standard_producer].low = self._std_rbd_pi
 
+
 def _free_sent_bds(self):
     tx_ci = self.status_block.sbdci
     if tx_ci != self._tx_ci:
@@ -157,10 +156,11 @@ def _free_sent_bds(self):
             self.mm.free(self._tx_buffers[self._tx_ci])
             self._tx_ci += 1
 
+
 def _dump_bd(self, ci, rbd):
     print("consuming bd 0x%x" % ci)
     print(" addr:      %08x:%08x" % (rbd.addr_hi, rbd.addr_low))
-    print("  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_ring_buffers[rbd.index], self.mm.get_paddr(self.rx_ring_buffers[rbd.index])))
+    print("  buf[%d] vaddr: %x, paddr: %x" % (rbd.index, self.rx_buffers[rbd.index], self.mm.get_paddr(self.rx_buffers[rbd.index])))
     print(" length:    %04x" % rbd.length)
     print(" index:     %04x" % rbd.index)
     print(" type:      %04x" % rbd.type)
@@ -183,4 +183,3 @@ def _dump_bd(self, ci, rbd):
     print(" vlan_tag:  %04x" % rbd.vlan_tag)
     print(" rss_hash:  %08x" % rbd.rss_hash)
     print(" opaque:    %08x" % rbd.opaque)
-
