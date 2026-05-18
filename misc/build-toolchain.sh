@@ -128,14 +128,18 @@ stage_gcc() {
         --disable-multilib --with-system-zlib \
         --with-arch=mips2 --with-tune=r6000 --with-float=soft \
         $(with_math)
-    # Build and install only the compiler, not target libgcc. The Tigon3
-    # core has no hardware multiply/divide; GCC 14's generic libgcc2.c soft
-    # routines (e.g. __mulvsi3) ICE when built with -mtigon. The freestanding
-    # firmware carries its own minimal soft-math (fw/softmath.c) instead and
-    # links -nostdlib, so libgcc is never needed.
+    # The Tigon3 core has no hardware multiply/divide, so GCC's generated
+    # code calls libgcc's soft __mulsi3/__divsi3/... routines. Build and
+    # install target-libgcc with -mtigon (applied to libgcc via the t-elf
+    # patch). One routine, _mulvsi3 -- the trapping signed multiply -- ICEs
+    # under -mtigon in GCC 14; the patch excludes it via LIB2FUNCS_EXCLUDE.
+    # __mulvsi3 is emitted only for -ftrapv / __builtin_*_overflow, which the
+    # firmware never uses, so libgcc still links cleanly.
     make -j"$JOBS" all-gcc
     make install-gcc
-    say "gcc (compiler only) installed"
+    make -j"$JOBS" all-target-libgcc
+    make install-target-libgcc
+    say "gcc + libgcc installed"
 }
 
 stage_clean() {

@@ -17,11 +17,13 @@ What it does NOT do, and why:
     __muldi3 -- which are already GCC's defaults for a non-vr4120 build.
     It was redundant, and editing a function body is the most fragile kind
     of patch, so it is dropped.
-  * It does not add custom libgcc routines. Stock libgcc2.c already supplies
-    the soft __divsi3/__udivsi3/__mulsi3/__muldi3/... and t-elf is patched
-    below to build libgcc2 itself with -mtigon. If a genuine gap exists it
-    appears as an undefined symbol when fw.elf links -- a precise, debuggable
-    signal, far better than guessing.
+It DOES extend the libgcc build (libgcc/config/mips/t-elf, plus a generated
+tg-mulsi3.c). Stock MIPS has hardware mult/div, so libgcc ships no SImode soft
+routines; code built with -mtigon calls __mulsi3/__divsi3/__udivsi3/__modsi3/
+__umodsi3. The patch pulls in GCC's own generic soft divide (divmod.c,
+udivmod.c, udivmodsi4.c) and installs a soft __mulsi3 (GCC's own shift-add
+routine, the one it ships for every no-multiply target), and builds libgcc2
+itself with -mtigon.
 
 Idempotent: re-running on an already-patched tree is a no-op. Exits non-zero
 with a clear message if an expected anchor is missing (a future GCC moved
@@ -145,24 +147,107 @@ def patch_mips_cc(tree):
     info("mips.cc: mips_mulsidi3_gen_fn returns a libcall for -mtigon")
 
 
-# --- libgcc/config/mips/t-elf -------------------------------------------------
+# --- libgcc soft multiply/divide for -mtigon ----------------------------------
+# Stock MIPS has hardware mult/div, so libgcc never builds the SImode soft
+# routines a -mtigon build calls. Two parts fix that, both in t-elf:
+#   * LIB2ADD pulls in GCC's own generic soft divide (libgcc/divmod.c,
+#     udivmod.c, udivmodsi4.c -- the same files pdp11 and iq2000 use) plus a
+#     soft __mulsi3 (config/mips/tg-mulsi3.c, written by patch_tg_mulsi3).
+#   * libgcc2 itself is built with -mtigon; _mulvsi3 is excluded because the
+#     trapping signed multiply ICEs under -mtigon (it is only ever called by
+#     -ftrapv / __builtin_*_overflow, which the firmware does not use).
 T_ELF_ADD = """
-# ThunderGate: build libgcc2 with -mtigon so its soft multiply/divide
+# ThunderGate: -mtigon libgcc. Build libgcc2 with -mtigon so its soft
 # routines avoid mult/div/HILO and lwl/lwr on the Broadcom Tigon3 core.
 HOST_LIBGCC2_CFLAGS += -mtigon
+# _mulvsi3 (trapping signed multiply) ICEs under -mtigon; it is referenced
+# only by -ftrapv / __builtin_mul_overflow, which the firmware never uses.
+LIB2FUNCS_EXCLUDE += _mulvsi3
+# Stock MIPS has hardware mult/div so libgcc omits the SImode soft routines a
+# -mtigon build needs. Add GCC's own generic soft divide and a soft __mulsi3
+# (the shift-add routine GCC ships for its no-multiply targets).
+LIB2ADD += $(srcdir)/divmod.c $(srcdir)/udivmod.c $(srcdir)/udivmodsi4.c \\
+           $(srcdir)/config/mips/tg-mulsi3.c
 """
+
+# config/mips/tg-mulsi3.c: GCC's own shift-and-add __mulsi3 -- the routine it
+# ships as config/nios2/lib2-mul.c, config/lm32/_mulsi3.c, ... for every
+# target that lacks a hardware multiply -- with self-contained mode typedefs.
+TG_MULSI3_C = '''/* Soft 32-bit integer multiply for the Broadcom Tigon3 MIPS core.
+
+   The Tigon3 on-chip MIPS core has no mult/multu instruction, so GCC built
+   with -mtigon emits a __mulsi3 libcall. Stock MIPS always has a hardware
+   multiply, so libgcc carries no soft __mulsi3 for MIPS. This is the
+   shift-and-add routine GCC itself ships for its other no-multiply targets
+   (config/nios2/lib2-mul.c, config/lm32/_mulsi3.c, ...), placed here so the
+   -mtigon libgcc build is self-contained. Installed by misc/mtigon-patch.py.
+
+   Copyright (C) 2012-2024 Free Software Foundation, Inc.
+
+   This file is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the
+   Free Software Foundation; either version 3, or (at your option) any
+   later version.
+
+   This file is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+   General Public License for more details.
+
+   Under Section 7 of GPL version 3, you are granted additional
+   permissions described in the GCC Runtime Library Exception, version
+   3.1, as published by the Free Software Foundation.
+
+   You should have received a copy of the GNU General Public License and
+   a copy of the GCC Runtime Library Exception along with this program;
+   see the files COPYING3 and COPYING.RUNTIME respectively. If not, see
+   <http://www.gnu.org/licenses/>. */
+
+typedef int SItype __attribute__ ((mode (SI)));
+typedef unsigned int USItype __attribute__ ((mode (SI)));
+
+SItype
+__mulsi3 (SItype a, SItype b)
+{
+  SItype res = 0;
+  USItype cnt = a;
+
+  while (cnt)
+    {
+      if (cnt & 1)
+	res += b;
+      b <<= 1;
+      cnt >>= 1;
+    }
+
+  return res;
+}
+'''
 
 
 def patch_t_elf(tree):
     path = os.path.join(tree, "libgcc/config/mips/t-elf")
     text = read(path)
-    if "-mtigon" in text:
-        info("t-elf: -mtigon already present")
-        return
-    if not text.endswith("\n"):
-        text += "\n"
+    idx = text.find("# ThunderGate")
+    if idx >= 0:
+        if "tg-mulsi3.c" in text[idx:]:
+            info("t-elf: -mtigon libgcc block already present")
+            return
+        # A prior revision of the ThunderGate block is present; drop it
+        # (back to before its first comment) and re-append the current one.
+        text = text[:idx]
+    text = text.rstrip() + "\n"
     write(path, text + T_ELF_ADD)
-    info("t-elf: libgcc2 will be built with -mtigon")
+    info("t-elf: -mtigon libgcc block installed (soft mul/div, _mulvsi3 out)")
+
+
+def patch_tg_mulsi3(tree):
+    path = os.path.join(tree, "libgcc/config/mips/tg-mulsi3.c")
+    if os.path.isfile(path) and read(path) == TG_MULSI3_C:
+        info("tg-mulsi3.c: already present")
+        return
+    write(path, TG_MULSI3_C)
+    info("tg-mulsi3.c: soft __mulsi3 installed")
 
 
 def main():
@@ -175,6 +260,7 @@ def main():
     patch_mips_opt(tree)
     patch_mips_cc(tree)
     patch_t_elf(tree)
+    patch_tg_mulsi3(tree)
     info("done")
 
 
