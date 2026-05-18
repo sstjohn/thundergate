@@ -155,14 +155,39 @@ class TapDriver(TDInt):
         if self.running:
             asyncio.ensure_future(self.interrupt_watcher())
 
-    async def tap_watcher(self):
-        pass
+    def _send_b(self, buf, buf_sz):
+        '''Hand a DMA buffer holding one frame to the NIC's send ring.'''
+        i = self._tx_pi
+        self._tx_buffers[i] = buf
+        paddr = self.mm.get_paddr(buf)
+        txb = cast(self.tx_ring_vaddr, POINTER(tg.sbd))
+        txb[i].addr_hi = paddr >> 32
+        txb[i].addr_low = paddr & 0xffffffff
+        txb[i].length = buf_sz
+        txb[i].flags.packet_end = 1
+        i = (i + 1) % self.tx_ring_len
+        self.dev.hpmb.box[tg.mb_sbd_host_producer].low = i
+        _ = self.dev.hpmb.box[tg.mb_sbd_host_producer].low  # flush the posted write
+        self._tx_pi = i
+        self.stats.pkt_out(buf_sz)
 
+    async def tap_watcher(self):
+        buf = self.mm.alloc(0x800)
+        buf, n = await self.loop.run_in_executor(
+            None, self._get_tap_packet, buf, 0x800)
+        if n < 64:
+            ctypes.memset(buf + n, 0, 64 - n)
+            n = 64
+        self._send_b(buf, n)
+        if self.running:
+            asyncio.ensure_future(self.tap_watcher())
 
     async def arrive_device(self):
         await self.device_setup()
         await self.enable_rx()
+        await self.enable_tx()
         asyncio.ensure_future(self.interrupt_watcher())
+        asyncio.ensure_future(self.tap_watcher())
 
     def run(self):
         self.running = True

@@ -53,7 +53,7 @@ async def _handle_interrupt(self):
         #    _handle_rr(self, i)
         
         #_replenish_rx_bds(self)
-        #_free_sent_bds(self)
+        _free_sent_bds(self)
 
     if self.verbose:
         logger.info("interrupt handling concluded")
