@@ -33,7 +33,11 @@
 #endif
 
 #undef DEFAULT_FLAGS
-#define DEFAULT_FLAGS LOCAL_CTRL | PEER_CTRL | OPROM_EN | CLOAK_EN
+/* Cloak is opt-in. cloak_engage() hides the NIC from the host by rewriting
+   its PCI vendor ID to DEFAULT_CLOAK_VID -- which also makes the device
+   unmanageable through the host driver/dext. Engage it deliberately via the
+   0x88b5 CLOAK_EN_CMD when wanted; do not cloak by default. */
+#define DEFAULT_FLAGS (LOCAL_CTRL | PEER_CTRL | OPROM_EN)
 
 #define DEFAULT_CTRL_ETYPE	0x88b5
 
