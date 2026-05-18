@@ -23,7 +23,7 @@
 	<key>LSBackgroundOnly</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright (C) 2015-2026 Saul St. John. GPLv3.</string>
+	<string>Copyright (C) 2015-2026  Saul St. John. GPLv3.</string>
 	<!--
 	   OSSystemExtensionUsageDescription is shown to the user when the
 	   embedded dext requests activation.

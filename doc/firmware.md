@@ -2,38 +2,19 @@
 
 ## Toolchain ##
 
-A bespoke cross-compiler targeting the Tigon3 (MIPS-ish) processor is required
-in order to build custom firmware targeting the device. Produce one as follows
-on Linux, or on Windows within an MSYS2 environment.
-
-1. Retrieve, compile and install cross mips-elf binutils:
+Building custom firmware needs a cross-compiler for the Tigon3's MIPS-ish
+core. Build one with:
 
     ~~~
-$ curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.25.tar.bz2
-$ tar xfi binutils-2.25.tar.bz2
-$ mkdir binutils-build
-$ pushd binutils-build
-$ ../binutils-2.25/configure --target=mips-elf --with-sysroot --disable-nls
-$ make && sudo make install && popd
+$ misc/build-toolchain.sh
     ~~~
 
-2. Retrieve, patch, compile and install cross mips-elf GCC 5.1:
-
-    ~~~
-$ curl -O http://ftp.gnu.org/gnu/gcc/gcc-5.1.0/gcc-5.1.0.tar.bz2
-$ tar xfi gcc-5.1.0.tar.bz2
-$ pushd gcc-5.1.0
-$ patch -p1 < ../thundergate/misc/gcc-5.1.0-mtigon.patch
-$ popd
-$ mkdir gcc-build
-$ pushd gcc-build
-$ ../gcc-5.1.0/configure --target=mips-elf --program-prefix=mips-elf-        \
-        --disable-nls --enable-languages=c,c++ --without-headers             \
-        --without-llsc --with-tune=r6000 --with-arch=mips2 --disable-biarch  \
-        --disable-multilib --with-float=soft --without-hard-float
-$ make all-gcc && make all-target-libgcc
-$ sudo make install-gcc && sudo make install-target-libgcc && popd
-    ~~~
+This produces a mips-elf GCC 14.2 cross-toolchain under `toolchain/`. GCC is
+patched (`misc/mtigon-patch.py`) with a `-mtigon` target that suppresses the
+instructions the core lacks -- unaligned load/store, hardware
+multiply/divide, and the HI/LO registers -- so multiply and divide go through
+libgcc's soft routines instead. Add `toolchain/bin` to your PATH so
+`fw/Makefile` finds `mips-elf-gcc`. The script runs on Linux and macOS.
 
 ## Build ##
 
@@ -59,8 +40,8 @@ to a Thunderbolt Gigabit Ethernet adapter device as follows:
  $ sudo py/main.py -i 0a:00.0
 
           ThunderGate
-	 Version 0.5.0
-Copyright (c) 2015 Saul St John
+	  Version 1.0
+Copyright (C) 2015-2026  Saul St. John
      http://thundergate.io
 
 [+] tg3 inspector initializing
