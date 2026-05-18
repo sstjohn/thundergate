@@ -128,7 +128,7 @@ TGUserClient::ExternalMethod(uint64_t selector,
 
     case kTGGetBar0Info: {
         uint64_t size = 0;
-        kern_return_t ret = ivars->owner->GetBAR0Size(&size);
+        kern_return_t ret = ivars->owner->GetRegBarSize(&size);
         if (ret != kIOReturnSuccess)
             return ret;
         arguments->scalarOutput[0] = size;
@@ -191,7 +191,7 @@ IMPL(TGUserClient, CopyClientMemoryForType)
         return kIOReturnNotReady;
 
     if (type == kTGMemoryBar0)
-        return ivars->owner->CopyBAR0Memory(memory);
+        return ivars->owner->CopyRegBarMemory(memory);
 
     if (type >= kTGMemoryDMA && type < kTGMemoryDMA + kTGMaxDMABuffers)
         return ivars->owner->CopyDMAMemory(type - kTGMemoryDMA, memory);

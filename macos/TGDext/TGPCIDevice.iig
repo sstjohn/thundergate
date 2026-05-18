@@ -20,7 +20,7 @@
  * TGPCIDevice -- the ThunderGate dext's matching IOService.
  *
  * It matches the Tigon3 PCI device (Info.plist IOKitPersonalities),
- * opens it, keeps a descriptor for BAR 0, owns the DMA buffers and the
+ * opens it, keeps a descriptor for the register BAR, owns the DMA
  * MSI interrupt source, and vends a TGUserClient.
  *
  * BUILD NOTE: .iig files are processed by Xcode's `iig` tool -- this
@@ -55,11 +55,11 @@ public:
      * so these are local (in-process) calls, not cross-process IPC.
      */
 
-    /* --- config space + BAR 0 ----------------------------------------- */
+    /* --- config space + register BAR ---------------------------------- */
     virtual kern_return_t ConfigRead32(uint64_t offset, uint32_t * value);
     virtual kern_return_t ConfigWrite32(uint64_t offset, uint32_t value);
-    virtual kern_return_t GetBAR0Size(uint64_t * size);
-    virtual kern_return_t CopyBAR0Memory(IOMemoryDescriptor ** memory);
+    virtual kern_return_t GetRegBarSize(uint64_t * size);
+    virtual kern_return_t CopyRegBarMemory(IOMemoryDescriptor ** memory);
 
     /* --- DMA buffers + interrupts ------------------------------------- */
     virtual kern_return_t AllocDMA(uint64_t size, uint64_t * handle,

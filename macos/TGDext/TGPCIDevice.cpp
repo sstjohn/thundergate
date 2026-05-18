@@ -51,9 +51,9 @@ struct TGDMASlot
 struct TGPCIDevice_IVars
 {
     IOPCIDevice               * pci;
-    IOMemoryDescriptor        * bar0;
-    uint64_t                    bar0Size;
-    uint8_t                     bar0Index;
+    IOMemoryDescriptor        * regBar;
+    uint64_t                    regBarSize;
+    uint8_t                     regBarIndex;
 
     /* MSI interrupt -> the registered user client. */
     IOInterruptDispatchSource * intSource;
@@ -122,7 +122,8 @@ IMPL(TGPCIDevice, Start)
        stock Apple Thunderbolt-Ethernet adapter presents it at BAR 2
        (our own firmware enables BAR 0, but the stock one does not). So
        scan BAR0..BAR5 for the first memory BAR of non-zero size,
-       rather than assuming index 0. */
+       rather than assuming index 0. A 64-bit BAR's high half
+       reports size 0 and is skipped. */
     ret = kIOReturnNotFound;
     for (uint8_t bar = 0; bar < 6; bar++) {     /* BAR0..BAR5, no expansion ROM */
         uint8_t  mIndex = 0;
@@ -135,8 +136,8 @@ IMPL(TGPCIDevice, Start)
            I/O-space indicator (1 = I/O port, 0 = memory). */
         if (bType & 1)
             continue;
-        ivars->bar0Index = mIndex;
-        ivars->bar0Size  = mSize;
+        ivars->regBarIndex = mIndex;
+        ivars->regBarSize  = mSize;
         ret = kIOReturnSuccess;
         TGLog("Start: register BAR %u -> memory index %u, %llu bytes",
               bar, mIndex, mSize);
@@ -146,8 +147,8 @@ IMPL(TGPCIDevice, Start)
         TGLog("Start: no usable memory BAR found");
         goto fail;
     }
-    ret = ivars->pci->_CopyDeviceMemoryWithIndex(ivars->bar0Index,
-                                                 &ivars->bar0, this);
+    ret = ivars->pci->_CopyDeviceMemoryWithIndex(ivars->regBarIndex,
+                                                 &ivars->regBar, this);
     if (ret != kIOReturnSuccess) {
         TGLog("Start: copying BAR memory failed 0x%x", ret);
         goto fail;
@@ -179,7 +180,7 @@ IMPL(TGPCIDevice, Start)
         OSSafeReleaseNULL(ivars->intSource);
     }
 
-    TGLog("Start: ok -- register BAR is %llu bytes", ivars->bar0Size);
+    TGLog("Start: ok -- register BAR is %llu bytes", ivars->regBarSize);
     RegisterService();
     return kIOReturnSuccess;
 
@@ -203,7 +204,7 @@ IMPL(TGPCIDevice, Stop)
     for (int i = 0; i < kTGMaxDMABuffers; i++)
         FreeDMA((uint64_t)i);
 
-    OSSafeReleaseNULL(ivars->bar0);
+    OSSafeReleaseNULL(ivars->regBar);
     if (ivars->pci != nullptr) {
         ivars->pci->Close(this, 0);
         OSSafeReleaseNULL(ivars->pci);
@@ -235,7 +236,7 @@ IMPL(TGPCIDevice, NewUserClient)
 }
 
 /* ====================================================================== */
-/* config space + BAR 0                                                   */
+/* config space + register BAR                                            */
 /* ====================================================================== */
 
 kern_return_t
@@ -257,19 +258,19 @@ IMPL(TGPCIDevice, ConfigWrite32)
 }
 
 kern_return_t
-IMPL(TGPCIDevice, GetBAR0Size)
+IMPL(TGPCIDevice, GetRegBarSize)
 {
-    *size = ivars->bar0Size;
+    *size = ivars->regBarSize;
     return kIOReturnSuccess;
 }
 
 kern_return_t
-IMPL(TGPCIDevice, CopyBAR0Memory)
+IMPL(TGPCIDevice, CopyRegBarMemory)
 {
-    if (ivars->bar0 == nullptr)
+    if (ivars->regBar == nullptr)
         return kIOReturnNotReady;
-    ivars->bar0->retain();          /* balanced by the caller's release */
-    *memory = ivars->bar0;
+    ivars->regBar->retain();          /* balanced by the caller's release */
+    *memory = ivars->regBar;
     return kIOReturnSuccess;
 }
 
