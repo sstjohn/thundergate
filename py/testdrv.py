@@ -68,10 +68,10 @@ class TestDriver(object):
         buf_vaddr = dev.interface.mm.alloc(1024)
         buf = cast(buf_vaddr, POINTER(c_char))
         for b in range(0, 1024, 4):
-            buf[b] = '\xde'
-            buf[b+1] = '\xad'
-            buf[b+2] = '\xbe'
-            buf[b+3] = '\xef'
+            buf[b] = b'\xde'
+            buf[b+1] = b'\xad'
+            buf[b+2] = b'\xbe'
+            buf[b+3] = b'\xef'
         buf_paddr = dev.interface.mm.get_paddr(buf_vaddr)
         print("vaddr %x, paddr %x" % (buf_vaddr, buf_paddr))
 
@@ -113,10 +113,10 @@ class TestDriver(object):
         intermediate = reutils.state_diff(dev, initial)
 
         for b in range(0, 1024, 4):
-            buf[b] = '\xba'
-            buf[b+1] = '\xad'
-            buf[b+2] = '\xd0'
-            buf[b+3] = '\x0d'
+            buf[b] = b'\xba'
+            buf[b+1] = b'\xad'
+            buf[b+2] = b'\xd0'
+            buf[b+3] = b'\x0d'
 
         print("[+] setting sw event 0 again")
         dev.grc.rxcpu_event.sw_event_0 = 1
@@ -141,10 +141,10 @@ class TestDriver(object):
         buf_vaddr = dev.interface.mm.alloc(1024)
         buf = cast(buf_vaddr, POINTER(c_char))
         for b in range(0, 1024, 4):
-            buf[b] = '\xab'
-            buf[b+1] = '\xcd'
-            buf[b+2] = '\xdc'
-            buf[b+3] = '\xba'
+            buf[b] = b'\xab'
+            buf[b+1] = b'\xcd'
+            buf[b+2] = b'\xdc'
+            buf[b+3] = b'\xba'
         buf_paddr = dev.interface.mm.get_paddr(buf_vaddr)
         print("vaddr %x, paddr %x" % (buf_vaddr, buf_paddr))
 
@@ -403,7 +403,7 @@ class TestDriver(object):
         test_buf_p = dev.interface.mm.get_paddr(test_buf_v)
         print("[+] allocated test buffer at vaddr %x, paddr %x" % (test_buf_v, test_buf_p))
         for i in range(128):
-            cast(test_buf_v, POINTER(c_char))[i] = '\xb4'
+            cast(test_buf_v, POINTER(c_char))[i] = b'\xb4'
 
         dev.mem.txbd[0].addr_hi = test_buf_p >> 32
         dev.mem.txbd[0].addr_low = test_buf_p & 0xffffffff
@@ -457,7 +457,7 @@ class TestDriver(object):
         state = reutils.state_save(dev)
         
         print("[+] submitting test packet to tap driver")
-        tap.send('\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x88\xb5' + ('\xaa\x55' * 25)) #, flags=("cpu_post_dma"))
+        tap.send(b'\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x88\xb5' + (b'\xaa\x55' * 25)) #, flags=("cpu_post_dma"))
         usleep(10)
         state = reutils.state_diff(dev, state)
 

@@ -151,7 +151,7 @@ class ThunderGateInterface:
             for i in range(16, len(r), 4):
                 if a + (i - 16) >= end:
                     break
-                data += r[i+3:i+4] + r[i+2:i+3] + r[i+1:i+2] + r[i:i+1]
+                data += r[i:i+4][::-1]
         # the loop accumulates whole dwords; return exactly numb bytes so
         # callers that frame on the length (e.g. leechbridge) stay in sync.
         return data[:numb]
@@ -175,9 +175,7 @@ class ThunderGateInterface:
             # bits replace this client-side workaround.
             if len(chunk) % 4:
                 chunk += b'\x00' * (4 - len(chunk) % 4)
-            swapped = b''
-            for i in range(0, len(chunk), 4):
-                swapped += chunk[i+3:i+4] + chunk[i+2:i+3] + chunk[i+1:i+2] + chunk[i:i+1]
+            swapped = b''.join(chunk[i:i+4][::-1] for i in range(0, len(chunk), 4))
             payload = pack(">H", WRITE_DMA_CMD)
             payload += pack(">I", addr_hi) + pack(">I", addr_lo) + pack(">I", cnt)
             payload += swapped

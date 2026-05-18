@@ -26,8 +26,7 @@
  *
  * It exercises the protocol logic (dispatch, parsing, reply construction,
  * checksum round-trips) self-consistently. True network-byte-order
- * behaviour is a property of the big-endian core, verified on hardware
- * in Phase 6.
+ * behaviour is a property of the big-endian core, verified on hardware.
  */
 
 #include <stdio.h>

@@ -1,15 +1,13 @@
 # ThunderGate tooling configuration.
 #
-# Runtime dependencies live in requirements.txt; this file holds lint
-# configuration for the Python 2 -> 3 modernization effort (Phase 2 of
-# the modernization plan).
+# Runtime dependencies live in requirements.txt; this file holds the
+# ruff lint configuration.
 
 [tool.ruff]
 target-version = "py313"
 line-length = 100
 
 [tool.ruff.lint]
-# The codebase is mid-migration from Python 2. Until Phase 2 lands, keep
-# the lint surface on real breakage — syntax errors (E9) and pyflakes
-# findings (F) — rather than style.
+# Lint for real breakage -- syntax errors (E9) and pyflakes findings (F)
+# -- rather than style.
 select = ["E9", "F"]

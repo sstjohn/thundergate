@@ -146,11 +146,11 @@ def mem_diff(start, end):
             quiesced = False
             print(" 0x%04x:" % offset, end=' ')
             for i in range(0, 8):
-                print("%02x" % ord(scur[i]), end=' ')
+                print("%02x" % scur[i], end=' ')
 
             print(" -> ", end=' ')
             for i in range(0, 8):
-                print("%02x" % ord(ecur[i]), end=' ')
+                print("%02x" % ecur[i], end=' ')
 
             print()
 

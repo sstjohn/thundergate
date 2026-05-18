@@ -22,9 +22,9 @@
  * The dext (this directory) and py/interfaces/macos.py must agree on
  * these selectors and memory-type values; the Python side mirrors them.
  *
- * Selectors 0-2 (config space + BAR0) are the flash path (Phase 4a).
- * Selectors 3-5 (DMA buffers + interrupts) back the TAP driver and the
- * py/mm/macos.py memory manager (Phase 4b).
+ * Selectors 0-2 (config space + BAR0) are the flash path. Selectors 3-5
+ * (DMA buffers + interrupts) back the TAP driver and the py/mm/macos.py
+ * memory manager.
  */
 
 #ifndef TG_DEXT_H

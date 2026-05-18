@@ -27,7 +27,7 @@ The user-space half lives in `py/interfaces/macos.py`, which opens an
 
 To **build-validate** the dext — run `iig`, compile, and link the driver
 executable — use `TGDext/build.sh` (requires Xcode with the DriverKit
-SDK). A clean run reports `build: OK -- Mach-O 64-bit executable arm64`.
+SDK). A clean run reports `build: OK -- Mach-O 64-bit executable arm64e`.
 
 `.iig` files are processed by Xcode's `iig` tool, which generates the
 `TGPCIDevice.h` / `TGUserClient.h` headers that the `.cpp` files

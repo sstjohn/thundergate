@@ -34,6 +34,14 @@ if ! make -C "$PROJ_ROOT/fw" >"$log" 2>&1; then
 fi
 [ -f "$PROJ_ROOT/fw/fw.img" ] || { echo "verify-fw: fw.img was not produced" >&2; exit 1; }
 
+# The firmware runs from the RX RISC scratch pad (0x08008000-0x0800FFFF);
+# over 32 KB overruns it and the core never boots.
+size="$(wc -c < "$PROJ_ROOT/fw/fw.img" | tr -d ' ')"
+if [ "$size" -gt 32768 ]; then
+    echo "verify-fw: FAIL — fw.img is $size bytes, over the 32 KB scratch-pad budget" >&2
+    exit 1
+fi
+
 hits="$(mips-elf-objdump -d "$PROJ_ROOT/fw/fw.elf" | grep -wiE "$FORBIDDEN" || true)"
 if [ -n "$hits" ]; then
     echo "verify-fw: FAIL — the linked firmware contains instructions the core lacks:" >&2
@@ -41,4 +49,4 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
-echo "verify-fw: OK — fw.img built ($(wc -c < "$PROJ_ROOT/fw/fw.img" | tr -d ' ') bytes), no forbidden instructions"
+echo "verify-fw: OK — fw.img built ($size bytes, within the 32 KB scratch pad), no forbidden instructions"

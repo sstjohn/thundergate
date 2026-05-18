@@ -18,6 +18,7 @@ fw/*.elf
 fw/*.img
 fw/fixed.sym
 fw/net/test/nettest
+fw/net/test/nettest.dSYM/
 # Apple-proprietary on-NIC firmware, RE reference only -- never commit
 fw/apple-ref/
 efi/*.efi

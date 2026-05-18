@@ -27,8 +27,6 @@ class ExprLiveEval(object):
     def __init__(self, image):
         self._image = image
         self._val = 0
-        # Modern pyelftools replaced the GenericExprVisitor base class
-        # with DWARFExprParser, which returns a list of decoded ops.
         self._parser = DWARFExprParser(image.dwarf.structs)
 
     def process_expr(self, dev, expr, frame):

@@ -222,7 +222,7 @@ class MacOSInterface(object):
             raise Exception("dext method %d failed (%s)" % (selector, _kr(kr)))
         return [out_arr[i] for i in range(out_cnt.value)] if n_out else []
 
-    # --- config space (Phase 4a) ----------------------------------------
+    # --- config space ---------------------------------------------------
 
     def cfg_read(self, offset):
         assert 0 <= offset < 0x1000
@@ -232,7 +232,7 @@ class MacOSInterface(object):
         assert 0 <= offset < 0x1000
         self._call_scalar(kTGConfigWrite, [offset, val & 0xffffffff], 0)
 
-    # --- DMA buffers (Phase 4b) -----------------------------------------
+    # --- DMA buffers-----------------------------------------------------
     # Called by mm/macos.py:MacOSMemMgr.
 
     def _dma_alloc(self, size):
@@ -257,7 +257,7 @@ class MacOSInterface(object):
         _iokit.IOConnectUnmapMemory64(self._conn, kTGMemoryDMA + handle,
                                       _mach_task_self(), vaddr)
 
-    # --- interrupts (Phase 4b) ------------------------------------------
+    # --- interrupts------------------------------------------------------
 
     def wait_interrupt(self, timeout_ms=1000):
         '''Block until the device interrupts, or the timeout elapses.
@@ -265,8 +265,7 @@ class MacOSInterface(object):
         Returns True on an interrupt, False on timeout. The dext delivers
         the async completion of kTGWaitInterrupt as a Mach message; this
         receives it directly. The TAP driver (asyncio) runs this in an
-        executor thread -- bridging it to a selector loop is finalised in
-        Phase 6c against real hardware.'''
+        executor thread.'''
         if self._int_port == 0:
             port = mach_port_t(0)
             kr = _libc.mach_port_allocate(_mach_task_self(),

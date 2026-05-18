@@ -55,13 +55,13 @@ public:
      * so these are local (in-process) calls, not cross-process IPC.
      */
 
-    /* --- config space + BAR 0 (Phase 4a) ------------------------------ */
+    /* --- config space + BAR 0 ----------------------------------------- */
     virtual kern_return_t ConfigRead32(uint64_t offset, uint32_t * value);
     virtual kern_return_t ConfigWrite32(uint64_t offset, uint32_t value);
     virtual kern_return_t GetBAR0Size(uint64_t * size);
     virtual kern_return_t CopyBAR0Memory(IOMemoryDescriptor ** memory);
 
-    /* --- DMA buffers + interrupts (Phase 4b) -------------------------- */
+    /* --- DMA buffers + interrupts ------------------------------------- */
     virtual kern_return_t AllocDMA(uint64_t size, uint64_t * handle,
                                    uint64_t * iova);
     virtual kern_return_t FreeDMA(uint64_t handle);

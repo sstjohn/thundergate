@@ -63,7 +63,7 @@ final class RequestDelegate: NSObject, OSSystemExtensionRequestDelegate {
         @unknown default:
             print("tgctl: done -- result \(result.rawValue).")
         }
-        exit(result == .completed ? 0 : 0)
+        exit(0)
     }
 
     func request(_ request: OSSystemExtensionRequest,

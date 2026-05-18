@@ -124,9 +124,7 @@ class NvramEditor(wx.Panel):
         path = saveFileDialog.GetPath()
 
         # Resolve the size -- and, for a single image, its directory index --
-        # before building the progress dialog, which needs the total. (The
-        # original code read `total` before assigning it, and indexed a
-        # non-existent nvram.directory attribute.)
+        # before building the progress dialog, which needs the total.
         self.dev.nvram.acquire_lock()
         if entire:
             entry_index, total = None, self.dev.nvram.eeprom_len
