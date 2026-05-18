@@ -17,13 +17,20 @@
  */
 
 /*
- * UDP (RFC 768): a datagram echo service -- any datagram addressed to the
- * core is bounced back to its sender with the ports swapped.
+ * UDP (RFC 768): a console service. A datagram sent to CONSOLE_PORT carries
+ * one line of REPL input; it is handed to the language interpreter linked
+ * into this image and the interpreter's output is returned as a single
+ * datagram to the sender. `nc -u <nic-ip> 7777` is thus an interactive
+ * prompt served entirely by the NIC's RX CPU.
  */
 
 #include "net/net.h"
 #include "net/inet.h"
 #include "net/checksum.h"
+#include "console.h"
+
+/* UDP port the REPL listens on. Datagrams to any other port are ignored. */
+#define CONSOLE_PORT 7777
 
 /* The UDP checksum covers an IPv4 pseudo-header (source and destination
  * address, a zero byte, the protocol, the UDP length) and then the UDP
@@ -51,9 +58,10 @@ void udp_input(const u8 *iphdr, const u8 *payload, u32 plen)
 {
     const struct ip_hdr *ip = (const struct ip_hdr *)iphdr;
     const struct udp_hdr *req = (const struct udp_hdr *)payload;
+    const char *out;
     struct udp_hdr *rep;
     u8 *seg;
-    u32 ulen, dlen, i;
+    u32 ulen, dlen, olen, i;
     u16 ck;
 
     if (plen < sizeof(struct udp_hdr))
@@ -61,7 +69,9 @@ void udp_input(const u8 *iphdr, const u8 *payload, u32 plen)
     ulen = req->len;                         /* UDP header + data */
     if (ulen < sizeof(struct udp_hdr) || ulen > plen)
         return;
-    if (ulen > (NET_TX_MAX - NET_L4_OFF))
+
+    /* Only datagrams to the console port carry a REPL line. */
+    if (req->dst_port != CONSOLE_PORT)
         return;
 
     /* The UDP checksum is optional; verify it only when one is present. */
@@ -71,20 +81,27 @@ void udp_input(const u8 *iphdr, const u8 *payload, u32 plen)
 
     dlen = ulen - sizeof(struct udp_hdr);
 
-    /* Echo: rebuild the datagram with the ports swapped. */
+    /* Hand the datagram payload to the interpreter as one REPL line; it
+       leaves its output in the console buffer. */
+    con_out_reset();
+    interp_eval_line((const char *)payload + sizeof(struct udp_hdr), dlen);
+    out = con_out_buf();
+    olen = con_out_len();                    /* bounded to one datagram */
+
+    /* Build the reply datagram from the console buffer, ports swapped. */
     seg = net_txbuf + NET_L4_OFF;
     rep = (struct udp_hdr *)seg;
     rep->src_port = req->dst_port;
     rep->dst_port = req->src_port;
-    rep->len = ulen;
+    rep->len = sizeof(struct udp_hdr) + olen;
     rep->checksum = 0;
-    for (i = 0; i < dlen; i++)
-        seg[sizeof(struct udp_hdr) + i] = payload[sizeof(struct udp_hdr) + i];
+    for (i = 0; i < olen; i++)
+        seg[sizeof(struct udp_hdr) + i] = out[i];
 
-    ck = udp_checksum(net_if.ip, ip->src, seg, ulen);
+    ck = udp_checksum(net_if.ip, ip->src, seg, rep->len);
     if (ck == 0)
         ck = 0xffff;                         /* a 0 checksum transmits as ~0 */
     net_put16((u8 *)&rep->checksum, ck);
 
-    ip_output(ip->src, IP_PROTO_UDP, ulen);
+    ip_output(ip->src, IP_PROTO_UDP, rep->len);
 }

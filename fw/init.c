@@ -55,7 +55,7 @@ void init()
     grc.rxcpu_event.word = 0xffffffff;
     grc.rxcpu_event.word = 0;
 
-    grc.fastboot_pc.addr = 0x8008000;
+    grc.fastboot_pc.addr = 0x8000000;
     grc.fastboot_pc.enable = 1;
 
     grc.rxcpu_event_enable.word = 0;    
@@ -70,15 +70,19 @@ void init()
     
     grc.power_management_debug.perst_override = 1;
      
+#ifdef TG_GATE
     if (config.flags & CLOAK_EN)
         cloak_engage();
-        
+#endif
+
     if (config.flags & LOCAL_CTRL) {
 	    cfg_port.bar_ctrl.bar0_sz = 1;
+#ifdef TG_GATE
 	    lgate_setup();
+#endif
     } else {
 	    cfg_port.bar_ctrl.bar0_sz = 0;
-    }    
+    }
 
     cfg_port.bar_ctrl.rom_bar_sz = 0x6;
     grc.exp_rom_addr.base = read_nvram(0x1c);
@@ -150,8 +154,10 @@ void init()
     if (config.flags & PEER_CTRL)
     	rx_setup();
 
+#ifdef TG_BEACON
     if (config.flags & BEACON_EN)
     	beacon();
+#endif
 
     check_link();
     

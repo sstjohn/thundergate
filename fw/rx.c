@@ -27,9 +27,28 @@ void rx()
     if (ftq.rdiq.peek.valid == 1 && ftq.rdiq.peek.pass == 0) {
         u32 mbuf = ftq.rdiq.peek.head_rxmbuf_ptr;
 
-        if (0x88b5 != (rxmbuf[mbuf].data.word[13] >> 16)) {
-            /* Not a control frame: gather it from the mbuf cluster into a
-               contiguous buffer and hand it to the on-core TCP/IP stack. */
+#ifdef TG_GATE
+        if (0x88b5 == (rxmbuf[mbuf].data.word[13] >> 16)) {
+            /* 0x88b5 control frame: hand it to the gate handler. */
+            u32 mbufs = ftq.rdiq.peek.word & 0x3ffff;
+            u32 tmp = rxmbuf[mbuf].data.word[13];
+            u16 cmd = tmp & 0xffff;
+            u32 arg1 = rxmbuf[mbuf].data.word[14];
+            u32 arg2 = rxmbuf[mbuf].data.word[15];
+            u32 arg3 = rxmbuf[mbuf].data.word[16];
+
+            mac_cpy(((u8 *)&rxmbuf[mbuf].data.word[11]) + 2, state.remote_mac);
+            state.dest_mac = state.remote_mac;
+
+            ftq.rdiq.peek.skip = 1;
+            ftq.mbuf_clust_free.q.word = mbufs;
+
+            handle(tx_asf, cmd, arg1, arg2, arg3);
+        } else
+#endif
+        {
+            /* Gather the frame from the mbuf cluster into a contiguous
+               buffer and hand it to the on-core TCP/IP stack. */
             u32 mbufs = ftq.rdiq.peek.word & 0x3ffff;
             u32 total = rxmbuf[mbuf].data.frame.len;
             u32 got = 0, cur = mbuf, first = 1;
@@ -53,22 +72,6 @@ void rx()
             ftq.mbuf_clust_free.q.word = mbufs;
 
             net_rx(net_rxbuf, got);
-        } else {
-            u32 mbufs = ftq.rdiq.peek.word & 0x3ffff;
-            u32 tmp = rxmbuf[mbuf].data.word[13];
-            u16 cmd = tmp & 0xffff;
-            u32 arg1 = rxmbuf[mbuf].data.word[14];
-            u32 arg2 = rxmbuf[mbuf].data.word[15];
-            u32 arg3 = rxmbuf[mbuf].data.word[16];
-
-            mac_cpy(((u8 *)&rxmbuf[mbuf].data.word[11]) + 2, state.remote_mac);
-            state.dest_mac = state.remote_mac;
-
-            ftq.rdiq.peek.skip = 1;
-
-            ftq.mbuf_clust_free.q.word = mbufs;
-
-            handle(tx_asf, cmd, arg1, arg2, arg3);
         }
     }
     grc.rxcpu_event.rdiq = 0;

@@ -16,31 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fw.h"
-#include "net/net.h"
-#include "console.h"
+/*
+ * Per-language backends behind the fw/interp.c dispatcher. Both interpreters
+ * are linked into the one firmware image; interp.c's interp_eval_line()
+ * routes a REPL line to whichever is active.
+ */
+#ifndef _INTERP_H_
+#define _INTERP_H_
 
-void main()
-{
-    net_init();
-    interp_init();
+void zf_interp_init(void);
+void zf_interp_eval(const char *line, unsigned len);
+void ub_interp_init(void);
+void ub_interp_eval(const char *line, unsigned len);
 
-    while (1) {
-        if (grc.rxcpu_event.emac) {
-            check_link();
-        }
-#ifdef TG_BEACON
-        if (grc.rxcpu_event.timer) {
-            beacon();
-        }
 #endif
-        if (grc.rxcpu_event.rdiq) {
-            rx();
-        }
-#ifdef TG_GATE
-        if (grc.rxcpu_event.sw_event_0) {
-            lgate_reply();
-        }
-#endif
-    }
-}
