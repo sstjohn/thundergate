@@ -1,6 +1,6 @@
 /*
  *  ThunderGate - an open source toolkit for PCI bus exploration
- *  Copyright (C) 2015  Saul St. John
+ *  Copyright (C) 2015-2026  Saul St. John
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ void cloak_engage()
 	}
 	if (config.cloak_did) {
 		new_id &= 0xffff0000;
-		new_id |= config.cloak_vid;
+		new_id |= config.cloak_did;
 	}
 	cfg_port.pci_id.word = new_id;
 
