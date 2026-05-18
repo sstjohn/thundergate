@@ -335,34 +335,3 @@ def whats_at(addr):
     except:
         pass
     return (block_name, reg_name, block_offset + reg_offset, reg_size)
-
-def __blargh():
-            if hasattr(t, "_anonymous_"):
-                fields = [f for f in t._fields_ if f[0] not in t._anonymous_]
-                anonf = [f[1] for f in t._fields_ if f[0] in t._anonymous_]
-                while len(anonf) > 0:
-                    a = anonf.pop()
-                    if hasattr(a, "_anonymous_"):
-                        fields += [f for f in a._fields_ if f[0] not in a._anonymous_]
-                        anonf += [f[1] for f in a._fields_ if f[0] in a._anonymous_]
-                    else:
-                        fields += [f for f in a._fields_]
-            else:
-                fields = t._fields_
-            for f in fields:
-                ov = getattr(o, f[0])
-                nv = getattr(n, f[0])
-                if hasattr(ov, "_fields_"):
-                    print("  %s:" % f[0])
-                    for g in t._fields_:
-                        sov = getattr(o, g[0])
-                        snv = getattr(n, g[0])
-                        if sov != snv:
-                            tabs = (6 - (len(g[0]) + 3) // 8)
-                            fmtstr = "   %s" + ('\t' * tabs) + "%x\t\t%x"
-                            print(fmtstr % (g[0], sov, snv))
-                else:
-                    if ov != nv:
-                        tabs = (6 - (len(f[0]) + 2) // 8)
-                        fmtstr = "  %s" + ('\t' * tabs) + "%x\t\t%x"
-                        print(fmtstr % (f[0], ov, nv))
