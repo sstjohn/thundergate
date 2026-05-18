@@ -179,7 +179,7 @@ VOID DeviceTG_ReadScatter(PLC_CONTEXT ctxLC, DWORD cpMEMs, PPMEM_SCATTER ppMEMs)
         PMEM_SCATTER pMEM = ppMEMs[i];
         if(pMEM->f || pMEM->cb == 0) { continue; }          /* already done */
         if(pMEM->qwA == (QWORD)-1) { continue; }            /* invalid addr */
-        if(pMEM->qwA + pMEM->cb > ctx->cbMax) { continue; }
+        if(pMEM->qwA > ctx->cbMax || pMEM->cb > ctx->cbMax - pMEM->qwA) { continue; }
         if(TG_ReadOne(ctx, pMEM->qwA, pMEM->cb, pMEM->pb)) {
             pMEM->f = TRUE;
         }
@@ -194,7 +194,7 @@ VOID DeviceTG_WriteScatter(PLC_CONTEXT ctxLC, DWORD cpMEMs, PPMEM_SCATTER ppMEMs
         PMEM_SCATTER pMEM = ppMEMs[i];
         if(pMEM->cb == 0) { continue; }
         if(pMEM->qwA == (QWORD)-1) { continue; }
-        if(pMEM->qwA + pMEM->cb > ctx->cbMax) { continue; }
+        if(pMEM->qwA > ctx->cbMax || pMEM->cb > ctx->cbMax - pMEM->qwA) { continue; }
         pMEM->f = TG_WriteOne(ctx, pMEM->qwA, pMEM->cb, pMEM->pb);
     }
 }

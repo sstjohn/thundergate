@@ -24,13 +24,19 @@ daemon over TCP.
 
 ## Run
 
-Daemon, on a Linux box on the target's segment, as root:
+Daemon, on a Linux box on the target's segment, as root. It listens on
+`127.0.0.1` by default -- this is unauthenticated arbitrary physical-memory
+access, so do not expose it on an untrusted network:
 
-    python3 py/leechbridge.py eth0 --listen 0.0.0.0:28473 --size 0x200000000
+    sudo python3 py/leechbridge.py eth0 --size 0x200000000
 
-Analysis host:
+Reach it from the analysis host over an SSH tunnel:
 
-    memprocfs -device 'thundergate://daemon=10.0.0.2:28473'
+    ssh -N -L 28473:127.0.0.1:28473 user@linux-box
+
+Analysis host, through the tunnel:
+
+    memprocfs -device 'thundergate://daemon=127.0.0.1:28473'
 
 ## Build
 
@@ -41,8 +47,10 @@ runtime library; the result lands in `../files/`.
 
 ## Status
 
-- `py/leechbridge.py` -- complete; relays READ / WRITE / INFO to the
-  `ThunderGateInterface` in `client.py`.
+- `py/leechbridge.py` -- complete; relays READ and WRITE to the
+  `ThunderGateInterface` in `client.py`, and bounds-checks each request.
+  INFO just reports the configured `--size` (the firmware has no
+  memory-size probe).
 - The plugin C -- written to the LeechCore-plugins skeleton ABI but **not
   verified against a live build**. If a struct field or helper differs in
   your `leechcore_device.h` (the `LcMemMap_AddRange` and `Config.fVolatile`

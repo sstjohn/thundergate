@@ -152,7 +152,9 @@ class ThunderGateInterface:
                 if a + (i - 16) >= end:
                     break
                 data += r[i+3:i+4] + r[i+2:i+3] + r[i+1:i+2] + r[i:i+1]
-        return data
+        # the loop accumulates whole dwords; return exactly numb bytes so
+        # callers that frame on the length (e.g. leechbridge) stay in sync.
+        return data[:numb]
     
     def readv(self, req):
         for r in req:
@@ -188,7 +190,7 @@ class ThunderGateInterface:
             self.write(addr, data)
 
     def close(self):
-        pass
+        self._socket.close()
 
 def client_main(gate, cmd, args):
     if cmd > 1:

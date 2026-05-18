@@ -29,6 +29,7 @@
 #   request  -- 16 bytes, little-endian:
 #       op:u8  flags:u8  pad:u16  addr:u64  len:u32
 #       op 0 READ, 1 WRITE, 2 INFO; a WRITE appends `len` data bytes.
+#       flags and pad are reserved -- send 0.
 #   response -- little-endian:
 #       READ   ok:u8 followed by exactly `len` bytes (zeroed on failure)
 #       WRITE  ok:u8
@@ -36,14 +37,19 @@
 #   ok is 1 on success, 0 on failure.
 
 import argparse
+import os
 import socket
 import struct
 import sys
 
+# leechbridge.py lives in py/ next to client.py -- make that import work
+# no matter what directory the daemon is launched from.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client import ThunderGateInterface
 
 OP_READ, OP_WRITE, OP_INFO = 0, 1, 2
 _REQ = struct.Struct("<BBHQI")          # op, flags, pad, addr, len
+MAX_XFER = 16 * 1024 * 1024             # cap one transfer (len is untrusted)
 
 
 def _recv_exact(conn, n):
@@ -63,17 +69,32 @@ def _serve(conn, tg, max_address):
             return
         op, _flags, _pad, addr, length = _REQ.unpack(hdr)
 
+        if op not in (OP_READ, OP_WRITE, OP_INFO):
+            sys.stderr.write("unknown op %d\n" % op)
+            return
+
+        # addr/length come straight off an untrusted socket: bound them
+        # before allocating a buffer or relaying anything to the target.
+        if op != OP_INFO:
+            if length == 0 or length > MAX_XFER:
+                sys.stderr.write("rejecting %#x-byte transfer\n" % length)
+                return
+            if addr + length > max_address:
+                sys.stderr.write("rejecting out-of-range %#x+%#x\n"
+                                 % (addr, length))
+                return
+
         if op == OP_READ:
             try:
                 data = tg.read(addr, length)
             except Exception as e:
                 sys.stderr.write("read %#x+%#x failed: %s\n" % (addr, length, e))
                 data = b''
-            if len(data) == length:
-                conn.sendall(b'\x01' + data)
-            else:
-                # keep the stream framed: always status + `length` bytes
-                conn.sendall(b'\x00' + b'\x00' * length)
+            # always reply status + exactly `length` bytes so the stream
+            # stays framed; a short or over-long read counts as failure.
+            ok = len(data) >= length
+            data = data[:length].ljust(length, b'\x00')
+            conn.sendall((b'\x01' if ok else b'\x00') + data)
 
         elif op == OP_WRITE:
             data = _recv_exact(conn, length)
@@ -89,17 +110,15 @@ def _serve(conn, tg, max_address):
         elif op == OP_INFO:
             conn.sendall(b'\x01' + struct.pack("<Q", max_address))
 
-        else:
-            sys.stderr.write("unknown op %d\n" % op)
-            return
-
 
 def main():
     ap = argparse.ArgumentParser(
         description="bridge a ThunderGate NIC to LeechCore / MemProcFS")
     ap.add_argument("iface", help="network interface on the target's segment")
-    ap.add_argument("--listen", default="0.0.0.0:28473",
-                    help="host:port for the LeechCore plugin (default %(default)s)")
+    ap.add_argument("--listen", default="127.0.0.1:28473",
+                    help="host:port to listen on. This exposes unauthenticated "
+                         "arbitrary host physical-memory read/write -- keep it "
+                         "on loopback or a trusted segment (default %(default)s)")
     ap.add_argument("--size", default="0x200000000",
                     help="target physical address span (default 8 GiB)")
     args = ap.parse_args()
@@ -121,6 +140,7 @@ def main():
             conn, peer = srv.accept()
             print("leechbridge: leechcore connected from %s:%d" % peer)
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            conn.settimeout(300)        # a stalled peer must not wedge us
             try:
                 _serve(conn, tg, max_address)
             except (ConnectionError, OSError) as e:
