@@ -118,17 +118,36 @@ IMPL(TGPCIDevice, Start)
     command |= (kPCICommandMemorySpace | kPCICommandBusMaster);
     ivars->pci->ConfigurationWrite16(kPCICommandOffset, command);
 
-    /* Locate BAR 0 and keep an IOMemoryDescriptor for it. */
-    ret = ivars->pci->GetBARInfo(0, &ivars->bar0Index, &ivars->bar0Size,
-                                 &barType);
+    /* Locate the register BAR and keep an IOMemoryDescriptor for it.
+       The Tigon3's register block is NOT always at BAR index 0 -- a
+       stock Apple Thunderbolt-Ethernet adapter presents it at BAR 2
+       (our own firmware enables BAR 0, but the stock one does not). So
+       scan the BAR indices for the first memory BAR of non-zero size,
+       rather than assuming index 0. */
+    ret = kIOReturnNotFound;
+    for (uint8_t bar = 0; bar < 6; bar++) {
+        uint8_t  mIndex = 0;
+        uint64_t mSize  = 0;
+        uint8_t  bType  = 0;
+        if (ivars->pci->GetBARInfo(bar, &mIndex, &mSize, &bType)
+                == kIOReturnSuccess && mSize != 0) {
+            ivars->bar0Index = mIndex;
+            ivars->bar0Size  = mSize;
+            barType          = bType;
+            ret = kIOReturnSuccess;
+            TGLog("Start: register BAR %u -> memory index %u, %llu bytes",
+                  bar, mIndex, mSize);
+            break;
+        }
+    }
     if (ret != kIOReturnSuccess) {
-        TGLog("Start: GetBARInfo(0) failed 0x%x", ret);
+        TGLog("Start: no usable memory BAR found");
         goto fail;
     }
     ret = ivars->pci->_CopyDeviceMemoryWithIndex(ivars->bar0Index,
                                                  &ivars->bar0, this);
     if (ret != kIOReturnSuccess) {
-        TGLog("Start: copying BAR0 memory failed 0x%x", ret);
+        TGLog("Start: copying BAR memory failed 0x%x", ret);
         goto fail;
     }
 

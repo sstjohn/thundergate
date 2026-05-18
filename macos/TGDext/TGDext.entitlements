@@ -17,7 +17,11 @@
 	<array>
 		<dict>
 			<key>IOPCIMatch</key>
-			<string>0x168214e4 0x164414e4 0x164514e4 0x164614e4 0x164714e4 0x164814e4 0x165314e4 0x165914e4 0x167714e4 0x168414e4</string>
+			<!-- ...0x168288b5: a ThunderGate-cloaked Tigon (cloak_engage
+			     rewrites the PCI vendor ID to 0x88b5). Must be authorized
+			     here as well as in Info.plist IOPCIMatch -- the kernel
+			     gates dext PCI attach on the transport.pci entitlement. -->
+			<string>0x168214e4 0x164414e4 0x164514e4 0x164614e4 0x164714e4 0x164814e4 0x165314e4 0x165914e4 0x167714e4 0x168414e4 0x168288b5</string>
 		</dict>
 	</array>
 	<key>com.apple.developer.driverkit.allow-any-userclient-access</key>

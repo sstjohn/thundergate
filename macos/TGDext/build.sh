@@ -34,7 +34,10 @@ for f in $IFACES; do
 done
 
 # 2. compile the dext sources and the generated glue.
-CXXFLAGS=(-x c++ -std=gnu++17 -arch arm64 -fno-exceptions -fno-rtti
+#    arm64e, NOT arm64: the kernel refuses to exec an arm64 DriverKit
+#    binary ("exec_mach_imgact: disallowing arm64 platform driverkit
+#    binary ... should be arm64e") -- the dext matches but never launches.
+CXXFLAGS=(-x c++ -std=gnu++17 -arch arm64e -fno-exceptions -fno-rtti
           -I. -I"$BUILD" -I"$BUILD/TGDext")
 OBJS=()
 for f in $IFACES; do
@@ -44,7 +47,7 @@ for f in $IFACES; do
 done
 
 # 3. link the driver executable against the DriverKit runtime.
-xcrun --sdk driverkit clang++ -arch arm64 "${OBJS[@]}" \
+xcrun --sdk driverkit clang++ -arch arm64e "${OBJS[@]}" \
     -framework DriverKit -framework PCIDriverKit \
     -o "$BUILD/tgdext-exe"
 
