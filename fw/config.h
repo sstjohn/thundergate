@@ -25,14 +25,6 @@
 #define OPROM_EN	0x20
 #define CLOAK_EN	0x40
 
-#ifdef CONFIG_DEPLOYMENT
-#define DEFAULT_FLAGS	(PEER_CTRL | OPROM_EN | CLOAK_EN)
-#else
-#define DEFAULT_FLAGS	(LOCAL_CTRL | PEER_CTRL | BEACON_EN | \
-			 OPROM_EN | CLOAK_EN)
-#endif
-
-#undef DEFAULT_FLAGS
 /* Cloak is opt-in. cloak_engage() hides the NIC from the host by rewriting
    its PCI vendor ID to DEFAULT_CLOAK_VID -- which also makes the device
    unmanageable through the host driver/dext. Engage it deliberately via the
