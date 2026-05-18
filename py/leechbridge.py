@@ -123,7 +123,10 @@ def main():
                     help="target physical address span (default 8 GiB)")
     args = ap.parse_args()
 
+    if ":" not in args.listen:
+        ap.error("--listen must be host:port")
     host, _, port = args.listen.rpartition(":")
+    host = host.strip("[]")
     max_address = int(args.size, 0)
 
     tg = ThunderGateInterface(args.iface)

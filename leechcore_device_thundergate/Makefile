@@ -25,7 +25,7 @@ all: $(OBJ)
 	$(CC) -o $(OUT) $(OBJ) $(CFLAGS) $(LDFLAGS)
 	mkdir -p ../files
 	mv $(OUT) ../files/
-	rm -f *.o *.so *.dylib 2>/dev/null || true
+	rm -f $(OBJ)
 
 clean:
 	rm -f *.o *.so *.dylib ../files/$(OUT)

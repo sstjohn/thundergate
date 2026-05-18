@@ -56,6 +56,10 @@ typedef int tg_sock;
 #define tg_close_sock   close
 #endif /* _WIN32 */
 
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#error "thundergate plugin assumes a little-endian host"
+#endif
+
 #define TG_OP_READ      0
 #define TG_OP_WRITE     1
 #define TG_OP_INFO      2
