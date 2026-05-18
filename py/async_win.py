@@ -48,10 +48,27 @@ class ReadAsync(_async):
     def __init__(self, handle, length, mm):
         self.length = length
         self.mm = mm
+        self.buffer = None
         super(ReadAsync, self).__init__(handle)
 
-    def reset(self, resubmit = True):
+    def __del__(self):
+        super(ReadAsync, self).__del__()
+        if self.buffer is not None:
+            self.mm.free(self.buffer)
+
+    def reset(self, resubmit = True, free_buffer = True):
         self._pkt_len = 0
+        # free_buffer is False only when _get_packet has taken the current
+        # buffer; otherwise reclaim it -- cancelling the pending read and
+        # waiting it out first, so the OS is no longer writing to it.
+        if free_buffer and self.buffer is not None:
+            if self.submitted:
+                CancelIoEx(self.handle, pointer(self.req))
+                transferred = DWORD(0)
+                GetOverlappedResult(self.handle, pointer(self.req),
+                                    pointer(transferred), True)
+                self.submitted = False
+            self.mm.free(self.buffer)
         self.buffer = self.mm.alloc(self.length)
         super(ReadAsync, self).reset(resubmit)
 

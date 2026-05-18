@@ -90,7 +90,7 @@ class TapWinInterface(object):
             print("[+] getting a packet from tap device...", end=' ')
         pkt_len = self._tap_evt.pkt_len
         pkt = self._tap_evt.buffer
-        self._tap_evt.reset()
+        self._tap_evt.reset(free_buffer=False)
         if self.verbose:
             print("read %d bytes" % pkt_len)
         return (pkt, pkt_len)
@@ -104,7 +104,7 @@ class TapWinInterface(object):
     def _write_pkt(self, pkt, length):
         if not self._connected:
             return
-        o = OVERLAPPED(hEvent = CreateEvent(None, True, False, None))
+        o = OVERLAPPED()  # WriteFileEx ignores OVERLAPPED.hEvent
         if self.verbose:
             print("[!] attempting to write to the tap device...", end=' ')
         completion = FileIOCompletion(functools.partial(TapWinInterface._tap_write_completion, self, o, pkt))
