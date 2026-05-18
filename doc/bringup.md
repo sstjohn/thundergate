@@ -53,18 +53,22 @@ Treat these as the risk list for bring-up:
   ROM is built and verified only on Intel + VT-d (Phase 6e, lowest
   priority). It has no Apple Silicon target.
 
-## 4. Open items surfaced by review (not bring-up blockers)
+## 4. The TAP drivers
 
-- **TAP drivers — resolved.** `py/main.py -d` runs the `tap/` package
-  (the live userspace TAP driver, Linux/Windows). `testdrv.py` (the
-  `-t` test driver) was *broken*, not dead — it imported a long-removed
-  `tapdrv` module — and is now repointed at `_tap/`, which exports the
-  same `TapDriver` and imports cleanly. The trollius-based `_aiotap/`
-  was the superseded twin of `_tap/`, referenced by nothing, and has
-  been removed. `tap/` and `_tap/` both remain as Linux TAP drivers.
-- **No macOS TAP path yet.** `tap/` is Linux/Windows-only; consuming the
-  Phase 4b dext DMA/MSI from a macOS `tap` backend is unbuilt. The flash
-  path (the core goal) does not need it.
+The toolkit keeps three userspace TAP implementations, each a different
+take on the same job. `py/main.py -d` runs one; `--tap` selects which, and
+otherwise a per-platform default applies. A driver that does not support
+the host platform is rejected before the device is touched.
+
+- `py/tap/` — asyncio, built as a `Driver` object running cooperative
+  tasks; Linux and Windows, the default there.
+- `py/_tap/` — synchronous, a `select()` loop around a `TapDriver` class
+  with per-OS backends; Linux and Windows. `testdrv.py` (`main.py -t`)
+  also uses it.
+- `py/_aiotap/` — an asyncio rework of `_tap`'s `TapDriver` with a macOS
+  feth/BPF/NDRV backend (`_aiotap/macos.py`); Linux, Windows and macOS,
+  the default on macOS. Exercising the macOS backend against the live
+  dext is Phase 6 work; the flash path (the core goal) does not need it.
 
 ## 5. Bring-up runbook
 
@@ -138,8 +142,8 @@ score first — it is the standard mechanism.
 ### 5.4 macOS — DMA + interrupts (4b)
 
 Exercise `MacOSMemMgr` (DMA buffer alloc/map) and `wait_interrupt()`
-against the live device; finalize the asyncio bridge. A macOS `tap`
-backend is still to be written (§4).
+against the live device; finalize the asyncio bridge, then run the
+`_aiotap` macOS backend (`main.py -d`, §4) against the live dext.
 
 ### 5.5 Windows / efi (later, lower priority)
 

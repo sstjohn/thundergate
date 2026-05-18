@@ -1,6 +1,6 @@
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015-2016  Saul St. John
+    Copyright (C) 2015-2026  Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 
 from winlib import *
 from async_win import ReadAsync, IoctlAsync
-import functools
 
 class TapWinInterface(object):
     def __init__(self, dev):
@@ -26,6 +25,9 @@ class TapWinInterface(object):
         self.mm = dev.interface.mm
         self._connected = False
         self._pending_completions = {}
+        # one long-lived completion callback -- a per-write one would
+        # drop its own last reference from inside its own call.
+        self._write_completion = FileIOCompletion(self._tap_write_completion)
 
     def __enter__(self):
         self.tfd = create_tap_if()
@@ -95,11 +97,11 @@ class TapWinInterface(object):
             print("read %d bytes" % pkt_len)
         return (pkt, pkt_len)
 
-    def _tap_write_completion(self, overlapped, pkt, errcode, written, overlapped_ptr):
+    def _tap_write_completion(self, errcode, written, overlapped_ptr):
+        o, pkt = self._pending_completions.pop(cast(overlapped_ptr, c_void_p).value)
         if self.verbose:
             print("[.] freeing sent packet at %x" % addressof(pkt))
         self.mm.free(addressof(pkt))
-        del self._pending_completions[addressof(pkt)]
 
     def _write_pkt(self, pkt, length):
         if not self._connected:
@@ -107,11 +109,12 @@ class TapWinInterface(object):
         o = OVERLAPPED()  # WriteFileEx ignores OVERLAPPED.hEvent
         if self.verbose:
             print("[!] attempting to write to the tap device...", end=' ')
-        completion = FileIOCompletion(functools.partial(TapWinInterface._tap_write_completion, self, o, pkt))
-        if not WriteFileEx(self.tfd, pkt, length, pointer(o), completion):
+        # keyed by the OVERLAPPED -- it lives exactly as long as this
+        # entry, whereas pkt's address can be recycled by mm in flight.
+        self._pending_completions[addressof(o)] = (o, pkt)
+        if not WriteFileEx(self.tfd, pkt, length, pointer(o), self._write_completion):
+            del self._pending_completions[addressof(o)]
             raise WinError()
-        else:
-            self._pending_completions[addressof(pkt)] = completion
         if self.verbose:
             print("queued %d bytes" % len(pkt))
 

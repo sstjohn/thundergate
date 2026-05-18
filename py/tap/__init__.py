@@ -1,7 +1,4 @@
-from tap.main_loop import run
+"""Asyncio TAP driver, built as a Driver object running cooperative tasks.
+Linux and Windows; the default `main.py -d` driver there."""
 
-if __name__ == "__main__":
-    import logging
-    logging.basicConfig()
-
-    run()
+from .main_loop import run

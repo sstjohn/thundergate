@@ -2,7 +2,7 @@
 
 '''
     ThunderGate - an open source toolkit for PCI bus exploration
-    Copyright (C) 2015-2016  Saul St. John
+    Copyright (C) 2015-2026  Saul St. John
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -65,6 +65,15 @@ import reutils
 
 import argparse
 
+# Userspace TAP driver implementations and the platforms each supports.
+# `main.py -d` runs one; --tap selects which, else the per-platform default.
+TAP_DRIVERS = {
+    "tap":     {"Linux", "Windows", "cli"},
+    "_tap":    {"Linux", "Windows", "cli"},
+    "_aiotap": {"Linux", "Windows", "cli", "Darwin"},
+}
+TAP_DEFAULT = {"Linux": "tap", "Windows": "tap", "cli": "tap", "Darwin": "_aiotap"}
+
 def banner():
     print("""
 
@@ -76,8 +85,8 @@ def banner():
     #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
     #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
                           
-                                 Version 0.9.9
-                    Copyright (c) 2015-2016 Saul St John
+                                  Version 1.0
+                    Copyright (C) 2015-2026  Saul St. John
                              http://thundergate.io
 """)
 
@@ -92,12 +101,19 @@ def main(args):
     parser.add_argument("-s", "--shell", help="ipython cli", action="store_true")
     parser.add_argument("-b", "--backup", help="create eeprom backup", action="store_true", default=False)
     parser.add_argument("-d", "--driver", help="load userspace tap driver", action="store_true")
+    parser.add_argument("--tap", choices=sorted(TAP_DRIVERS),
+                        help="tap driver implementation (default: per-platform)")
     parser.add_argument("-i", "--install", help="install thundergate firmware", action="store_true")
     parser.add_argument("--wait", help="wait for debugger attachment at startup", action="store_true")
     parser.add_argument("--cdpserver", help="launch VS Code debug protocol server", action="store_true")
     parser.add_argument("-g", "--gui", help="launch wxpython gui", action="store_true")
 
     args = parser.parse_args(args=args[1:])
+
+    tap_choice = args.tap or TAP_DEFAULT[sys_name]
+    if args.driver and sys_name not in TAP_DRIVERS[tap_choice]:
+        logger.error("the '%s' tap driver does not support %s", tap_choice, sys_name)
+        return 1
 
     if args.cdpserver:
         conout = sys.stdout
@@ -211,8 +227,8 @@ def main(args):
             gui._run(dev)
         else:
             if args.driver:
-                import tap
-                return tap.run(dev)
+                import importlib
+                return importlib.import_module(tap_choice).run(dev)
             elif args.tests:
                 from testdrv import TestDriver
                 with TestDriver(dev) as test:

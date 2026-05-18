@@ -1,17 +1,22 @@
 # Thundergate TAP Driver #
 
-The Thundergate toolkit includes Python modules inplementing a PCI driver for
+The Thundergate toolkit includes Python modules implementing a PCI driver for
 Broadcom 57xx devices, and a TAP interface driver consuming it. Together they
 comprise a userspace interface between the network hardware and the kernel
 TCP/IP stack.
 
-This functionality is available on Windows and Linux subject to the caveats
-described in the platform-specific INSTALL files.
+This functionality is available on Linux, Windows and -- via `_aiotap` --
+macOS, subject to the caveats described in the platform-specific INSTALL
+files.
 
 ## Usage ##
 
 Specify `-d` on the command line to start the execution of the driver.  The
 driver runs in the foreground and offers a minimal single-key interface.
+
+The toolkit ships three TAP implementations -- `tap`, `_tap` and `_aiotap`.
+`-d` runs the default for the host platform; `--tap <name>` selects one
+explicitly, subject to that implementation supporting the platform.
 
    ~~~
 # python py/main.py -d
@@ -49,9 +54,8 @@ but may need IP configuration using host OS tools (such as Linux's `ip` or
  * Link detection and change notifications are hit-and-miss and may not trigger
 at startup. Press `d` to force link re-negotiation.
 
-* The TAP driver relies on asyncio from Python 3, as backported to Python 2
-by the 'trollius' package (`pip install trollius`). This package has since 
-been deprecated without replacement, although it continues to work.
+* The TAP driver is built on asyncio and needs Python 3.13+ (see the
+top-level README for the dependency list).
 
 ## Performance ##
 
