@@ -53,8 +53,13 @@ elif sys_name == "Windows" or sys_name == "cli":
 
     loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(loop)
+
+elif sys_name == "Darwin":
+    from .macos import TapMacInterface
+    TDInt = TapMacInterface
+
 else:
-    raise NotImplementedError("tap driver only available on linux and windows")
+    raise NotImplementedError("tap driver only available on linux, macos and windows")
    
 from time import sleep
 usleep = lambda x: sleep(x / 1000000.0)
