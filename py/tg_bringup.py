@@ -104,6 +104,14 @@ def configure_device(dev, drv):
     prepare_block(dev.emac, {
         'low_watermark_max_receive_frame': {'count': 1},
         'tx_mac_lengths': {'ipg': 0x6, 'ipg_crs': 0x2, 'slot': 0x20},
+        # Default class for frames matching no receive rule. tglib's
+        # struct receive_mac_rules_configuration is wrong: it places
+        # no_rules_matches_default_class at bits 4:2, but the chip's field
+        # is bits 7:3 (PG Table 23). So this value is shifted: writing 2
+        # yields register 0x08, which the chip reads as class 1 -- exactly
+        # tg3's RCV_RULE_CFG_DEFAULT_CLASS (0x08). Writing 1 would yield
+        # 0x04 = class 0 = discard. Leave it 2 until include/emac.h is
+        # fixed (field should be 5 bits at 7:3) and tglib regenerated.
         'rx_rules_conf': {'no_rules_matches_default_class': 2},
         'tx_random_backoff': sum(drv.mac_addr) & 0x3ff,
         'rx_mtu': 1500,
@@ -111,6 +119,17 @@ def configure_device(dev, drv):
                  'en_rx_statistics': 1, 'en_tx_statistics': 1},
         'event_enable': {'link_state_changed': 1},
     })
+
+    # Disable every receive rule. The chip's rule checker classifies each
+    # frame against these 8 rule slots before the no-rules default class
+    # applies; left at their post-reset/bootcode state they hold leftover
+    # rules that misclassify frames -- non-IP (ARP) gets dropped while IP
+    # falls through to the default class. tg3 clears the whole rule array
+    # at bring-up ("Initialize receive rules" in tg3.c). A zero control
+    # word has the enable bit clear, so the rule is off.
+    for i in range(len(dev.emac.rx_rule)):
+        dev.emac.rx_rule[i].control.word = 0
+        dev.emac.rx_rule[i].mask_value = 0
 
     prepare_block(dev.rlp, {
         'config': {'default_interrupt_distribution_queue': 0,
@@ -243,9 +262,17 @@ def enable_tx_mac(dev):
 
 
 def enable_rx_mac(dev):
+    # RSS off. With RSS on, IP frames are hashed through the indirection
+    # table to a return ring while non-IP frames (ARP) fall to the
+    # rules/class path; the paths diverge and ARP never reaches a drained
+    # ring (rr0_pi advances only for IP frames). With RSS off the chip
+    # runs legacy: every frame type is classified by the rules and placed
+    # in the single return ring the driver drains as rr0. The default
+    # class (no_rules_matches_default_class in configure_device) must
+    # stay at 2: non-discard and clear of the rlp bad_frames_class (1).
     prepare_block(dev.emac, {'rx_mac_mode': {
         'promiscuous_mode': 1,
         'accept_runts': 1,
-        'rss_enable': 1,
+        'rss_enable': 0,
         'enable': 1,
     }})

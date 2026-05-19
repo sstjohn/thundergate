@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 from .stats import TapStatistics
 
-default_verbosity = 0
+default_verbosity = 1     # on by default while the RX path is being debugged
 
 sys_name = platform.system()
 
@@ -70,8 +70,6 @@ from .dev_fns import _device_setup, _enable_rx, _enable_tx
 from .link import _link_detect
 from .interrupt import _handle_interrupt
 
-async def async_msleep(self, t):
-    await asyncio.sleep(t / 1000.0)
 
 class TapDriver(TDInt):
     def __init__(self, dev):
@@ -85,12 +83,9 @@ class TapDriver(TDInt):
     def __enter__(self):
         print("[+] tap driver initializing")
         super(TapDriver, self).__enter__()
-        self.old_msleep = self.dev.msleep
-        self.dev.msleep = async_msleep.__get__(self.dev)
         return self
 
     def __exit__(self, t, v, traceback):
-        self.dev.msleep = self.old_msleep
         super(TapDriver, self).__exit__()
         self.dev.close()
         print("[+] tap driver terminated")
@@ -119,6 +114,92 @@ class TapDriver(TDInt):
         self.verbose = not self.verbose
         print("[+] verbosity %s" % ("enabled" if self.verbose else "disabled"))
 
+    async def rxstats_handler(self):
+        '''dump NIC MAC counters and receive state'''
+        dev = self.dev
+        s = dev.stats
+        rxm = dev.emac.rx_mac_mode
+        sb = self.status_block
+        print()
+        print("[s] MAC rx in:   ucast=%d mcast=%d bcast=%d" % (
+            s.ifHCInUcastPkts, s.ifHCInMulticastPkts, s.ifHCInBroadcastPkts))
+        print("[s] MAC rx errs: fcs=%d align=%d undersize=%d toolong=%d "
+              "jabber=%d frag=%d" % (
+            s.dot3StatsFCSErrors, s.dot3StatsAlignmentErrors,
+            s.etherStatsUndersizePkts, s.dot3StatsFramesTooLongs,
+            s.etherStatsJabbers, s.etherStatsFragments))
+        print("[s] MAC tx out:  ucast=%d mcast=%d bcast=%d  (TX sanity)" % (
+            s.iHCOutUcastPkts, s.iHCOutMulticastPkts, s.iHCOutBroadcastPkts))
+        print("[s] rx_mac_mode: enable=%d promiscuous=%d accept_runts=%d "
+              "rss=%d  rules default class=%d" % (
+            rxm.enable, rxm.promiscuous_mode, rxm.accept_runts, rxm.rss_enable,
+            dev.emac.rx_rules_conf.no_rules_matches_default_class))
+        print("[s] status block: rpci=%x rr0_pi=%x rr1_pi=%x rr2_pi=%x "
+              "rr3_pi=%x sbdci=%x" % (
+            sb.rpci, sb.rr0_pi, sb.rr1_pi, sb.rr2_pi, sb.rr3_pi, sb.sbdci))
+        fa = dev.hc.flow_attention
+        attn = [n for n in ('sbdi', 'sbdc', 'sbdrs', 'sdi', 'sdc', 'rbdi',
+                'rbdc', 'rlp', 'rls', 'rdi', 'rdc', 'rcb_incorrect',
+                'dmac_discard', 'hc', 'ma', 'mbuf_low_water')
+                if getattr(fa, n)]
+        print("[s] flow attention: %s" % (" ".join(attn) if attn else "(none)"))
+
+        # RX pipeline localization: the MAC counters above show frames
+        # arriving; rpci/rr0_pi staying 0 means nothing was placed into a
+        # return ring. These registers say where between the MAC and the
+        # ring the frames go. class_zero / mapping_oor on the RLP mean the
+        # rules engine is classifying frames to a discard/invalid class.
+        # rdi.local_* and rbdi.local_* are the chip's own view of the
+        # producer and return rings.
+        try:
+            rlp = dev.rlp
+            rs = rlp.status
+            print("[s] rlp status:  class_zero=%d mapping_oor=%d stats_ovf=%d"
+                  % (rs.class_zero_attention,
+                     rs.mapping_out_of_range_attention,
+                     rs.stats_overflow_attention))
+            rc = rlp.config
+            print("[s] rlp config:  default_q=%d bad_frames_class=%d "
+                  "active_lists=%d lists_per_grp=%d" % (
+                      rc.default_interrupt_distribution_queue,
+                      rc.bad_frames_class, rc.number_of_active_lists,
+                      rc.number_of_lists_per_distribution_group))
+            ctrs = " ".join("%d:%d" % (i, rlp.stat_counter[i].counters_value)
+                            for i in range(23)
+                            if rlp.stat_counter[i].counters_value)
+            print("[s] rlp counters:%s" % (" " + ctrs if ctrs else " (all zero)"))
+            print("[s] rlp lists non-empty: %04x"
+                  % rlp.selector_not_empty_bits.list_non_empty_bits)
+            rbdi = dev.rbdi
+            print("[s] rbdi: bds_avail_on_disabled_ring=%d local_std_rbd_pi=%x"
+                  % (rbdi.status.receive_bds_available_on_disabled_rbd_ring,
+                     rbdi.local_std_rbd_pi))
+            rdi = dev.rdi
+            print("[s] rdi:  illegal_rr_size=%d frame_too_large=%d "
+                  "local_std_rbd_ci=%x local_rr0_pi=%x" % (
+                      rdi.status.illegal_return_ring_size,
+                      rdi.status.frame_size_too_large_for_bd,
+                      rdi.local_std_rbd_ci, rdi.local_rr_pi[0]))
+            print("[s] rbdc error=%d  bufman: mbuf_low=%d error=%d" % (
+                dev.rbdc.status.error,
+                dev.bufman.status.mbuf_low_attention,
+                dev.bufman.status.error))
+            print("[s] driver: std_rbd_pi=%x std_rbd_ci=%x prod_mailbox=%x" % (
+                self._std_rbd_pi, self._std_rbd_ci,
+                dev.hpmb.box[tg.mb_rbd_standard_producer].low))
+            # The producer BDs the chip is about to consume next. If the
+            # RX engine is stalled, this is the BD it is stuck on -- a
+            # zero addr or bogus index/flags here is the stall cause.
+            rxb = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
+            for j in range(sb.rpci, sb.rpci + 3):
+                b = rxb[j % self.rx_ring_len]
+                print("[s]   prod bd[%d]: addr=%08x:%08x len=%x idx=%d "
+                      "flags=%04x" % (j % self.rx_ring_len, b.addr_hi,
+                      b.addr_low, b.length, b.index, b.flags.word))
+        except Exception as e:
+            print("[s] RX pipeline dump failed: %r" % e)
+        print()
+
     async def quit_handler(self):
         '''terminate tap driver execution and close device'''
         self.running = False
@@ -129,6 +210,12 @@ class TapDriver(TDInt):
 
     async def keypress_dispatch(self):
         r = await self.loop.run_in_executor(None, self._wait_for_keypress)
+        if not self.running:
+            # quit_handler has cleared self.running and stopped the loop;
+            # _wait_for_keypress returned None without blocking. Don't
+            # dispatch or re-arm -- the default executor is being shut
+            # down, and another run_in_executor would raise.
+            return
         if r in self.keypress_handlers:
             asyncio.ensure_future(self.keypress_handlers[r]())
         else:
@@ -175,6 +262,8 @@ class TapDriver(TDInt):
         buf = self.mm.alloc(0x800)
         buf, n = await self.loop.run_in_executor(
             None, self._get_tap_packet, buf, 0x800)
+        if self.verbose:
+            logger.info("tap_watcher: %d bytes from the host feth", n)
         if n < 64:
             ctypes.memset(buf + n, 0, 64 - n)
             n = 64
@@ -184,8 +273,26 @@ class TapDriver(TDInt):
 
     async def arrive_device(self):
         await self.device_setup()
+        # The driver bridges frames between the wire and the host tap
+        # without rewriting addresses, so the host's identity on the wire
+        # is whatever MAC the tap carries. Hand it the NIC's own address
+        # -- device_setup has just read it -- or the host stack drops
+        # every unicast frame the NIC delivers.
+        if hasattr(self, "_adopt_nic_mac"):
+            self._adopt_nic_mac()
         await self.enable_rx()
         await self.enable_tx()
+        # negotiate the PHY and set emac.mode.port_mode -- the EMAC will
+        # not pass traffic until the link parameters are programmed.
+        await self.link_detect()
+        rxm = self.dev.emac.rx_mac_mode
+        logger.info("rx mac mode: promiscuous=%d accept_runts=%d enable=%d",
+                    rxm.promiscuous_mode, rxm.accept_runts, rxm.enable)
+        # PG 7.1 step 74 -- enable the host interrupt. dev.init() left it
+        # masked; until it is cleared the chip raises no MSI and
+        # interrupt_watcher only ever wakes on its 1 s wait_interrupt timeout.
+        self.dev.hpmb.box[tg.mb_interrupt].low = 0
+        self.dev.unmask_interrupts()
         asyncio.ensure_future(self.interrupt_watcher())
         asyncio.ensure_future(self.tap_watcher())
 
@@ -195,12 +302,14 @@ class TapDriver(TDInt):
             'g': self.gui_handler,
             'h': self.help_handler,
             'q': self.quit_handler,
+            's': self.rxstats_handler,
             'v': self.verbosity_handler,
         }
 
-        self.loop = asyncio.get_event_loop()
-        asyncio.ensure_future(self.keypress_dispatch())
-        asyncio.ensure_future(self.arrive_device())
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.loop.create_task(self.keypress_dispatch())
+        self.loop.create_task(self.arrive_device())
         self.loop.run_forever()
         self.loop.run_until_complete(self.loop.shutdown_default_executor())
         self.loop.close()

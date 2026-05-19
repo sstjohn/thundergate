@@ -7386,19 +7386,19 @@ enum_known_mailboxes = c_int# /Users/saul/src/thundergate/include/mbox.h: 22
 
 mb_interrupt = 0# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_standard_producer = (0x68 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_standard_producer = (0x68 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr0_consumer = (0x80 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr0_consumer = (0x80 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr1_consumer = (0x88 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr1_consumer = (0x88 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr2_consumer = (0x90 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr2_consumer = (0x90 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr3_consumer = (0x98 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr3_consumer = (0x98 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_sbd_host_producer = (0x100 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_sbd_host_producer = (0x100 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_sbd_nic_producer = (0x380 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_sbd_nic_producer = (0x380 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
 # /Users/saul/src/thundergate/include/mbox.h: 33
 class struct_mailbox(Structure):

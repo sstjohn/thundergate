@@ -27,36 +27,44 @@ logger = logging.getLogger(__name__)
 async def _handle_interrupt(self):
     dev = self.dev
     if self.verbose:
-        logger.info("handling interrupt")
+        sb = self.status_block
+        logger.info("handling interrupt -- sb: updated=%d tag=%d att=%d "
+                    "link=%d rpci=%x rr0_pi=%x", sb.updated, sb.status_tag,
+                    sb.attention, sb.link_status, sb.rpci, sb.rr0_pi)
 
+    # Mask the NIC interrupt for the duration of this handler. This chip's
+    # MSI is not one-shot, and the macOS dext never masks it between
+    # deliveries -- so unless the host writes a non-zero value to
+    # interrupt-mailbox-0, the NIC keeps re-signalling and the handler
+    # storms (tg3_msi: "Writing non-zero to intr-mbox-0 ... tells the NIC
+    # to stop sending us irqs"). The tag << 24 write at the end re-enables
+    # the interrupt and, in tagged-status mode, acks the tag.
+    dev.hpmb.box[tg.mb_interrupt].low = 1
     _ = dev.hpmb.box[tg.mb_interrupt].low
-    tag = 0
 
-    while self.status_block.updated:
-        tag = self.status_block.status_tag
-        if self.verbose:
-            logger.debug("processing status tag %x", tag)
-        tag = tag << 24
+    # Capture status_tag now and always write it back below. The old code
+    # computed the tag only inside `while self.status_block.updated`, so an
+    # interrupt taken with `updated` already 0 -- the steady state in
+    # tagged mode -- wrote tag 0 and never acked. Work is driven off the
+    # ring indices, not `updated`: _handle_rr, _replenish_rx_bds and
+    # _free_sent_bds each no-op when their producer and consumer indices
+    # already agree.
+    tag = self.status_block.status_tag
+    self.status_block.updated = 0
 
-        self.status_block.updated = 0
-        if self.verbose:
-            logger.debug("status block updated! link: %d, attention: %d", self.status_block.link_status, self.status_block.attention)
+    if dev.emac.status.link_state_changed:
+        # ack only -- calling link_detect() here restarts PHY
+        # autonegotiation, which itself raises a fresh link event.
+        self.dev.emac.status.link_state_changed = 1
 
-        if dev.emac.status.link_state_changed:
-            self.dev.emac.status.link_state_changed = 1
-            now_connected = self.link_detect()
-            if now_connected != self._connected:
-                self._set_tapdev_status(now_connected)
-                self._connected = now_connected
-
-        for i in range(len(dev.mem.rxrcb)):
-            _handle_rr(self, i)
-        _replenish_rx_bds(self)
-        _free_sent_bds(self)
+    for i in range(len(dev.mem.rxrcb)):
+        _handle_rr(self, i)
+    _replenish_rx_bds(self)
+    _free_sent_bds(self)
 
     if self.verbose:
         logger.info("interrupt handling concluded")
-    self.dev.hpmb.box[tg.mb_interrupt].low = tag
+    self.dev.hpmb.box[tg.mb_interrupt].low = tag << 24
     _ = self.dev.hpmb.box[tg.mb_interrupt].low
 
 
@@ -79,6 +87,10 @@ def _handle_rr(self, i):
         if ci > self.rr_rings_len:
             ci = 1
         rbd = rr_bds[ci - 1]
+        if rbd.index >= len(self.rx_buffers):
+            logger.warning("rr %d: bogus return-bd index 0x%x at ci %d; "
+                           "stopping ring drain", i, rbd.index, ci)
+            break
         if self.verbose:
             _dump_bd(self, ci, rbd)
 

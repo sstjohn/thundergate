@@ -34,10 +34,12 @@ import ctypes
 import fcntl
 import logging
 import os
+import select
 import struct
 import subprocess
 import sys
 import termios
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +59,14 @@ BIOCGBLEN = _ioc(_IOC_OUT, 'B', 102, 4)
 BIOCPROMISC = _ioc(_IOC_VOID, 'B', 105, 0)
 BIOCSETIF = _ioc(_IOC_IN, 'B', 108, 32)
 BIOCIMMEDIATE = _ioc(_IOC_IN, 'B', 112, 4)
+BIOCSSEESENT = _ioc(_IOC_IN, 'B', 119, 4)
 
-# bpf_hdr -- net/bpf.h, LP64: a 16-byte timeval, then bh_caplen (u32) at
-# offset 16, bh_datalen (u32), bh_hdrlen (u16) at offset 24. A read()
-# yields one or more records; the frame starts bh_hdrlen into the record,
-# and the next record is 4-byte aligned after bh_hdrlen + bh_caplen.
-_BPF_CAPLEN = 16
-_BPF_HDRLEN = 24
+# bpf_hdr -- net/bpf.h. On LP64, BPF_TIMEVAL is timeval32 (8 bytes), so
+# bh_caplen (u32) sits at offset 8 and bh_hdrlen (u16) at offset 16. A
+# read() yields one or more records; the frame starts bh_hdrlen into the
+# record, and the next record is 4-byte aligned after bh_hdrlen + caplen.
+_BPF_CAPLEN = 8
+_BPF_HDRLEN = 16
 
 AF_NDRV = 27       # net/if_ndrv.h
 SOCK_RAW = 3
@@ -112,6 +115,10 @@ def _open_bpf(ifname):
     fcntl.ioctl(fd, BIOCSETIF, ifname.encode().ljust(32, b'\0'))
     fcntl.ioctl(fd, BIOCIMMEDIATE, struct.pack("I", 1))
     fcntl.ioctl(fd, BIOCPROMISC, 0)
+    # See-sent off. _put_tap_packet injects NIC-received frames onto this
+    # same feth with PF_NDRV; with see-sent on, BPF replays those
+    # injections and tap_watcher loops every receive straight back out.
+    fcntl.ioctl(fd, BIOCSSEESENT, struct.pack("I", 0))
     blen = struct.unpack("I", fcntl.ioctl(fd, BIOCGBLEN,
                                           struct.pack("I", 0)))[0]
     return fd, blen
@@ -151,6 +158,7 @@ class TapMacInterface(object):
                     "the driver holds %s", self.host_feth, self.nic_feth)
         self.bpf_fd, self.bpf_blen = _open_bpf(self.nic_feth)
         self.ndrv_fd = _open_ndrv(self.nic_feth)
+        self._inject_selftest()
         self._wait_for_interrupt = self._wait_on_dext_interrupt
         return self
 
@@ -162,6 +170,70 @@ class TapMacInterface(object):
                 _ifconfig(feth, "destroy")
             except subprocess.CalledProcessError:
                 logger.warning("could not destroy %s", feth)
+
+    def _inject_selftest(self):
+        '''Write a throwaway frame to our own NDRV socket and confirm it
+        lands on the host feth. The whole receive path ends in this hop;
+        if it is wedged, every frame the NIC delivers is lost in silence
+        -- so check it once, loudly, before the driver runs deaf.'''
+        probe_fd, probe_blen = _open_bpf(self.host_feth)
+        try:
+            tag = b'TG-SELFTEST-' + os.urandom(4)
+            frame = (b'\xff\xff\xff\xff\xff\xff' + b'\x02tgate'
+                     + b'\x88\xb5' + tag).ljust(64, b'\0')
+            os.write(self.ndrv_fd, frame)
+            deadline = time.time() + 1.0
+            while True:
+                timeout = deadline - time.time()
+                if timeout <= 0:
+                    break
+                if not select.select([probe_fd], [], [], timeout)[0]:
+                    break
+                if tag in os.read(probe_fd, probe_blen):
+                    logger.info("rx inject self-test passed (%s -> %s)",
+                                self.nic_feth, self.host_feth)
+                    return
+            logger.error("rx inject self-test FAILED -- a frame written to "
+                          "the NDRV socket on %s never reached %s; frames "
+                          "the NIC receives will not reach the host stack",
+                          self.nic_feth, self.host_feth)
+        finally:
+            os.close(probe_fd)
+
+    def _set_tapdev_status(self, connected):
+        '''Track the NIC link state on the host-facing feth interface.'''
+        if self._connected == connected:
+            return
+        _ifconfig(self.host_feth, "up" if connected else "down")
+        logger.info("host interface %s is %s", self.host_feth,
+                    "up" if connected else "down")
+        self._connected = connected
+
+    def _adopt_nic_mac(self):
+        '''Give the host feth the NIC's own MAC address. _put_tap_packet
+        hands wire frames to the host feth unchanged, and those frames are
+        addressed to the Tigon3 -- so unless the host feth answers to that
+        address the host stack drops every unicast frame the NIC delivers,
+        leaving only broadcast and multicast to get through. device_setup
+        populates self.mac_addr before this runs.'''
+        mac_addr = getattr(self, "mac_addr", None)
+        if not mac_addr or not any(mac_addr) or mac_addr[0] & 1:
+            logger.warning("no usable NIC MAC (%s) -- host feth keeps its "
+                           "own address; the host will hear only broadcast "
+                           "and multicast frames", mac_addr)
+            return
+        mac = ":".join("%02x" % b for b in mac_addr)
+        try:
+            _ifconfig(self.host_feth, "down")
+            _ifconfig(self.host_feth, "ether", mac)
+            _ifconfig(self.host_feth, "up")
+        except subprocess.CalledProcessError as e:
+            logger.error("could not set %s MAC to %s (%s) -- the host "
+                         "stack will not receive unicast traffic",
+                         self.host_feth, mac, e)
+            return
+        logger.info("host feth %s now answers to the NIC MAC %s",
+                    self.host_feth, mac)
 
     def _wait_for_keypress(self):
         if not self.running:
@@ -196,4 +268,7 @@ class TapMacInterface(object):
 
     def _put_tap_packet(self, pkt):
         '''Inject an Ethernet frame the NIC received onto the host stack.'''
-        os.write(self.ndrv_fd, pkt)
+        n = os.write(self.ndrv_fd, pkt)
+        if self.verbose:
+            logger.info("_put_tap_packet: %d/%d bytes -> %s",
+                        n, len(pkt), self.nic_feth)

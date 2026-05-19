@@ -105,6 +105,13 @@ async def init_rx_rings(self):
     dev.rdi.std_rcb.host_addr_low = self.rx_ring_paddr & 0xffffffff
     dev.rdi.std_rcb.ring_size = self.rx_ring_len
     dev.rdi.std_rcb.max_frame_len = 0x600
+    # std_rcb.nic_addr (register 0x245c) is the location of the producer-
+    # ring BD cache in NIC internal memory, and the 57762 requires it.
+    # Without it the chip reads garbage producer BDs and posts return BDs
+    # with a junk index (0x400 seen on the wire). PG ch.7.1 step 16 reads
+    # as "do not initialize" for this family, but the hardware disagrees:
+    # the MAC stats counter confirms frames arrive, and only a set nic_addr
+    # gets sane descriptors back.
     dev.rdi.std_rcb.nic_addr = 0x6000
     dev.rdi.std_rcb.disable_ring = 0
     logger.info("standard receive producer ring of size %d allocated at %x",
@@ -135,6 +142,8 @@ async def produce_rxb(self, idx):
     rbd.addr_low = pbuf & 0xffffffff
     rbd.index = idx
     rbd.length = 0x800
-    rbd.flags.disabled = 0
+    # Producer-ring BDs carry no flags; clear the whole word. ("disabled"
+    # is an RCB flag, not a per-BD one -- rbd.flags has no such field.)
+    rbd.flags.word = 0
 
     logger.debug("produced rx buffer #%d", idx)

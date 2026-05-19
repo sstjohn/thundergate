@@ -35,6 +35,11 @@ from .mm import _MemMgr
 class MacOSMemMgr(_MemMgr):
     def __init__(self, iface):
         super(MacOSMemMgr, self).__init__()
+        # The dext exposes only kTGMaxDMABuffers (16) DMA slots, one taken
+        # per get_page(). A large page keeps the whole driver's ring and
+        # buffer footprint within a handful of dext allocations; the dext
+        # AllocDMA takes an arbitrary size and DART maps it contiguously.
+        self.page_sz = 0x100000
         self._iface = iface
         self._pages = {}        # page vaddr -> (dext DMA handle, IOVA)
 
@@ -45,9 +50,12 @@ class MacOSMemMgr(_MemMgr):
         return (vaddr, self.page_sz)
 
     def get_paddr(self, vaddr):
-        page = vaddr & ~(self.page_sz - 1)
-        handle, iova = self._pages[page]
-        return iova | (vaddr & (self.page_sz - 1))
+        # The mapped page base is only OS-page-aligned, not page_sz-aligned,
+        # so find the owning page by range rather than masking the vaddr.
+        for page, (_handle, iova) in self._pages.items():
+            if page <= vaddr < page + self.page_sz:
+                return iova + (vaddr - page)
+        raise KeyError(vaddr)
 
     def release(self):
         # Unmap and free every DMA page obtained from the dext.
