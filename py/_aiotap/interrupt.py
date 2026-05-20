@@ -32,23 +32,19 @@ async def _handle_interrupt(self):
                     "link=%d rpci=%x rr0_pi=%x", sb.updated, sb.status_tag,
                     sb.attention, sb.link_status, sb.rpci, sb.rr0_pi)
 
-    # Mask the NIC interrupt for the duration of this handler. This chip's
-    # MSI is not one-shot, and the macOS dext never masks it between
-    # deliveries -- so unless the host writes a non-zero value to
-    # interrupt-mailbox-0, the NIC keeps re-signalling and the handler
-    # storms (tg3_msi: "Writing non-zero to intr-mbox-0 ... tells the NIC
-    # to stop sending us irqs"). The tag << 24 write at the end re-enables
-    # the interrupt and, in tagged-status mode, acks the tag.
+    # Mask the NIC interrupt while this handler runs. A non-zero value in
+    # interrupt-mailbox-0 tells the NIC to stop signalling; the dext does
+    # not mask the MSI between deliveries, so without this the handler
+    # re-enters on every frame. The tag << 24 write at the end re-enables
+    # the interrupt and acks the tag.
     dev.hpmb.box[tg.mb_interrupt].low = 1
     _ = dev.hpmb.box[tg.mb_interrupt].low
 
-    # Capture status_tag now and always write it back below. The old code
-    # computed the tag only inside `while self.status_block.updated`, so an
-    # interrupt taken with `updated` already 0 -- the steady state in
-    # tagged mode -- wrote tag 0 and never acked. Work is driven off the
-    # ring indices, not `updated`: _handle_rr, _replenish_rx_bds and
-    # _free_sent_bds each no-op when their producer and consumer indices
-    # already agree.
+    # Read the status tag every interrupt; it is acked below. In tagged
+    # mode `updated` is already 0 in steady state, so it cannot gate the
+    # ack. The work is driven off the ring indices instead: _handle_rr,
+    # _replenish_rx_bds and _free_sent_bds each no-op when their producer
+    # and consumer indices already agree.
     tag = self.status_block.status_tag
     self.status_block.updated = 0
 

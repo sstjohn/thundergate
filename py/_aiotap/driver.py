@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 from .stats import TapStatistics
 
-default_verbosity = 1     # on by default while the RX path is being debugged
+default_verbosity = 0
 
 sys_name = platform.system()
 
@@ -144,13 +144,9 @@ class TapDriver(TDInt):
                 if getattr(fa, n)]
         print("[s] flow attention: %s" % (" ".join(attn) if attn else "(none)"))
 
-        # RX pipeline localization: the MAC counters above show frames
-        # arriving; rpci/rr0_pi staying 0 means nothing was placed into a
-        # return ring. These registers say where between the MAC and the
-        # ring the frames go. class_zero / mapping_oor on the RLP mean the
-        # rules engine is classifying frames to a discard/invalid class.
-        # rdi.local_* and rbdi.local_* are the chip's own view of the
-        # producer and return rings.
+        # The RX pipeline between the MAC and the return ring: RLP rule-
+        # classification status and counters, and the chip's own view of
+        # the producer and return ring indices (rdi/rbdi local_*).
         try:
             rlp = dev.rlp
             rs = rlp.status
@@ -187,9 +183,8 @@ class TapDriver(TDInt):
             print("[s] driver: std_rbd_pi=%x std_rbd_ci=%x prod_mailbox=%x" % (
                 self._std_rbd_pi, self._std_rbd_ci,
                 dev.hpmb.box[tg.mb_rbd_standard_producer].low))
-            # The producer BDs the chip is about to consume next. If the
-            # RX engine is stalled, this is the BD it is stuck on -- a
-            # zero addr or bogus index/flags here is the stall cause.
+            # The next producer BDs the chip will consume; a zero addr or
+            # bogus index/flags here points at a stalled RX ring.
             rxb = ctypes.cast(self.rx_ring_vaddr, ctypes.POINTER(tg.rbd))
             for j in range(sb.rpci, sb.rpci + 3):
                 b = rxb[j % self.rx_ring_len]
@@ -273,11 +268,8 @@ class TapDriver(TDInt):
 
     async def arrive_device(self):
         await self.device_setup()
-        # The driver bridges frames between the wire and the host tap
-        # without rewriting addresses, so the host's identity on the wire
-        # is whatever MAC the tap carries. Hand it the NIC's own address
-        # -- device_setup has just read it -- or the host stack drops
-        # every unicast frame the NIC delivers.
+        # The host feth must answer to the NIC's MAC or the host stack
+        # drops its unicast traffic; device_setup has just read it.
         if hasattr(self, "_adopt_nic_mac"):
             self._adopt_nic_mac()
         await self.enable_rx()
@@ -288,9 +280,8 @@ class TapDriver(TDInt):
         rxm = self.dev.emac.rx_mac_mode
         logger.info("rx mac mode: promiscuous=%d accept_runts=%d enable=%d",
                     rxm.promiscuous_mode, rxm.accept_runts, rxm.enable)
-        # PG 7.1 step 74 -- enable the host interrupt. dev.init() left it
-        # masked; until it is cleared the chip raises no MSI and
-        # interrupt_watcher only ever wakes on its 1 s wait_interrupt timeout.
+        # PG 7.1 step 74 -- enable the host interrupt. dev.init() leaves
+        # it masked; until it is cleared the chip raises no MSI.
         self.dev.hpmb.box[tg.mb_interrupt].low = 0
         self.dev.unmask_interrupts()
         asyncio.ensure_future(self.interrupt_watcher())
