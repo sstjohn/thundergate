@@ -1,0 +1,218 @@
+---
+import Base from '../layouts/Base.astro';
+
+const ascii = String.raw`
+#######                                            #####
+   #    #    # #    # #    # #####  ###### #####  #     #   ##   ##### ######
+   #    #    # #    # ##   # #    # #      #    # #        #  #    #   #
+   #    ###### #    # # #  # #    # #####  #    # #  #### #    #   #   #####
+   #    #    # #    # #  # # #    # #      #####  #     # ######   #   #
+   #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
+   #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
+`.trim();
+
+const repo = 'https://github.com/sstjohn/thundergate';
+
+const parts = [
+  {
+    name: 'userspace TAP driver',
+    body: 'Bridge the NIC to the host network stack from userspace. Three implementations, one synchronous and two asyncio, selected per platform across Linux, Windows and macOS.',
+  },
+  {
+    name: 'on-NIC firmware',
+    body: "Code that runs on the Tigon3's own MIPS core: a built-from-source image with an on-core ARP / IPv4 / ICMP / UDP stack, plus zForth and uBASIC interpreters because it can.",
+  },
+  {
+    name: 'EFI option ROM',
+    body: 'A PCI option ROM and EFI boot-services driver that rewrites the ACPI DMAR and IORT tables to inhibit Intel VT-d and ARM SMMU address translation.',
+  },
+];
+
+const platforms = [
+  { os: 'Linux', detail: 'vfio-pci for the TAP driver; uio_pci_generic and sysfs for the read-only toolkit paths.' },
+  { os: 'macOS', detail: 'A PCIDriverKit driver extension on Intel and Apple Silicon.' },
+  { os: 'Windows', detail: "A KMDF driver (tgwink) binds the NIC; the host TAP uses OpenVPN's TAP-Windows6 adapter." },
+];
+
+const uses = [
+  {
+    name: 'DMA research',
+    body: 'A programmable bus-mastering PCIe endpoint built from a cheap, widely available adapter, with full source for the firmware that drives it.',
+  },
+  {
+    name: 'IOMMU work',
+    body: 'A reproducible target for evaluating Intel VT-d and ARM SMMU configurations, with a boot-time EFI ROM that disables translation when you want a known-bad baseline.',
+  },
+  {
+    name: 'NIC reverse engineering',
+    body: "A working second implementation to compare against Broadcom's stock firmware on NetXtreme and NetLink parts.",
+  },
+  {
+    name: 'Teaching and CTF',
+    body: "zForth and uBASIC interpreters on the NIC's MIPS core, because it can.",
+  },
+];
+---
+
+<Base>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="/" class="brand" aria-label="ThunderGate home"><span class="bolt" aria-hidden="true">⌁</span> thundergate</a>
+      <nav class="nav">
+        <a class="in-page" href="#inside">What's inside</a>
+        <a class="in-page" href="#quickstart">Quick start</a>
+        <a href={repo + '/tree/master/doc'} aria-label="ThunderGate documentation">Docs <span aria-hidden="true">↗</span></a>
+        <a href={repo} aria-label="ThunderGate source on GitHub">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <pre class="ascii" role="img" aria-label="ThunderGate">{ascii}</pre>
+        <h1 class="tagline">ThunderGate: a toolkit for Tigon3 firmware and PCIe research</h1>
+        <p class="lede">
+          ThunderGate turns the Tigon3 gigabit Ethernet controller into an
+          open platform for on-NIC firmware development, DMA experiments,
+          and PCIe attack-surface research.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href={repo}>Source on GitHub</a>
+          <a class="btn" href="#quickstart">Quick start</a>
+        </div>
+        <p class="version">release <span class="tag">1.0</span> &nbsp;·&nbsp; GPLv3</p>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="wrap prose">
+        <h2><span class="hash">#</span> what it is</h2>
+        <p>
+          The Tigon3 is the controller behind Broadcom's NetXtreme and
+          NetLink gigabit Ethernet interfaces: the onboard Ethernet in a
+          generation of Dell, HP and IBM business PCs and servers, and the
+          silicon inside the Apple Thunderbolt Gigabit Ethernet adapter.
+        </p>
+        <p>
+          It is also a small computer that happens to forward packets.
+          Behind the Ethernet MAC sit a PCI endpoint, DMA read and write
+          engines, on-chip RAM, non-volatile storage, and an on-chip MIPS
+          core, all reachable from the host. (Older Tigon3 variants
+          carry a second core; the 57762 generation does not.)
+        </p>
+        <p>
+          ThunderGate opens them up. It drives the hardware from userspace
+          Python, builds and flashes custom firmware for the on-chip cores,
+          and ships worked examples of what that makes possible, from a
+          userspace network tap to firmware that monitors and rewrites
+          traffic and host memory.
+        </p>
+        <p class="muted">
+          Background: the project grew out of <em>Thunderbolt: Exposure
+          and Mitigation</em> (<a href="/tg_old.pdf">CS838-1 final project,
+          University of Wisconsin&ndash;Madison, 2013</a>) and the v0
+          ThunderGate releases that followed in 2015.
+        </p>
+      </div>
+    </section>
+
+    <section id="inside">
+      <div class="wrap">
+        <h2><span class="hash">#</span> what's inside</h2>
+        <div class="cards">
+          {parts.map((p) => (
+            <article class="card">
+              <h3>{p.name}</h3>
+              <p>{p.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="uses">
+      <div class="wrap">
+        <h2><span class="hash">#</span> what it's good for</h2>
+        <div class="cards">
+          {uses.map((u) => (
+            <article class="card">
+              <h3>{u.name}</h3>
+              <p>{u.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="platforms">
+      <div class="wrap">
+        <h2><span class="hash">#</span> runs on</h2>
+        <div class="platforms">
+          {platforms.map((p) => (
+            <div class="platform">
+              <div class="os">{p.os}</div>
+              <div class="detail">{p.detail}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart">
+      <div class="wrap">
+        <h2><span class="hash">#</span> quick start</h2>
+        <div class="terminal">
+          <div class="terminal-bar"><span></span><span></span><span></span></div>
+          <pre><code><span class="c"># clone the repo</span>
+git clone https://github.com/sstjohn/thundergate.git
+cd thundergate
+
+<span class="c"># build the mips-elf cross-toolchain (GCC 14, -mtigon)</span>
+misc/build-toolchain.sh
+
+<span class="c"># set up the Python 3.13 toolkit</span>
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+<span class="c"># build the firmware, EFI ROM and tooling</span>
+make</code></pre>
+        </div>
+        <p class="muted" style="margin-top:1rem">
+          The <a href={repo + '/tree/master/doc'}>install guides</a> cover
+          per-platform setup: VFIO binding, the macOS driver extension, and
+          Windows driver signing.
+        </p>
+      </div>
+    </section>
+
+    <section class="warning">
+      <div class="wrap prose">
+        <h2><span class="hash">#</span> warning</h2>
+        <div class="panel">
+          <p>
+            ThunderGate is experimental software, made available under the
+            GPLv3. It writes firmware to your hardware and manipulates host
+            memory and IOMMU state. You assume all risks in using it.
+          </p>
+          <p>
+            Always back up your device's factory firmware before you start.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span class="brand"><span class="bolt" aria-hidden="true">⌁</span> thundergate <span class="muted small">1.0</span></span>
+      <nav class="footer-links">
+        <a href={repo}>GitHub</a>
+        <a href={repo + '/tree/master/doc'}>Docs</a>
+        <a href="/tg_old.pdf">Research paper (2013)</a>
+        <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a>
+      </nav>
+      <span class="muted small">© 2015–2026 Saul St. John</span>
+    </div>
+  </footer>
+</Base>

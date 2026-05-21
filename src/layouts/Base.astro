@@ -1,0 +1,56 @@
+---
+import '../styles/global.css';
+
+const {
+  title = 'ThunderGate: open source Tigon3 / Broadcom NetXtreme firmware and PCIe research toolkit',
+  description = "ThunderGate drives Broadcom Tigon3 (NetXtreme / NetLink, including the 57762 in Apple's Thunderbolt Gigabit Ethernet adapter), builds custom on-NIC MIPS firmware, and ships an EFI option ROM for DMA and IOMMU (VT-d, SMMU) research. Linux, macOS, Windows. GPLv3.",
+} = Astro.props;
+
+const ldjson = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: 'ThunderGate',
+  description,
+  codeRepository: 'https://github.com/sstjohn/thundergate',
+  programmingLanguage: ['Python', 'C', 'Swift', 'MIPS assembly'],
+  license: 'https://www.gnu.org/licenses/gpl-3.0.html',
+  url: 'https://thundergate.io/',
+  author: { '@type': 'Person', name: 'Saul St. John' },
+  softwareVersion: '1.0',
+  operatingSystem: ['Linux', 'macOS', 'Windows'],
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0a0b0f" />
+    <meta name="indexnow" content="b3c88519653f8fcbeb7ae068d2a56fd7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://thundergate.io/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ThunderGate" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content="https://thundergate.io/" />
+    <meta property="og:image" content="https://thundergate.io/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ThunderGate: an open source toolkit for PCI bus exploration" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://thundergate.io/og.png" />
+    <script type="application/ld+json" set:html={JSON.stringify(ldjson)} />
+    <script data-goatcounter="https://thundergate.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

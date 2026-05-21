@@ -1,0 +1,108 @@
+---
+// Hidden page used only to render the 1200x630 OG/Twitter card image.
+// Screenshotted by misc/make-og.sh; not linked from anywhere.
+const ascii = String.raw`
+#######                                            #####
+   #    #    # #    # #    # #####  ###### #####  #     #   ##   ##### ######
+   #    #    # #    # ##   # #    # #      #    # #        #  #    #   #
+   #    ###### #    # # #  # #    # #####  #    # #  #### #    #   #   #####
+   #    #    # #    # #  # # #    # #      #####  #     # ######   #   #
+   #    #    # #    # #   ## #    # #      #   #  #     # #    #   #   #
+   #    #    #  ####  #    # #####  ###### #    #  #####  #    #   #   ######
+`.trim();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>ThunderGate OG</title>
+    <style>
+      :root {
+        --bg:     #0a0b0f;
+        --accent: #4cc4ff;
+        --text:   #e7e9ef;
+        --muted:  #939aa8;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      }
+      body {
+        background:
+          radial-gradient(ellipse 60rem 28rem at 50% -8%,
+            rgba(76, 196, 255, 0.18), transparent 70%),
+          var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.75rem;
+        position: relative;
+      }
+      pre.ascii {
+        margin: 0;
+        color: var(--accent);
+        font-size: 1.2rem;
+        line-height: 1.1;
+        letter-spacing: 0.02em;
+      }
+      .tagline {
+        color: var(--muted);
+        font-size: 1.05rem;
+        letter-spacing: 0.06em;
+        margin: 0;
+        text-transform: lowercase;
+      }
+      .lede {
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-size: 1.65rem;
+        font-weight: 500;
+        margin: 0;
+        max-width: 920px;
+        text-align: center;
+        line-height: 1.35;
+      }
+      .meta {
+        position: absolute;
+        bottom: 2.25rem;
+        left: 0;
+        right: 0;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        letter-spacing: 0.05em;
+      }
+      .meta .dot { color: #3a3f4d; }
+      .tag {
+        color: var(--accent);
+        border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+        border-radius: 999px;
+        padding: 0.15rem 0.7rem;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <pre class="ascii">{ascii}</pre>
+    <p class="tagline">an open source toolkit for PCI bus exploration</p>
+    <p class="lede">Tigon3 firmware, DMA experiments, and PCIe attack-surface research.</p>
+    <div class="meta">
+      <span>thundergate.io</span>
+      <span class="dot">·</span>
+      <span class="tag">v1.0</span>
+      <span class="dot">·</span>
+      <span>GPLv3</span>
+    </div>
+  </body>
+</html>
