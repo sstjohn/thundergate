@@ -10,31 +10,41 @@
 #   Linux:  install  clang lld binutils   -- all used straight off PATH
 #   macOS:  brew install llvm lld binutils -- Apple's toolchain is
 #           Mach-O only; the Homebrew kegs are keg-only, hence the paths
-# The .rom step needs eficompressor in the project virtualenv:
+# The .rom step compresses the PE image (Tiano LZ77+Huffman) and needs
+# eficompressor in the project virtualenv:
 #   .venv/bin/pip install ext/python-eficompressor
-# gnu-efi is built automatically from the ext/gnu-efi submodule.
+# Override with `EFIROM_FLAGS=` on the command line for an uncompressed
+# ROM. gnu-efi is built automatically from the ext/gnu-efi submodule.
 
 include ../Make.common
 
 ARCHES  := x86_64 aarch64
 GNUEFI  := $(PROJ_ROOT)/ext/gnu-efi
-EFIROM  := $(PROJ_ROOT)/.venv/bin/python3 $(PROJ_ROOT)/py/efirom.py
+EFIROM      := $(PROJ_ROOT)/.venv/bin/python3 $(PROJ_ROOT)/py/efirom.py
+EFIROM_FLAGS ?= -c
 SRCS    := main.c splash.c werk.c iort.c
 
 # --- toolchain (override any of these on the command line) ----------
+# OBJCOPY is per-arch because stock Debian/Ubuntu binutils is single-
+# target: the BFD vector for the other arch's efi-bsdrv-* output is not
+# compiled in. Homebrew's binutils is multi-target and handles both.
 ifeq ($(shell uname -s),Darwin)
   CLANG   ?= /opt/homebrew/opt/llvm/bin/clang
   LLD     ?= /opt/homebrew/opt/lld/bin/ld.lld
   AR      ?= /opt/homebrew/opt/llvm/bin/llvm-ar
   RANLIB  ?= /opt/homebrew/opt/llvm/bin/llvm-ranlib
-  OBJCOPY ?= /opt/homebrew/opt/binutils/bin/objcopy
+  OBJCOPY_x86_64  ?= /opt/homebrew/opt/binutils/bin/objcopy
+  OBJCOPY_aarch64 ?= /opt/homebrew/opt/binutils/bin/objcopy
 else
   CLANG   ?= clang
   LLD     ?= ld.lld
   AR      ?= llvm-ar
   RANLIB  ?= llvm-ranlib
-  OBJCOPY ?= objcopy
+  # apt install binutils-x86-64-linux-gnu binutils-aarch64-linux-gnu
+  OBJCOPY_x86_64  ?= x86_64-linux-gnu-objcopy
+  OBJCOPY_aarch64 ?= aarch64-linux-gnu-objcopy
 endif
+OBJCOPY = $(OBJCOPY_$(ARCH))
 
 ifeq ($(ARCH),)
 # ==== top level: build the option ROM for every arch ================
@@ -50,7 +60,7 @@ gnuefi-%:
 	  CPATH=$(CURDIR)/elf-shim $(MAKE) -C $(GNUEFI) ARCH=$* \
 	    CC="$(CLANG) --target=$*-pc-linux-gnu" \
 	    AS="$(CLANG) --target=$*-pc-linux-gnu" \
-	    LD="$(LLD)" AR="$(AR)" RANLIB="$(RANLIB)" OBJCOPY="$(OBJCOPY)" \
+	    LD="$(LLD)" AR="$(AR)" RANLIB="$(RANLIB)" OBJCOPY="$(OBJCOPY_$*)" \
 	    HOSTCC="$(CLANG)" lib gnuefi
 
 clean:
@@ -60,7 +70,11 @@ distclean: clean
 	-for a in $(ARCHES); do \
 	  $(MAKE) -C $(GNUEFI) ARCH=$$a clean 2>/dev/null || true; done
 
-.PHONY: all clean distclean $(foreach a,$(ARCHES),gnuefi-$(a))
+# The gnuefi-% targets are deliberately *not* phony: GNU make skips
+# implicit/pattern-rule search for explicit-phony targets, which would
+# leave gnuefi-% with no recipe when invoked as a prerequisite. The
+# recipe's own `test -f libgnuefi.a` keeps it idempotent.
+.PHONY: all clean distclean
 
 else
 # ==== per-arch build (recursive invocation, ARCH set) ===============
@@ -90,7 +104,7 @@ MACHINE_x86_64  := 0x8664
 MACHINE_aarch64 := 0xaa64
 
 dmarf-$(ARCH).rom: dmarf-$(ARCH).efi
-	$(EFIROM) -v 0x14e4 -d 0x1682 -m $(MACHINE_$(ARCH)) $< $@
+	$(EFIROM) $(EFIROM_FLAGS) -v 0x14e4 -d 0x1682 -m $(MACHINE_$(ARCH)) $< $@
 
 # ELF -> PE/COFF. objcopy's efi-bsdrv-* target synthesises the PE
 # header and marks the image a boot-service driver.

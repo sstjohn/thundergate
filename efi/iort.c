@@ -97,9 +97,9 @@ u32 create_rmr(void *a, u64 base, u64 limit)
 		return 0;
 
 	/* find the PCIe root complex node */
-	for (u32 i = 0; i < iort->node_count; i++) {
+	for (u32 i = 0; i < iort->node_count && offset < iort->length; i++) {
 		struct iort_node *n = (struct iort_node *)((uintptr_t)a + offset);
-		if (n->length == 0)
+		if (n->length == 0 || offset + n->length > iort->length)
 			break;
 		if (n->type == IORT_NODE_ROOT_COMPLEX) {
 			rc = n;
