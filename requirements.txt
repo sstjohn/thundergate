@@ -19,3 +19,10 @@ debugpy              # py/cdpserver.py — replaces the dead ptvsd
 
 # Build-time only — regenerates py/tglib.py from include/*.h
 ctypesgen
+
+# Test runner (py/tests/)
+pytest
+
+# Tiano LZ77+Huffman compression for the EFI option-ROM payload (efi/).
+# Built from the local submodule (Python 2-era buffer protocol fixed).
+./ext/python-eficompressor
