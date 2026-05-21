@@ -34,8 +34,9 @@
 #include "net/net.h"
 #include "net/inet.h"
 #include "net/checksum.h"
+#include "console.h"
 
-/* --- the two things the stack would otherwise get from the firmware ---- */
+/* --- the things the stack would otherwise get from the firmware -------- */
 
 void mac_cpy(const u8 *src, u8 *dst)
 {
@@ -57,6 +58,37 @@ void net_tx(const u8 *frame, u32 len)
         tx_buf[i] = frame[i];
     tx_len = len;
     tx_count++;
+}
+
+/* Console + interpreter stubs. The UDP service routes the payload through
+   interp_eval_line() and drains con_out_buf() into the reply; the stub
+   interpreter is a verbatim echo, so the UDP test verifies the full
+   request -> interpreter -> reply round-trip end to end. */
+
+static char     con_buf[1500];
+static unsigned con_len_;
+
+void con_out_reset(void)        { con_len_ = 0; }
+const char *con_out_buf(void)   { return con_buf; }
+unsigned    con_out_len(void)   { return con_len_; }
+int         con_truncated(void) { return 0; }
+
+void con_write(const char *p, unsigned n)
+{
+    unsigned i;
+    for (i = 0; i < n && con_len_ < sizeof(con_buf); i++)
+        con_buf[con_len_++] = p[i];
+}
+
+void con_putc(char c)        { con_write(&c, 1); }
+void con_puts(const char *s) { while (*s) con_putc(*s++); }
+void con_puti(int v)         { (void)v; }
+void con_putu(unsigned v)    { (void)v; }
+
+void interp_init(void) {}
+void interp_eval_line(const char *line, unsigned len)
+{
+    con_write(line, len);
 }
 
 /* --- fixtures ----------------------------------------------------------- */
@@ -215,7 +247,7 @@ static void test_udp(void)
     net_put16((u8 *)&ip->checksum, net_cksum((u8 *)ip, sizeof(struct ip_hdr)));
 
     udp->src_port = 4444;
-    udp->dst_port = 7;            /* echo */
+    udp->dst_port = 7777;         /* console (see CONSOLE_PORT in fw/net/udp.c) */
     udp->len = ulen;
     udp->checksum = 0;            /* optional -- the stack skips verifying it */
     for (i = 0; i < 8; i++)
@@ -226,7 +258,7 @@ static void test_udp(void)
 
     check(tx_count == 1, "one frame transmitted");
     rep = (struct udp_hdr *)(tx_buf + NET_L4_OFF);
-    check(rep->src_port == 7, "reply source port is the request's destination");
+    check(rep->src_port == 7777, "reply source port is the console port");
     check(rep->dst_port == 4444, "reply destination port is the request's source");
     check(rep->len == ulen, "reply length matches the request");
     echoed = 1;

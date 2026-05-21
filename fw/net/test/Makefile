@@ -7,7 +7,7 @@
 
 CC     ?= cc
 ROOT   := ../../..
-CFLAGS := -I$(ROOT)/include -Wall -g -O1
+CFLAGS := -I$(ROOT)/include -I$(ROOT)/fw -Wall -g -O1
 
 STACK := $(ROOT)/fw/net/checksum.c \
          $(ROOT)/fw/net/ether.c \
