@@ -42,9 +42,10 @@ win/**/*.VC.opendb
 **/__pycache__/
 env/
 
-# mips-elf cross-toolchain (misc/build-toolchain.sh)
-/.toolchain-build/
-/toolchain/
+# mips-elf cross-toolchain (misc/build-toolchain.sh); the glob covers
+# version-suffixed variants kept around as fallbacks (e.g. toolchain.gcc14/)
+/.toolchain-build*/
+/toolchain*/
 
 # Python virtualenv
 /.venv/
