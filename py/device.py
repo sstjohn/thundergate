@@ -107,7 +107,7 @@ class Device(object):
 
         self.bar0 = self.interface.bar0
         try: self.bar2 = self.interface.bar2
-        except: pass
+        except Exception: pass
         
         if 'msix' in self.config.caps:
             sz = self.config.caps['msix'].table_size
@@ -117,13 +117,13 @@ class Device(object):
             try:
                 bar = getattr(self, "bar%d" % tbar)
                 self.msix_tbl = msix.Table(bar, tofs, sz)
-            except: pass            
+            except Exception: pass            
             pbar = self.config.caps['msix'].pba_bir
             pofs = self.config.caps['msix'].pba_offset
             try:
                 bar = getattr(self, "bar%d" % pbar)
                 self.msix_pba = msix.Pba(bar, pofs, sz)
-            except: pass
+            except Exception: pass
 
         self.map_registers()
         self.map_memory()
@@ -143,14 +143,14 @@ class Device(object):
             try:
                 block = getattr(self, i)
                 block.disable()
-            except:
+            except Exception:
                 pass
         
         try: self.ftq.block_reset()
-        except: pass
+        except Exception: pass
 
         try: self.reset()
-        except: pass
+        except Exception: pass
 
         if hasattr(self, "pci"):
             if self.pci.command.bus_master:
@@ -258,7 +258,7 @@ class Device(object):
         if not cold:
             try:
                 self.nvram.acquire_lock()
-            except:
+            except Exception:
                 logger.warn("failed to acquire nvram lock")
                 self.rxcpu.halt()
                 self.nvram.reset()

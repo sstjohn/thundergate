@@ -56,7 +56,7 @@ try:
             i = struct.pack(">I", word)
             r = next(md.disasm(i, 4))
             return "%s %s" % (r.mnemonic, r.op_str)
-except:
+except Exception:
     print("[-] capstone not present - disassembly unavailable")
     _no_capstone = True
 
@@ -191,7 +191,7 @@ class CDPServer(object):
     def _dispatch_cmd(self, cmd):
         try:
             fncall = self.__dispatch_tbl[cmd["command"]]
-        except:
+        except Exception:
             fncall = self._default_cmd
         fncall(cmd)
 
@@ -205,7 +205,7 @@ class CDPServer(object):
     def _cmd_launch(self, cmd):
         try:
             stop_now = cmd["arguments"]["stopOnEntry"]
-        except:
+        except Exception:
             stop_now = False
 
         program = cmd["arguments"]["program"]
@@ -410,7 +410,7 @@ class CDPServer(object):
     def _collect_vars(self, variables, scope, frame):
         def _var_pp(v):
             try: return "%x" % v
-            except: return str(v)
+            except Exception: return str(v)
 
         collected = []
         for v in variables:
@@ -442,7 +442,7 @@ class CDPServer(object):
             o = {}
 
             try: o["name"] = child.display_name
-            except: o["name"] = child.name
+            except Exception: o["name"] = child.name
 
             if hasattr(child, "variablesReference"):
                 o["variablesReference"] = child.variablesReference
@@ -451,7 +451,7 @@ class CDPServer(object):
                 o["variablesReference"] = 0
                 data_value = child.scope.accessor(child)
                 try: o["value"] = "%x" % data_value
-                except: o["value"] = str(data_value)
+                except Exception: o["value"] = str(data_value)
             b["variables"] += [o]
 
         self._respond(cmd, True, body = b)
@@ -527,13 +527,13 @@ class CDPServer(object):
 
         try:
             self._breakpoints[addr] = original_insn
-        except:
+        except Exception:
             self._breakpoints = {addr: original_insn}
 
     def _setup_breakpoint(self, filename, line):
         try:
             line_addrs = self._image.line2addr(filename, line)
-        except:
+        except Exception:
             return False
         if not filename in self._breakpoints:
             self._breakpoints[filename] = {}
@@ -546,14 +546,14 @@ class CDPServer(object):
             else:
                 self._bp_replaced_insn[addr] = self.__insn_repl(addr, 0xd)
                 try: current_breakpoints[line] += [addr]
-                except: current_breakpoints[line] = [addr]
+                except Exception: current_breakpoints[line] = [addr]
                 print("breakpoint set at \"%s+%d\" (%x)" % (filename, line, addr))
         return True
 
     def _clear_breakpoint(self, filename, line_no = None):
         try:
             current_breakpoints = self._breakpoints[filename]
-        except:
+        except Exception:
             return
         if line_no is None:
             lines = current_breakpoints.keys()
@@ -591,7 +591,7 @@ class CDPServer(object):
         self._log_write("rcvd: %s\n" % repr(d))
         try:
             j = json.loads(d)
-        except:
+        except Exception:
             self._log_write("EXCEPTION!")
         return j
 

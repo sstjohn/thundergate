@@ -27,11 +27,11 @@ try:
     from inception import cfg, terminal
     from inception.exceptions import InceptionException
     _inception_support = True
-except:
+except Exception:
     _inception_support = False
 
 try: from clib import SIOCGIFHWADDR
-except: SIOCGIFHWADDR = 35111
+except Exception: SIOCGIFHWADDR = 35111
 
 # ThunderGate wire protocol command ids -- keep in sync with include/proto.h
 PING_CMD = 0x01
@@ -57,7 +57,7 @@ if _inception_support:
 def get_bytes_strs(a):
     try:
         return ["%02x" % o for o in a]
-    except:
+    except Exception:
         return ["%02x" % ord(o) for o in a]
 
 class ThunderGateInterface:
@@ -90,7 +90,7 @@ class ThunderGateInterface:
         if dst == None:
             try:
                 dst = self._tg_mac
-            except:
+            except Exception:
                 dst = b'\xff' * 6
 
         pkt = dst+src+etype+payload
@@ -109,14 +109,14 @@ class ThunderGateInterface:
     def _recv_resp(self, cmd_t = None, tg_mac = None):
         if tg_mac == None:
             try: tg_mac = self._tg_mac
-            except: pass
+            except Exception: pass
         
         if tg_mac == b'\xff' * 6:
             tg_mac = None
 
         if cmd_t == None:
             try: cmd_t = self._last_cmd
-            except: pass
+            except Exception: pass
 
         if cmd_t != None:
             ack = cmd_t | 0x8000        # CMD_REPLY
