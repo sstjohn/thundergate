@@ -25,8 +25,8 @@
 
 set -euo pipefail
 
-BINUTILS_VER=2.42
-GCC_VER=14.2.0
+BINUTILS_VER=2.46.0
+GCC_VER=16.1.0
 
 TARGET=mips-elf
 PROJ_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -131,10 +131,11 @@ stage_gcc() {
     # The Tigon3 core has no hardware multiply/divide, so GCC's generated
     # code calls libgcc's soft __mulsi3/__divsi3/... routines. Build and
     # install target-libgcc with -mtigon (applied to libgcc via the t-elf
-    # patch). One routine, _mulvsi3 -- the trapping signed multiply -- ICEs
-    # under -mtigon in GCC 14; the patch excludes it via LIB2FUNCS_EXCLUDE.
-    # __mulvsi3 is emitted only for -ftrapv / __builtin_*_overflow, which the
-    # firmware never uses, so libgcc still links cleanly.
+    # patch). One routine, _mulvsi3 -- the trapping signed multiply -- was
+    # observed to ICE under -mtigon in GCC 14; the patch excludes it via
+    # LIB2FUNCS_EXCLUDE and that exclusion is retained as a defensive
+    # measure. __mulvsi3 is emitted only for -ftrapv / __builtin_*_overflow,
+    # which the firmware never uses, so libgcc still links cleanly.
     make -j"$JOBS" all-gcc
     make install-gcc
     make -j"$JOBS" all-target-libgcc

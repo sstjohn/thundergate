@@ -9,7 +9,7 @@ gcc-5.1.0-mtigon.patch added a -mtigon flag that suppresses all of them.
 That patch was line-context based and no longer applies to a modern GCC.
 This script instead re-derives every change *by macro and function name*,
 so it survives GCC's source reorganisation between releases. Verified
-against GCC 14.2.0.
+against GCC 16.1.0.
 
 What it does NOT do, and why:
   * It does not re-add the original patch's mips_init_libfuncs hunk. That
