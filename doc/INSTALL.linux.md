@@ -62,7 +62,7 @@ still the tool to authorize it.
 
 ## Binding to vfio-pci
 
-For the userspace TAP driver, bind the NIC to `vfio-pci` — that is the
+For the userspace TAP driver, bind the NIC to `vfio-pci`; that is the
 standard way to receive MSI/MSI-X interrupts in userspace on Linux, and
 it requires an IOMMU. Without it the driver falls back to polling the
 status block, at a cost in responsiveness and power.
@@ -94,6 +94,7 @@ $ .venv/bin/python3 py/main.py --help
   -b, --backup    create eeprom backup
   -i, --install   install thundergate firmware
   -d, --driver    load userspace tap driver
+      --tap NAME  select a TAP implementation (tap, _tap, _aiotap)
   -s, --shell     ipython cli
 ~~~
 

@@ -54,16 +54,16 @@ but may need IP configuration using host OS tools (such as Linux's `ip` or
  * Link detection and change notifications are hit-and-miss and may not trigger
 at startup. Press `d` to force link re-negotiation.
 
-* The TAP driver is built on asyncio and needs Python 3.13+ (see the
-top-level README for the dependency list).
+* The TAP drivers need Python 3.13+ (see the top-level README for the
+dependency list). Two of the three are asyncio (`tap`, `_aiotap`); the
+third (`_tap`) is a synchronous `select()` loop.
 
 ## Performance ##
 
-Performance was measured using iPerf3 over a point-to-point Cat5 cable
-connecting a MacBook Air running Debian 8 and a MacBook Pro running Windows 10.
-All compilation was performed without optimization and the standard CPython 2.7
-interpreter was used. These (now outdated) numbers are only meaningful 
-relatively (if even).
+Historical iperf3 numbers from the v0 era, with CPython 2.7 and unoptimized
+compilation, over a point-to-point Cat5 cable between a MacBook Air on
+Debian 8 and a MacBook Pro on Windows 10. Kept as a relative shape, not as
+a target.
 
 Server: Windows 10 w/ b57nd60a  
 Client: Debian 8 w/ tg3  

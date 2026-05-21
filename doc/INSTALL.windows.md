@@ -97,7 +97,7 @@ C:\>pnputil /add-driver win\x64\Debug\tgwink\tgwink.inf /install
 
 After installation the Broadcom adapter disappears from *Network
 Adapters* in Device Manager and a *tgwink Device* appears under *System
-Devices*. Confirm it is present with no error code — the device itself
+Devices*. Confirm it is present with no error code; the device itself
 is unmodified by this; only the bound driver changed.
 
 ## Use
@@ -107,6 +107,7 @@ C:\thundergate>.venv\Scripts\python py\main.py --help
   -b, --backup    create eeprom backup
   -i, --install   install thundergate firmware
   -d, --driver    load userspace tap driver
+      --tap NAME  select a TAP implementation (tap, _tap, _aiotap)
   -s, --shell     ipython cli
 ~~~
 

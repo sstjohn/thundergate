@@ -4,13 +4,13 @@ This guide covers the macOS-native path: building the PCIDriverKit driver
 extension (dext), preparing the machine, installing the dext, and running
 the ThunderGate toolkit against a Tigon3 NIC.
 
-macOS support is **additive** — the Linux and Windows paths are
+macOS support is **additive**: the Linux and Windows paths are
 unaffected. See `INSTALL.linux.md` / `INSTALL.windows.md` for those.
 
 > **Security note.** The local-development path below disables System
 > Integrity Protection. That lowers the security of the whole machine.
 > Use a machine you are willing to run that way (a dedicated research
-> box), and re-enable SIP when you are done — see *Reverting*.
+> box), and re-enable SIP when you are done. See *Reverting*.
 
 ---
 
@@ -28,13 +28,13 @@ unaffected. See `INSTALL.linux.md` / `INSTALL.windows.md` for those.
 - To build firmware as well, the mips-elf cross-toolchain:
   `misc/build-toolchain.sh` (not needed just to flash a prebuilt image).
 - A Broadcom Tigon3 NIC. If it is a Thunderbolt-attached adapter, approve
-  it first (System Settings shows a prompt, or use `boltctl` semantics —
+  it first (System Settings shows a prompt, or use `boltctl` semantics;
   on macOS, accept the "Allow Accessories to Connect" prompt).
 
 No paid Apple Developer account is required for the local-development
 path. A signed, notarized, distributable build *does* require one, plus
 Apple's grant of the restricted `com.apple.developer.driverkit*`
-entitlements — that is out of scope here.
+entitlements. That is out of scope here.
 
 ---
 
@@ -72,13 +72,13 @@ source. Assemble them into an Xcode project once:
 5. **Signing.** For local development, set both targets' signing to
    *Sign to Run Locally* (Build Settings → Code Signing Identity), or
    select your personal team. Restricted DriverKit entitlements need not
-   be granted for the SIP-disabled path in step 3.
+   be granted for the SIP-disabled path in section 3.
 6. **Build** (⌘B). The `iig` tool generates `TGPCIDevice.h` /
    `TGUserClient.h` from the `.iig` files during the build.
 
 If the build stops on a DriverKit/PCIDriverKit API mismatch (method
 signature differs in your SDK), fix it against the SDK headers under
-`$(xcrun --sdk driverkit --show-sdk-path)` — the call sites are
+`$(xcrun --sdk driverkit --show-sdk-path)`. The call sites are
 annotated in the `.cpp` files.
 
 ---
@@ -150,7 +150,7 @@ With the dext active and the NIC present, the toolkit runs normally;
 ```
 
 `py/interfaces/macos.py` connects to the dext, maps BAR 0, and performs
-config-space access through it — the same flash path used on Linux and
+config-space access through it, the same flash path used on Linux and
 Windows.
 
 ---
@@ -159,7 +159,7 @@ Windows.
 
 1. Deactivate the dext: `tgctl deactivate` (or
    `systemextensionsctl uninstall <teamID> <bundleID>`).
-2. Re-enable SIP — recoveryOS Terminal: `csrutil enable` (Apple Silicon:
+2. Re-enable SIP. recoveryOS Terminal: `csrutil enable` (Apple Silicon:
    also restore *Full Security* in Startup Security Utility if desired),
    then reboot.
 3. Optionally `systemextensionsctl developer off`.
@@ -168,18 +168,18 @@ Windows.
 
 ## 7. Troubleshooting
 
-- **`tgctl`: "request failed"** — SIP still enabled, developer mode off,
+- **`tgctl`: "request failed"**: SIP still enabled, developer mode off,
   or the app is not signed. Recheck section 3 and the signing in
   section 2.
 - **`systemextensionsctl list` shows the dext but not `[activated
-  enabled]`** — approve it in System Settings, then re-run `tgctl`.
-- **Python: "ThunderGate dext not found"** — the dext is not activated,
+  enabled]`**: approve it in System Settings, then re-run `tgctl`.
+- **Python: "ThunderGate dext not found"**: the dext is not activated,
   or no matching NIC is present. Confirm the device ID is in
   `macos/TGDext/Info.plist` `IOPCIMatch` (and in `TGDext.entitlements`);
   find it with `system_profiler SPPCIDataType`.
-- **The dext loads but does not match the NIC** — the device ID is not
+- **The dext loads but does not match the NIC**: the device ID is not
   in `IOPCIMatch`. Add `0xDDDDVVVV` (device ID, then vendor `14e4`) to
   both the Info.plist and the entitlements, and rebuild.
-- **Inspect dext logs** — `log show --predicate 'sender == "TGDext"'
+- **Inspect dext logs**: `log show --predicate 'sender == "TGDext"'
   --last 10m`, or stream with `log stream --predicate 'sender ==
   "TGDext"'`.

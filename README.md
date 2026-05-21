@@ -20,15 +20,17 @@ such as is found in Apple Thunderbolt Gigabit Ethernet adapters.
 
 Tigon3 controllers contain a variety of architectural blocks, including a PCI
 endpoint, an 802.3 media access controller, on-chip ram, DMA read and write
-engines, nonvolatile storage, and one or more MIPS processors.
+engines, nonvolatile storage, and an on-chip MIPS processor (older variants
+have two: the RX CPU and a TX CPU; modern parts ship the RX CPU alone).
 
 These features are exposed by ThunderGate through an easy-to-use Python
 interface, allowing for reverse engineering, development, and deployment of
-custom firmware and applications. Examples provided include a userspace VFIO
-tap driver, a firmware application capable of monitoring and manipulating
-network traffic and host memory, and a PCI option rom containing an EFI boot
-services driver which can either inhibit the employ or compromise the 
-effectivity of Intel I/O MMU address translation (VT-d).
+custom firmware and applications. Examples provided include a userspace TAP
+driver (with synchronous and asyncio implementations on Linux, Windows and
+macOS), a firmware application capable of monitoring and manipulating network
+traffic and host memory, and a PCI option rom containing an EFI boot services
+driver which can either inhibit the employ or compromise the effectivity of
+Intel I/O MMU address translation (VT-d).
 
 # Warning #
 
@@ -39,6 +41,7 @@ for details.
 # Further Reading #
 
  * [Linux setup](doc/INSTALL.linux.md)
+ * [macOS setup](doc/INSTALL.macos.md)
  * [Windows setup](doc/INSTALL.windows.md)
  * [Firmware usage](doc/firmware.md)
  * [TAP driver usage](doc/TAP.md)

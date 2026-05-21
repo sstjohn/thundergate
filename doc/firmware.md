@@ -9,7 +9,7 @@ core. Build one with:
 $ misc/build-toolchain.sh
     ~~~
 
-This produces a mips-elf GCC 14.2 cross-toolchain under `toolchain/`. GCC is
+This produces a mips-elf GCC 16.1 cross-toolchain under `toolchain/`. GCC is
 patched (`misc/mtigon-patch.py`) with a `-mtigon` target that suppresses the
 instructions the core lacks -- unaligned load/store, hardware
 multiply/divide, and the HI/LO registers -- so multiply and divide go through
@@ -37,7 +37,7 @@ in the project root; it is highly recommended that you do so.
 The ```-i``` argument can be used to install built example firmware
 to a Thunderbolt Gigabit Ethernet adapter device as follows:
 <pre>
- $ sudo py/main.py -i 0a:00.0
+ $ sudo .venv/bin/python3 py/main.py --device 0a:00.0 -i
 
           ThunderGate
 	  Version 1.0
@@ -56,10 +56,10 @@ Copyright (C) 2015-2026  Saul St. John
 [+] enabling nvram access
 [+] enabling nvram write in grc block
 [+] enabling nvram write access
+[+] installing thundergate bootcode
+[+] writing block length 1630 at offset 6c00.........
 [+] installing thundergate oprom
 [+] writing block length 4604 at offset 25fc.....................
-[+] installing thundergate rxcpu firmware
-[+] writing block length 1630 at offset 6c00.........
 [+] tg3 inspector terminated
 </pre>
 
