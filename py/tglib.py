@@ -1,7 +1,7 @@
 r"""Wrapper for acpi.h
 
 Generated with:
-.venv/bin/ctypesgen -I include --no-macro-warnings -o py/tglib.py include/acpi.h include/asf.h include/bd.h include/bdrdma.h include/bufman.h include/cfg_port.h include/cpmu.h include/cpu.h include/cr_port.h include/dma.h include/dmac.h include/emac.h include/frame.h include/ftq.h include/gencomm.h include/grc.h include/hc.h include/ma.h include/mbox.h include/mbuf.h include/msi.h include/nrdma.h include/nvram.h include/otp.h include/pci.h include/pcie_alt.h include/pcie.h include/proto.h include/rbdc.h include/rbdi.h include/rbdrules.h include/rcb.h include/rdc.h include/rdi.h include/rdma.h include/regdef.h include/rlp.h include/rss.h include/rtsdi.h include/sbdc.h include/sbdi.h include/sbds.h include/sdc.h include/sdi.h include/stats.h include/status_block.h include/tcp_seg_ctrl.h include/utypes.h include/wdma.h
+/Users/saul/src/thundergate/.venv/bin/ctypesgen -I /Users/saul/src/thundergate/include --no-macro-warnings -o tglib.py /Users/saul/src/thundergate/include/acpi.h /Users/saul/src/thundergate/include/asf.h /Users/saul/src/thundergate/include/bd.h /Users/saul/src/thundergate/include/bdrdma.h /Users/saul/src/thundergate/include/bufman.h /Users/saul/src/thundergate/include/cfg_port.h /Users/saul/src/thundergate/include/cpmu.h /Users/saul/src/thundergate/include/cpu.h /Users/saul/src/thundergate/include/cr_port.h /Users/saul/src/thundergate/include/dma.h /Users/saul/src/thundergate/include/dmac.h /Users/saul/src/thundergate/include/emac.h /Users/saul/src/thundergate/include/frame.h /Users/saul/src/thundergate/include/ftq.h /Users/saul/src/thundergate/include/gencomm.h /Users/saul/src/thundergate/include/grc.h /Users/saul/src/thundergate/include/hc.h /Users/saul/src/thundergate/include/ma.h /Users/saul/src/thundergate/include/mbox.h /Users/saul/src/thundergate/include/mbuf.h /Users/saul/src/thundergate/include/msi.h /Users/saul/src/thundergate/include/nrdma.h /Users/saul/src/thundergate/include/nvram.h /Users/saul/src/thundergate/include/otp.h /Users/saul/src/thundergate/include/pci.h /Users/saul/src/thundergate/include/pcie_alt.h /Users/saul/src/thundergate/include/pcie.h /Users/saul/src/thundergate/include/proto.h /Users/saul/src/thundergate/include/rbdc.h /Users/saul/src/thundergate/include/rbdi.h /Users/saul/src/thundergate/include/rbdrules.h /Users/saul/src/thundergate/include/rcb.h /Users/saul/src/thundergate/include/rdc.h /Users/saul/src/thundergate/include/rdi.h /Users/saul/src/thundergate/include/rdma.h /Users/saul/src/thundergate/include/regdef.h /Users/saul/src/thundergate/include/rlp.h /Users/saul/src/thundergate/include/rss.h /Users/saul/src/thundergate/include/rtsdi.h /Users/saul/src/thundergate/include/sbdc.h /Users/saul/src/thundergate/include/sbdi.h /Users/saul/src/thundergate/include/sbds.h /Users/saul/src/thundergate/include/sdc.h /Users/saul/src/thundergate/include/sdi.h /Users/saul/src/thundergate/include/stats.h /Users/saul/src/thundergate/include/status_block.h /Users/saul/src/thundergate/include/tcp_seg_ctrl.h /Users/saul/src/thundergate/include/utypes.h /Users/saul/src/thundergate/include/wdma.h
 
 Do not modify this file.
 """
@@ -1049,7 +1049,131 @@ struct_dmar_andd._fields_ = [
     ('object_name', c_char * int(0)),
 ]
 
-# /Users/saul/src/thundergate/include/acpi.h: 103
+# /Users/saul/src/thundergate/include/acpi.h: 115
+class struct_iort_tbl_hdr(Structure):
+    pass
+
+struct_iort_tbl_hdr._pack_ = 1
+struct_iort_tbl_hdr.__slots__ = [
+    'sig',
+    'length',
+    'rev',
+    'cksum',
+    'oemid',
+    'oemtableid',
+    'oem_rev',
+    'creator_id',
+    'creator_rev',
+    'node_count',
+    'node_offset',
+    'reserved',
+]
+struct_iort_tbl_hdr._fields_ = [
+    ('sig', c_char * int(4)),
+    ('length', u32),
+    ('rev', u8),
+    ('cksum', u8),
+    ('oemid', c_char * int(6)),
+    ('oemtableid', c_char * int(8)),
+    ('oem_rev', u32),
+    ('creator_id', c_char * int(4)),
+    ('creator_rev', u32),
+    ('node_count', u32),
+    ('node_offset', u32),
+    ('reserved', u32),
+]
+
+# /Users/saul/src/thundergate/include/acpi.h: 130
+class struct_iort_node(Structure):
+    pass
+
+struct_iort_node._pack_ = 1
+struct_iort_node.__slots__ = [
+    'type',
+    'length',
+    'rev',
+    'identifier',
+    'mapping_count',
+    'mapping_offset',
+]
+struct_iort_node._fields_ = [
+    ('type', u8),
+    ('length', u16),
+    ('rev', u8),
+    ('identifier', u32),
+    ('mapping_count', u32),
+    ('mapping_offset', u32),
+]
+
+# /Users/saul/src/thundergate/include/acpi.h: 139
+class struct_iort_id_mapping(Structure):
+    pass
+
+struct_iort_id_mapping._pack_ = 1
+struct_iort_id_mapping.__slots__ = [
+    'input_base',
+    'id_count',
+    'output_base',
+    'output_reference',
+    'flags',
+]
+struct_iort_id_mapping._fields_ = [
+    ('input_base', u32),
+    ('id_count', u32),
+    ('output_base', u32),
+    ('output_reference', u32),
+    ('flags', u32),
+]
+
+# /Users/saul/src/thundergate/include/acpi.h: 147
+class struct_iort_smmu(Structure):
+    pass
+
+struct_iort_smmu._pack_ = 1
+struct_iort_smmu.__slots__ = [
+    'node',
+    'base_address',
+]
+struct_iort_smmu._fields_ = [
+    ('node', struct_iort_node),
+    ('base_address', u64),
+]
+
+# /Users/saul/src/thundergate/include/acpi.h: 154
+class struct_iort_rmr(Structure):
+    pass
+
+struct_iort_rmr._pack_ = 1
+struct_iort_rmr.__slots__ = [
+    'node',
+    'flags',
+    'desc_count',
+    'desc_offset',
+]
+struct_iort_rmr._fields_ = [
+    ('node', struct_iort_node),
+    ('flags', u32),
+    ('desc_count', u32),
+    ('desc_offset', u32),
+]
+
+# /Users/saul/src/thundergate/include/acpi.h: 161
+class struct_iort_rmr_desc(Structure):
+    pass
+
+struct_iort_rmr_desc._pack_ = 1
+struct_iort_rmr_desc.__slots__ = [
+    'base',
+    'length',
+    'reserved',
+]
+struct_iort_rmr_desc._fields_ = [
+    ('base', u64),
+    ('length', u64),
+    ('reserved', u32),
+]
+
+# /Users/saul/src/thundergate/include/acpi.h: 167
 class struct_acpi_sdt_hdr(Structure):
     pass
 
@@ -1077,7 +1201,7 @@ struct_acpi_sdt_hdr._fields_ = [
     ('creator_rev', u32),
 ]
 
-# /Users/saul/src/thundergate/include/acpi.h: 115
+# /Users/saul/src/thundergate/include/acpi.h: 179
 class struct_xsdt(Structure):
     pass
 
@@ -1091,7 +1215,7 @@ struct_xsdt._fields_ = [
     ('sdt', POINTER(struct_acpi_sdt_hdr) * int(0)),
 ]
 
-# /Users/saul/src/thundergate/include/acpi.h: 120
+# /Users/saul/src/thundergate/include/acpi.h: 184
 class struct_rsdp_t(Structure):
     pass
 
@@ -1111,7 +1235,7 @@ struct_rsdp_t._fields_ = [
     ('rsdt_address', u32),
 ]
 
-# /Users/saul/src/thundergate/include/acpi.h: 128
+# /Users/saul/src/thundergate/include/acpi.h: 192
 class struct_rsdp2_t(Structure):
     pass
 
@@ -7386,19 +7510,19 @@ enum_known_mailboxes = c_int# /Users/saul/src/thundergate/include/mbox.h: 22
 
 mb_interrupt = 0# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_standard_producer = (0x68 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_standard_producer = (0x68 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr0_consumer = (0x80 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr0_consumer = (0x80 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr1_consumer = (0x88 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr1_consumer = (0x88 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr2_consumer = (0x90 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr2_consumer = (0x90 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_rbd_rr3_consumer = (0x98 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_rbd_rr3_consumer = (0x98 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_sbd_host_producer = (0x100 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_sbd_host_producer = (0x100 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
-mb_sbd_nic_producer = (0x380 // 8)# /Users/saul/src/thundergate/include/mbox.h: 22
+mb_sbd_nic_producer = (0x380 / 8)# /Users/saul/src/thundergate/include/mbox.h: 22
 
 # /Users/saul/src/thundergate/include/mbox.h: 33
 class struct_mailbox(Structure):
@@ -13105,6 +13229,48 @@ try:
 except:
     pass
 
+# /Users/saul/src/thundergate/include/acpi.h: 107
+try:
+    IORT_NODE_ITS_GROUP = 0
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/acpi.h: 108
+try:
+    IORT_NODE_NAMED_COMPONENT = 1
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/acpi.h: 109
+try:
+    IORT_NODE_ROOT_COMPLEX = 2
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/acpi.h: 110
+try:
+    IORT_NODE_SMMU_V1V2 = 3
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/acpi.h: 111
+try:
+    IORT_NODE_SMMU_V3 = 4
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/acpi.h: 112
+try:
+    IORT_NODE_PMCG = 5
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/acpi.h: 113
+try:
+    IORT_NODE_RMR = 6
+except:
+    pass
+
 # /Users/saul/src/thundergate/include/ma.h: 62
 try:
     MA_ALL_TRAPS = 0x00111d7c
@@ -13383,6 +13549,36 @@ try:
 except:
     pass
 
+# /Users/saul/src/thundergate/include/proto.h: 73
+try:
+    WRITE_DMA_CMD = 0x0f
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 74
+try:
+    WRITE_DMA_ACK = (WRITE_DMA_CMD | CMD_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 75
+try:
+    WRITE_DMA_ERR = (WRITE_DMA_CMD | ERR_REPLY)
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 80
+try:
+    INTERP_EVAL_CMD = 0x10
+except:
+    pass
+
+# /Users/saul/src/thundergate/include/proto.h: 81
+try:
+    INTERP_EVAL_REPLY = (INTERP_EVAL_CMD | CMD_REPLY)
+except:
+    pass
+
 # /Users/saul/src/thundergate/include/rbdrules.h: 45
 try:
     RBD_RULE_OP_EQUAL = 0
@@ -13451,13 +13647,25 @@ dmar_rhsa = struct_dmar_rhsa# /Users/saul/src/thundergate/include/acpi.h: 87
 
 dmar_andd = struct_dmar_andd# /Users/saul/src/thundergate/include/acpi.h: 95
 
-acpi_sdt_hdr = struct_acpi_sdt_hdr# /Users/saul/src/thundergate/include/acpi.h: 103
+iort_tbl_hdr = struct_iort_tbl_hdr# /Users/saul/src/thundergate/include/acpi.h: 115
 
-xsdt = struct_xsdt# /Users/saul/src/thundergate/include/acpi.h: 115
+iort_node = struct_iort_node# /Users/saul/src/thundergate/include/acpi.h: 130
 
-rsdp_t = struct_rsdp_t# /Users/saul/src/thundergate/include/acpi.h: 120
+iort_id_mapping = struct_iort_id_mapping# /Users/saul/src/thundergate/include/acpi.h: 139
 
-rsdp2_t = struct_rsdp2_t# /Users/saul/src/thundergate/include/acpi.h: 128
+iort_smmu = struct_iort_smmu# /Users/saul/src/thundergate/include/acpi.h: 147
+
+iort_rmr = struct_iort_rmr# /Users/saul/src/thundergate/include/acpi.h: 154
+
+iort_rmr_desc = struct_iort_rmr_desc# /Users/saul/src/thundergate/include/acpi.h: 161
+
+acpi_sdt_hdr = struct_acpi_sdt_hdr# /Users/saul/src/thundergate/include/acpi.h: 167
+
+xsdt = struct_xsdt# /Users/saul/src/thundergate/include/acpi.h: 179
+
+rsdp_t = struct_rsdp_t# /Users/saul/src/thundergate/include/acpi.h: 184
+
+rsdp2_t = struct_rsdp2_t# /Users/saul/src/thundergate/include/acpi.h: 192
 
 asf_control = struct_asf_control# /Users/saul/src/thundergate/include/asf.h: 24
 

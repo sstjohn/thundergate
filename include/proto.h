@@ -74,4 +74,10 @@
 #define WRITE_DMA_ACK		WRITE_DMA_CMD | CMD_REPLY
 #define WRITE_DMA_ERR		WRITE_DMA_CMD | ERR_REPLY
 
+/* Interpreter eval: the input line is at lgate_base + 0x10, arg1 carries
+ * its byte length. The reply payload is u32 length followed by that many
+ * bytes of console output. */
+#define INTERP_EVAL_CMD		0x10
+#define INTERP_EVAL_REPLY	INTERP_EVAL_CMD | CMD_REPLY
+
 #endif

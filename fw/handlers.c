@@ -17,6 +17,7 @@
  */
 
 #include "fw.h"
+#include "console.h"
 
 void dump_pcie_retry_buffer(reply_t reply)
 {
@@ -235,6 +236,20 @@ void handle(reply_t reply, u16 cmd, u32 arg1, u32 arg2, u32 arg3)
 	    else
 		(*reply)(0, 0, WRITE_DMA_ACK);
 	    break;
+
+	case INTERP_EVAL_CMD: {
+	    /* reply layout: u32 length, then `length` bytes of console output. */
+	    u32 buf[1 + (256 + 3) / 4];
+	    u32 i, n;
+	    con_out_reset();
+	    interp_eval_line((const char *)(lgate_base + 0x10), arg1);
+	    n = con_out_len();
+	    buf[0] = n;
+	    for (i = 0; i < n; i++)
+		((u8 *)&buf[1])[i] = con_out_buf()[i];
+	    (*reply)(buf, 1 + ((n + 3) >> 2), INTERP_EVAL_REPLY);
+	    break;
+	}
 
         default:
 	    (*reply)(&arg1, 2, UNKNOWN_CMD);
