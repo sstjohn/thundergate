@@ -162,7 +162,7 @@ class TapMacInterface(object):
         self._wait_for_interrupt = self._wait_on_dext_interrupt
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         os.close(self.bpf_fd)
         os.close(self.ndrv_fd)
         for feth in (self.host_feth, self.nic_feth):
@@ -170,6 +170,7 @@ class TapMacInterface(object):
                 _ifconfig(feth, "destroy")
             except subprocess.CalledProcessError:
                 logger.warning("could not destroy %s", feth)
+        return False
 
     def _inject_selftest(self):
         '''Write a throwaway frame to our own NDRV socket and confirm it
@@ -269,6 +270,9 @@ class TapMacInterface(object):
     def _put_tap_packet(self, pkt):
         '''Inject an Ethernet frame the NIC received onto the host stack.'''
         n = os.write(self.ndrv_fd, pkt)
-        if self.verbose:
+        if n != len(pkt):
+            logger.warning("_put_tap_packet: short write %d/%d -- "
+                           "frame dropped", n, len(pkt))
+        elif self.verbose:
             logger.info("_put_tap_packet: %d/%d bytes -> %s",
                         n, len(pkt), self.nic_feth)

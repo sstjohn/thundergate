@@ -244,6 +244,8 @@ IMPL(TGPCIDevice, ConfigRead32)
 {
     if (ivars->pci == nullptr)
         return kIOReturnNotReady;
+    if (offset >= 0x1000)
+        return kIOReturnBadArgument;
     ivars->pci->ConfigurationRead32(offset, value);   /* returns void */
     return kIOReturnSuccess;
 }
@@ -253,6 +255,8 @@ IMPL(TGPCIDevice, ConfigWrite32)
 {
     if (ivars->pci == nullptr)
         return kIOReturnNotReady;
+    if (offset >= 0x1000)
+        return kIOReturnBadArgument;
     ivars->pci->ConfigurationWrite32(offset, value);  /* returns void */
     return kIOReturnSuccess;
 }
@@ -394,9 +398,16 @@ IMPL(TGPCIDevice, InterruptOccurred)
     (void)time;
 
     ivars->intCount++;
-    if (ivars->client != nullptr) {
-        TGUserClient * uc = OSDynamicCast(TGUserClient, ivars->client);
-        if (uc != nullptr)
-            uc->NotifyInterrupt();
-    }
+
+    /* Retain the client across the notify: UnregisterClient() drops
+       ivars->client, and the dispatched-method serialization in
+       DriverKit is the only thing keeping the cast safe otherwise. */
+    IOUserClient * client = ivars->client;
+    if (client == nullptr)
+        return;
+    client->retain();
+    TGUserClient * uc = OSDynamicCast(TGUserClient, client);
+    if (uc != nullptr)
+        uc->NotifyInterrupt();
+    client->release();
 }

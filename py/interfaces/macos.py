@@ -225,11 +225,13 @@ class MacOSInterface(object):
     # --- config space ---------------------------------------------------
 
     def cfg_read(self, offset):
-        assert 0 <= offset < 0x1000
+        if not 0 <= offset < 0x1000:
+            raise ValueError("config offset %#x out of range" % offset)
         return self._call_scalar(kTGConfigRead, [offset], 1)[0] & 0xffffffff
 
     def cfg_write(self, offset, val):
-        assert 0 <= offset < 0x1000
+        if not 0 <= offset < 0x1000:
+            raise ValueError("config offset %#x out of range" % offset)
         self._call_scalar(kTGConfigWrite, [offset, val & 0xffffffff], 0)
 
     # --- DMA buffers-----------------------------------------------------
